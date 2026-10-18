@@ -2,8 +2,8 @@ KILLED  M1 states: allow planned -> done  [src/states.ts]  # fail 1  (tests/unit
 KILLED  budget: USD cap never exceeded  [src/budget.ts]  # fail 7  (tests/unit/budget.test.ts, tests/unit/controller.test.ts)
 KILLED  budget: open reservations not counted (no defer)  [src/budget.ts]  # fail 6  (tests/unit/budget.test.ts)
 KILLED  store: claims without the cross-process lock  [src/store/fake.ts]  # fail 1  (tests/integration/concurrent-claims.test.ts)
-KILLED  resume: never-launched reservations left open  [src/controller.ts]  # fail 1  (tests/behavioral/crash-recovery.test.ts)
+KILLED  resume: never-launched reservations left open  [src/controller.ts]  # fail 2  (tests/behavioral/crash-recovery.test.ts)
 KILLED  journal: MAC omits the chain link  [src/journal.ts]  # fail 1  (tests/unit/journal.test.ts)
 KILLED  limits: one extra correction attempt  [src/controller.ts]  # fail 1  (tests/unit/controller.test.ts)
-KILLED  evidence: artefact hashes not checked  [src/evidence.ts]  # fail 2  (tests/unit/evidence-policy-plan.test.ts, tests/integration/cli.test.ts)
+KILLED  evidence: artefact hashes not checked  [src/evidence.ts]  # fail 3  (tests/unit/evidence-policy-plan.test.ts, tests/integration/cli.test.ts)
 ALL KILLED

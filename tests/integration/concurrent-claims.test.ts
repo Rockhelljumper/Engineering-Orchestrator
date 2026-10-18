@@ -81,3 +81,13 @@ test('a lock left by a killed process is taken over, and a live one is not', asy
   assert.equal(store.compareAndSetState('A', 'planned', 'ready'), true, 'stale lock taken over');
   assert.ok(Date.now() - started < 5_000);
 });
+
+test('release removes only the lock this instance created', () => {
+  const file = path.join(tmpDir(), 'x.lock');
+  const a = new FileLock(file, 'a');
+  assert.equal(a.tryAcquire(), true);
+  // Simulate a stale-lock takeover having replaced the file with someone else's lock.
+  fs.writeFileSync(file, JSON.stringify({ pid: 1, owner: 'b', acquiredAt: '', nonce: 'other' }));
+  a.release();
+  assert.ok(fs.existsSync(file), "another holder's lock must survive");
+});

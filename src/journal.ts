@@ -89,13 +89,13 @@ export class Journal {
 
   /**
    * Open for appending. Refuses a tampered journal. A torn final line (crash during write)
-   * is removed only when `repairTornTail` is set, which `eo resume` does after reporting it.
+   * is removed only when `repairTornTail` is set; the controller sets it on open and reports it in the resume record.
    */
   static open(file: string, key: Buffer, opts: { repairTornTail?: boolean } = {}): Journal {
     const v = verifyJournalFile(file, key);
     if (!v.ok) throw new JournalTamperError(`journal failed verification: ${v.errors.join('; ')}`);
     if (v.tornTail) {
-      if (!opts.repairTornTail) throw new JournalTamperError('journal has a torn final line; run "eo resume" to repair');
+      if (!opts.repairTornTail) throw new JournalTamperError('journal has a torn final line; opening the controller repairs it');
       const keep = v.records.map((r) => JSON.stringify(r) + '\n').join('');
       writeFileAtomic(file, keep);
     } else if (v.records.length > 0 && !fs.readFileSync(file, 'utf8').endsWith('\n')) {

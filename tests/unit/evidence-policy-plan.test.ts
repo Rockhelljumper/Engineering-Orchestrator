@@ -155,3 +155,30 @@ test('plan hash is independent of key order', () => {
   const b = JSON.parse(JSON.stringify({ tasks: a.tasks, title: a.title, epicId: a.epicId })) as typeof a;
   assert.equal(planHash(a), planHash(b));
 });
+
+test('a corrupt or malformed manifest is reported, not thrown', () => {
+  const ev = ledger();
+  ev.seal('T1', 1, [], {});
+  const mf = path.join(ev.attemptDir('T1', 1), 'manifest.json');
+  fs.writeFileSync(mf, '{not json');
+  assert.deepEqual(ev.verify('T1', 1), ['manifest unreadable']);
+  fs.writeFileSync(mf, JSON.stringify({ taskId: 'T1', attempt: 1, entries: 'x', mac: 'ab' }));
+  assert.deepEqual(ev.verify('T1', 1), ['manifest malformed']);
+});
+
+test('M1-10: replacing an approved directory with a symlink does not move the approval', () => {
+  const dir = tmpDir();
+  const repo = path.join(dir, 'repo');
+  const elsewhere = path.join(dir, 'elsewhere');
+  fs.mkdirSync(repo);
+  fs.mkdirSync(elsewhere);
+  const p = withApprovedRepository(defaultPolicy(), repo, 'human');
+  fs.renameSync(repo, path.join(dir, 'moved'));
+  try {
+    fs.symlinkSync(elsewhere, repo, 'junction');
+  } catch {
+    return; // Windows without symlink privilege
+  }
+  assert.equal(isRepositoryApproved(p, repo), false);
+  assert.equal(isRepositoryApproved(p, elsewhere), false);
+});

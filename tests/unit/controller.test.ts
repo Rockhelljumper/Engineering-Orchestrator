@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Controller, ControllerError, type EscalationRecord } from '../../src/controller.ts';
 import { FakeRunner, type FakeScript } from '../../src/runner/fake.ts';
-import { PolicyError, loadPolicy } from '../../src/policy.ts';
+import { PolicyError, loadPolicy, policyHash } from '../../src/policy.ts';
 import { doctor } from '../../src/doctor.ts';
 import { readExecLog, samplePlan, sandbox, tmpDir, type Sandbox } from '../support/helpers.ts';
 import type { Plan } from '../../src/plan.ts';
@@ -367,6 +367,136 @@ test('the run summary reports tasks stalled behind a blocked dependency', async 
   try {
     assert.equal(summary.states['T1'], 'blocked');
     assert.deepEqual(summary.stalled, ['T2', 'T3']);
+  } finally {
+    c.close();
+  }
+});
+
+// ------------------------------------------------------------------ review repairs
+
+function storeFile(sb: Sandbox): string {
+  return path.join(sb.root, 'store', 'tasks.json');
+}
+
+function editStore(sb: Sandbox, fn: (tasks: Record<string, Record<string, unknown>>) => void): void {
+  const s = JSON.parse(fs.readFileSync(storeFile(sb), 'utf8')) as { tasks: Record<string, Record<string, unknown>> };
+  fn(s.tasks);
+  fs.writeFileSync(storeFile(sb), JSON.stringify(s));
+}
+
+test('a task injected into the store behind the controller is refused, not run', async () => {
+  const sb = sandbox();
+  const c0 = Controller.open(sb.root);
+  c0.importPlan(twoIndependent, sb.repo, 'h');
+  c0.close();
+  editStore(sb, (t) => {
+    t['X'] = { ...(t['A'] as object), id: 'X', epicId: 'EVIL', state: 'ready' };
+  });
+  const log = path.join(sb.dir, 'exec.log');
+  const c = Controller.open(sb.root);
+  try {
+    await assert.rejects(c.run(new FakeRunner({ default: { behaviour: 'pass' }, execLog: log }), { repoPath: sb.repo }), /X is not in any journaled plan/);
+    assert.deepEqual(readExecLog(log), []);
+  } finally {
+    c.close();
+  }
+  assert.match(doctor(sb.root).problems.join(';'), /X is not in any journaled plan/);
+});
+
+test('a task whose epic or dependencies were edited in the store is refused', async () => {
+  for (const edit of [(t: Record<string, Record<string, unknown>>) => ((t['A'] as Record<string, unknown>)['epicId'] = 'OTHER'), (t: Record<string, Record<string, unknown>>) => ((t['T5'] as Record<string, unknown>)['deps'] = [])]) {
+    const sb = sandbox();
+    const c0 = Controller.open(sb.root);
+    c0.importPlan({ ...samplePlan(), tasks: [...samplePlan().tasks, { id: 'A', title: 'a', deps: [] }] }, sb.repo, 'h');
+    c0.close();
+    editStore(sb, edit);
+    const c = Controller.open(sb.root);
+    try {
+      await assert.rejects(c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo }), /does not match the journaled plans/);
+    } finally {
+      c.close();
+    }
+  }
+});
+
+test('tasks run only against the repository their plan was approved for', async () => {
+  const sb = sandbox();
+  const other = path.join(sb.dir, 'other-repo');
+  fs.mkdirSync(other);
+  const c = Controller.open(sb.root);
+  try {
+    c.approveRepository(other, 'h');
+    c.importPlan(twoIndependent, sb.repo, 'h');
+    const log = path.join(sb.dir, 'exec.log');
+    const s = await c.run(new FakeRunner({ default: { behaviour: 'pass' }, execLog: log }), { repoPath: other });
+    assert.deepEqual(readExecLog(log), [], 'nothing launched under the other repository');
+    assert.deepEqual(s.states, { A: 'ready', B: 'ready' });
+    assert.equal(c.journal.ofType('run.skip').length, 2);
+    const ok = await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
+    assert.deepEqual(ok.states, { A: 'done', B: 'done' });
+  } finally {
+    c.close();
+  }
+});
+
+test('a hand-edited policy can be accepted by a human, after which the controller opens', () => {
+  const sb = sandbox();
+  const file = path.join(sb.root, 'policy.json');
+  const p = loadPolicy(file);
+  p.limits.maxAttempts = 4;
+  fs.writeFileSync(file, JSON.stringify(p, null, 2));
+  assert.throws(() => Controller.open(sb.root), /eo policy accept/);
+  const c = Controller.open(sb.root, { allowPolicyDrift: true });
+  c.acceptPolicy('test-human');
+  c.close();
+  const c2 = Controller.open(sb.root);
+  try {
+    assert.equal(c2.policy.limits.maxAttempts, 4);
+  } finally {
+    c2.close();
+  }
+  assert.deepEqual(doctor(sb.root).problems, []);
+});
+
+test('a crash between journaling a policy change and committing it does not wedge the state root', () => {
+  // Crash after the intent but before the file write: the old policy stays in force.
+  const sb = sandbox();
+  const file = path.join(sb.root, 'policy.json');
+  let c = Controller.open(sb.root);
+  const next = { ...c.policy, leaseMs: 1234 };
+  c.journal.append('policy.pending', { hash: policyHash(next), reason: 'test' });
+  c.close();
+  c = Controller.open(sb.root);
+  assert.notEqual(c.policy.leaseMs, 1234);
+  // Crash after the file write but before the commit: the change is completed on open.
+  c.journal.append('policy.pending', { hash: policyHash(next), reason: 'test' });
+  fs.writeFileSync(file, JSON.stringify(next, null, 2));
+  c.close();
+  c = Controller.open(sb.root);
+  try {
+    assert.equal(c.policy.leaseMs, 1234);
+    const last = c.journal.ofType<{ reason: string }>('policy.set').at(-1);
+    assert.match(last?.data.reason ?? '', /^completed: test/);
+  } finally {
+    c.close();
+  }
+});
+
+test('a malformed reported cost is charged as unknown instead of wedging the journal', async () => {
+  const sb = sandbox();
+  const c = Controller.open(sb.root);
+  try {
+    c.importPlan(twoIndependent, sb.repo, 'h');
+    const runner = {
+      kind: 'bad-cost',
+      run: async () => ({ kind: 'completed' as const, cost: { usd: -1, tokens: 1.5 }, verification: { verdict: 'pass' as const, signature: null }, review: { verdict: 'approve' as const }, summary: '' }),
+    };
+    const s = await c.run(runner, { repoPath: sb.repo });
+    assert.deepEqual(s.states, { A: 'done', B: 'done' });
+    const end = c.journal.ofType<{ taskId: string; invalidCost?: string; result: { cost: unknown } }>('attempt.end').find((r) => r.data.taskId === 'A');
+    assert.equal(end?.data.result.cost, null);
+    assert.match(end?.data.invalidCost ?? '', /-1/);
+    assert.ok(c.journal.ofType<{ basis: string }>('budget.settle').every((r) => r.data.basis === 'unknown'));
   } finally {
     c.close();
   }

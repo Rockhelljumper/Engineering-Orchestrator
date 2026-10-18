@@ -8,6 +8,7 @@ import { verifyJournalFile } from '../../src/journal.ts';
 import { readJournalKey, statePaths } from '../../src/stateRoot.ts';
 import { CLI, readExecLog, runCli, samplePlan, sandbox, writeJson, type Sandbox } from '../support/helpers.ts';
 import type { Policy } from '../../src/policy.ts';
+import type { Plan } from '../../src/plan.ts';
 
 /**
  * M1-4. A scripted 5-task run with one verification failure and one worker crash. The
@@ -39,14 +40,39 @@ interface Scenario {
   scriptFile: string;
 }
 
-function setup(delayMs = 0): Scenario {
+/** Second scenario: A exhausts its correction attempts and blocks; B (needs A) stalls; C runs. */
+const escalationPlan: Plan = {
+  epicId: 'E2',
+  title: 'escalation',
+  tasks: [
+    { id: 'A', title: 'a', deps: [] },
+    { id: 'B', title: 'b', deps: ['A'] },
+    { id: 'C', title: 'c', deps: [] },
+  ],
+};
+const escalationScript = (log: string): object => ({
+  execLog: log,
+  default: { behaviour: 'pass' },
+  tasks: { A: Array.from({ length: 12 }, (_, i) => ({ behaviour: 'verify-fail', signature: `sig-${i + 1}` })) },
+});
+
+function setup(delayMs = 0, variant: 'sample' | 'escalation' = 'sample'): Scenario {
   const sb = sandbox(roomy);
   const c = Controller.open(sb.root);
-  c.importPlan(samplePlan(), sb.repo, 'test-human');
+  c.importPlan(variant === 'sample' ? samplePlan() : escalationPlan, sb.repo, 'test-human');
   c.close();
   const log = path.join(sb.dir, 'exec.log');
-  const scriptFile = writeJson(path.join(sb.dir, 'script.json'), script(log, delayMs));
+  const scriptFile = writeJson(path.join(sb.dir, 'script.json'), variant === 'sample' ? script(log, delayMs) : escalationScript(log));
   return { sb, log, scriptFile };
+}
+
+/** Escalation categories per task, which must also match the baseline. */
+function escalationsOf(s: Scenario): string[] {
+  const p = statePaths(s.sb.root);
+  return verifyJournalFile(p.journal, readJournalKey(p))
+    .records.filter((r) => r.type === 'escalation')
+    .map((r) => `${(r.data as { taskId: string }).taskId}:${(r.data as { category: string }).category}`)
+    .sort();
 }
 
 const runArgs = (s: Scenario): string[] => ['run', '--state-root', s.sb.root, '--repo', s.sb.repo, '--runner', 'fake', '--script', s.scriptFile];
@@ -159,4 +185,25 @@ test('M1-4: random SIGKILLs during attempts, then resume', { timeout: 600_000 },
   }
   t.diagnostic(`SIGKILLs delivered: ${killed} across 8 runs`);
   assert.ok(killed >= 8, `only ${killed} kills landed; the test is not exercising recovery`);
+});
+
+test('M1-4: crash at every boundary of a run that ends in an escalation, then resume', { timeout: 900_000 }, (t) => {
+  const base = setup(0, 'escalation');
+  const before = journalCount(base);
+  assert.equal(runCli(runArgs(base)).status, 0);
+  const N = journalCount(base) - before;
+  const baseline = finalStates(base);
+  assert.deepEqual(baseline, { A: 'blocked', B: 'planned', C: 'done' });
+  const baseEsc = escalationsOf(base);
+  assert.deepEqual(baseEsc, ['A:attempts']);
+  for (let k = 1; k <= N; k++) {
+    const s = setup(0, 'escalation');
+    assert.equal(runCli(runArgs(s), { EO_CRASH_AT: String(k) }).status, 137, `boundary ${k}`);
+    recover(s, `escalation boundary ${k}`);
+    checkRecovered(s, baseline, `escalation boundary ${k}`);
+    assert.deepEqual(escalationsOf(s), baseEsc, `escalation boundary ${k}: escalations`);
+    const esc = fs.readdirSync(path.join(s.sb.root, 'escalations'));
+    assert.equal(esc.length, 1, `escalation boundary ${k}: one escalation file`);
+  }
+  t.diagnostic(`escalation scenario boundaries tested: ${N}`);
 });

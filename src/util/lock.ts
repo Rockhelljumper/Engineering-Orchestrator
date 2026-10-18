@@ -1,10 +1,13 @@
 import * as fs from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { isProcessAlive } from './fsx.ts';
 
 interface LockInfo {
   pid: number;
   owner: string;
   acquiredAt: string;
+  /** Random per acquisition, so release removes only the lock this instance created. */
+  nonce: string;
 }
 
 /** Lock files held by FileLock instances in this process. */
@@ -19,6 +22,7 @@ export class FileLock {
   readonly file: string;
   readonly owner: string;
   private held = false;
+  private nonce = '';
 
   constructor(file: string, owner: string) {
     this.file = file;
@@ -29,7 +33,8 @@ export class FileLock {
     for (let i = 0; i < 2; i++) {
       try {
         const fd = fs.openSync(this.file, 'wx', 0o600);
-        const info: LockInfo = { pid: process.pid, owner: this.owner, acquiredAt: new Date().toISOString() };
+        this.nonce = randomBytes(8).toString('hex');
+        const info: LockInfo = { pid: process.pid, owner: this.owner, acquiredAt: new Date().toISOString(), nonce: this.nonce };
         fs.writeSync(fd, JSON.stringify(info));
         fs.closeSync(fd);
         this.held = true;
@@ -61,7 +66,9 @@ export class FileLock {
     this.held = false;
     heldHere.delete(this.file);
     try {
-      fs.unlinkSync(this.file);
+      // Only remove the lock if it is still ours (a stale-lock takeover may have replaced it).
+      const info = JSON.parse(fs.readFileSync(this.file, 'utf8')) as LockInfo;
+      if (info.nonce === this.nonce) fs.unlinkSync(this.file);
     } catch {
       // already gone
     }
@@ -81,7 +88,9 @@ export class FileLock {
     try {
       fd = fs.openSync(breaker, 'wx', 0o600);
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+      const code = (err as NodeJS.ErrnoException).code;
+      if (process.platform === 'win32' && (code === 'EPERM' || code === 'EACCES')) return false; // delete pending
+      if (code !== 'EEXIST') throw err;
       // A breaker left by a process killed in this tiny window is cleared after 10s.
       try {
         if (Date.now() - fs.statSync(breaker).mtimeMs > 10_000) fs.unlinkSync(breaker);

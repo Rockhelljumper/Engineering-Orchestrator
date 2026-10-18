@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { timingSafeEqual } from 'node:crypto';
 import { canonicalJson, hmacHex, sha256Hex } from './util/canonical.ts';
 import { writeFileAtomic } from './util/fsx.ts';
 
@@ -59,20 +60,25 @@ export class EvidenceLedger {
   read(taskId: string, attempt: number): EvidenceManifest | null {
     const file = path.join(this.attemptDir(taskId, attempt), 'manifest.json');
     if (!fs.existsSync(file)) return null;
-    return JSON.parse(fs.readFileSync(file, 'utf8')) as EvidenceManifest;
+    try {
+      return JSON.parse(fs.readFileSync(file, 'utf8')) as EvidenceManifest;
+    } catch {
+      return null;
+    }
   }
 
   /** Recompute the MAC and every artifact hash. Returns a list of problems (empty = valid). */
   verify(taskId: string, attempt: number): string[] {
     const m = this.read(taskId, attempt);
-    if (m === null) return ['manifest missing'];
+    if (m === null) return [fs.existsSync(path.join(this.attemptDir(taskId, attempt), 'manifest.json')) ? 'manifest unreadable' : 'manifest missing'];
+    if (typeof m !== 'object' || !Array.isArray(m.entries) || typeof m.mac !== 'string') return ['manifest malformed'];
     const problems: string[] = [];
     const { mac, ...body } = m;
-    if (hmacHex(this.key, canonicalJson(body)) !== mac) problems.push('manifest MAC mismatch');
+    if (!macEqual(hmacHex(this.key, canonicalJson(body)), mac)) problems.push('manifest MAC mismatch');
     if (m.taskId !== taskId || m.attempt !== attempt) problems.push('manifest identity mismatch');
     for (const e of m.entries) {
-      if (!SAFE_NAME.test(e.name)) {
-        problems.push(`unsafe entry name ${e.name}`);
+      if (typeof e !== 'object' || e === null || typeof e.name !== 'string' || !SAFE_NAME.test(e.name)) {
+        problems.push(`unsafe entry name ${String((e as { name?: unknown } | null)?.name)}`);
         continue;
       }
       const file = path.join(this.attemptDir(taskId, attempt), e.name);
@@ -85,4 +91,10 @@ export class EvidenceLedger {
     }
     return problems;
   }
+}
+
+function macEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a, 'hex');
+  const bb = Buffer.from(b, 'hex');
+  return ba.length === bb.length && ba.length > 0 && timingSafeEqual(ba, bb);
 }

@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { Journal, verifyJournalFile, type JournalRecord } from './journal.ts';
 import { EvidenceLedger } from './evidence.ts';
 import { BudgetGovernor, type Amount } from './budget.ts';
-import { assertRepositoryApproved, loadPolicy, policyHash, savePolicy, withApprovedRepository, type Policy } from './policy.ts';
+import { assertRepositoryApproved, canonicalRepoPath, loadPolicy, policyHash, savePolicy, withApprovedRepository, type Policy } from './policy.ts';
 import { readJournalKey, statePaths, type StateRootPaths } from './stateRoot.ts';
 import { assertTransition, type TaskState } from './states.ts';
 import { FakeStore } from './store/fake.ts';
@@ -32,6 +32,8 @@ export interface AttemptEndRecord {
   attempt: number;
   result: RunResult | { kind: 'infra'; reason: 'interrupted'; cost: null };
   synthesized: boolean;
+  /** A cost the runner reported that was not a valid amount; charged as unknown instead. */
+  invalidCost?: string;
 }
 
 export type EscalationCategory = 'budget' | 'attempts' | 'repeated-failure' | 'infra' | 'evidence' | 'policy';
@@ -89,14 +91,23 @@ export class Controller {
     this.store = opts.store ?? FakeStore.atDir(paths.store);
     this.evidence = new EvidenceLedger(paths.evidence, key);
     this.budget = new BudgetGovernor(this.journal, this.policy.budget);
-    const sets = this.journal.ofType<{ hash: string }>('policy.set');
-    const journaledHash = sets[sets.length - 1]?.data.hash;
-    if (journaledHash === undefined) {
-      this.journal.append('policy.set', { hash: policyHash(this.policy), reason: 'initial' });
-    } else if (journaledHash !== policyHash(this.policy) && !opts.allowPolicyDrift) {
-      throw new ControllerError('policy.json differs from the last policy recorded in the journal; a human must accept the change ("eo policy accept")');
+    const now = policyHash(this.policy);
+    const { committed, pending } = policyRecords(this.journal.records());
+    if (committed === undefined) {
+      this.journal.append('policy.set', { hash: now, reason: 'initial' });
+    } else if (now !== committed) {
+      if (pending && pending.hash === now) {
+        // A controller change was journaled and written but not committed before a crash.
+        this.journal.append('policy.set', { hash: now, reason: `completed: ${pending.reason}` });
+      } else if (!opts.allowPolicyDrift) {
+        throw new ControllerError('policy.json differs from the last policy recorded in the journal; a human must review it and run "eo policy accept"');
+      }
     }
+    this.planIndex = journaledTasks(this.journal.records());
   }
+
+  /** Task facts as approved in journaled plans; authoritative over the store's copy. */
+  private planIndex: Map<string, PlannedTask>;
 
   /** Acquire the controller lock and open state. Throws if another controller is running. */
   static open(root: string, opts: { store?: TaskStore; allowPolicyDrift?: boolean } = {}): Controller {
@@ -121,10 +132,23 @@ export class Controller {
   /** Approve a repository. The CLI only calls this after an interactive human confirmation. */
   approveRepository(repoPath: string, approvedBy: string): Policy {
     const next = withApprovedRepository(this.policy, repoPath, approvedBy);
+    const reason = `approve-repo ${path.resolve(repoPath)} by ${approvedBy}`;
+    // Write-ahead: intent, file, commit. A crash in between is completed or ignored on open.
+    this.journal.append('policy.pending', { hash: policyHash(next), reason });
     savePolicy(this.paths.policy, next);
-    this.journal.append('policy.set', { hash: policyHash(next), reason: `approve-repo ${path.resolve(repoPath)} by ${approvedBy}` });
+    this.journal.append('policy.set', { hash: policyHash(next), reason });
     this.policy = next;
     return next;
+  }
+
+  /**
+   * Human action: accept policy.json as it is now on disk. Requires a controller opened with
+   * allowPolicyDrift; the CLI confirms interactively first.
+   */
+  acceptPolicy(by: string): string {
+    const hash = policyHash(this.policy);
+    this.journal.append('policy.set', { hash, reason: `accepted by ${by}` });
+    return hash;
   }
 
   // ---------------------------------------------------------------- plan
@@ -136,7 +160,8 @@ export class Controller {
     for (const t of plan.tasks) {
       if (this.store.get(t.id)) throw new ControllerError(`task ${t.id} already exists`);
     }
-    this.journal.append('plan.import', { epicId: plan.epicId, planHash: planHash(plan), approvedBy, repoPath: path.resolve(repoPath), plan });
+    this.journal.append('plan.import', { epicId: plan.epicId, planHash: planHash(plan), approvedBy, repoPath: canonicalRepoPath(repoPath), plan });
+    this.planIndex = journaledTasks(this.journal.records());
     this.materialisePlan(plan);
     return plan;
   }
@@ -222,6 +247,10 @@ export class Controller {
     for (const r of records) {
       if (r.type === 'plan.import') report.tasksCreated.push(...this.materialisePlan((r.data as { plan: Plan }).plan));
     }
+    const mismatches = planMismatches(this.store.list(), this.planIndex);
+    if (mismatches.length > 0) {
+      throw new ControllerError(`task store does not match the journaled plans (${mismatches.join('; ')}); investigate with "eo doctor"`);
+    }
 
     // 2. Escalation files and the latest journaled state of every task.
     for (const r of records) {
@@ -290,7 +319,8 @@ export class Controller {
     const states = new Map(tasks.map((t) => [t.id, t.state]));
     const promoted: string[] = [];
     for (const t of tasks) {
-      if (t.state === 'planned' && t.deps.every((d) => states.get(d) === 'done')) {
+      const deps = this.planIndex.get(t.id)?.deps ?? t.deps;
+      if (t.state === 'planned' && deps.every((d) => states.get(d) === 'done')) {
         this.transition({ taskId: t.id, from: 'planned', to: 'ready', reason: 'dependencies done' });
         promoted.push(t.id);
       }
@@ -304,6 +334,7 @@ export class Controller {
    */
   async run(runner: Runner, opts: { maxSteps?: number; repoPath: string }): Promise<RunSummary> {
     assertRepositoryApproved(this.policy, opts.repoPath);
+    const runRepo = canonicalRepoPath(opts.repoPath);
     this.resume();
     this.journal.append('run.start', { owner: this.owner, runner: runner.kind });
     let steps = 0;
@@ -313,6 +344,15 @@ export class Controller {
       this.promote();
       const t = this.store.claimReady(this.owner, this.policy.leaseMs, Date.now(), deferred);
       if (!t) break;
+      const planned = this.planIndex.get(t.id);
+      if (!planned || planned.repoPath !== runRepo) {
+        // Tasks run only against the repository their plan was approved for.
+        this.store.release(t.id, this.owner);
+        deferred.add(t.id);
+        this.journal.append('run.skip', { taskId: t.id, reason: `planned for ${planned?.repoPath ?? 'unknown repository'}` });
+        continue;
+      }
+      // The run's repository was checked as approved above, so this task's repository is too.
       steps++;
       await this.runAttempt(t, runner, deferred);
     }
@@ -333,7 +373,7 @@ export class Controller {
     // Unique per reservation: a reservation released by resume (never launched) must not
     // collide with the retry of the same attempt number.
     const reservationId = `${t.id}#${attempt}@${this.journal.records().length + 1}`;
-    const decision = this.budget.reserve(reservationId, t.id, t.epicId);
+    const decision = this.budget.reserve(reservationId, t.id, this.planIndex.get(t.id)?.epicId ?? t.epicId);
     if (decision.kind !== 'admit') {
       this.store.release(t.id, this.owner);
       if (decision.kind === 'defer') {
@@ -369,7 +409,8 @@ export class Controller {
       if (timer) clearTimeout(timer);
       controller.abort();
     }
-    const end: AttemptEndRecord = { taskId: t.id, attempt, result, synthesized: false };
+    const end: AttemptEndRecord = { taskId: t.id, attempt, result: sanitizeCost(result), synthesized: false };
+    if (end.result !== result) end.invalidCost = JSON.stringify(result.cost);
     this.journal.append('attempt.end', end);
     this.advance(t.id);
     this.store.release(t.id, this.owner);
@@ -410,7 +451,11 @@ export class Controller {
           changed = true;
           continue;
         case 'verifying': {
-          this.ensureEvidence(t, end);
+          const evProblem = this.ensureEvidence(t, end);
+          if (evProblem) {
+            this.escalate(taskId, 'verifying', 'evidence', evProblem, 'Evidence failed verification; investigate tampering?');
+            return true;
+          }
           if (r.verification.verdict === 'pass') {
             this.transition({ taskId, from: 'verifying', to: 'reviewing', reason: 'verification passed (M1: scripted)' });
           } else {
@@ -433,6 +478,9 @@ export class Controller {
           continue;
         case 'integrating': {
           const problems = this.evidence.verify(taskId, end.attempt);
+          const sealed = this.sealedMac(taskId, end.attempt);
+          if (sealed === undefined) problems.push('no journaled seal');
+          else if (this.evidence.read(taskId, end.attempt)?.mac !== sealed) problems.push('manifest differs from the journaled seal');
           if (problems.length > 0) {
             this.escalate(taskId, 'integrating', 'evidence', `evidence invalid: ${problems.join(', ')}`, 'Evidence failed verification; investigate tampering?');
           } else {
@@ -461,11 +509,27 @@ export class Controller {
     }
   }
 
-  /** Evidence for the attempt, written by the controller (never by a worker). Idempotent. */
-  private ensureEvidence(t: TaskRecord, end: AttemptEndRecord): void {
-    if (this.evidence.read(t.id, end.attempt) && this.evidence.verify(t.id, end.attempt).length === 0) return;
+  /**
+   * Evidence for the attempt, written by the controller (never by a worker). Idempotent.
+   * Returns a problem when evidence that was already sealed no longer verifies: that is
+   * tampering, and it is escalated rather than silently rewritten.
+   */
+  private ensureEvidence(t: TaskRecord, end: AttemptEndRecord): string | null {
+    const sealed = this.sealedMac(t.id, end.attempt);
+    const problems = this.evidence.verify(t.id, end.attempt);
+    if (problems.length === 0) {
+      const mac = this.evidence.read(t.id, end.attempt)?.mac as string;
+      if (sealed === undefined) {
+        // Sealed, then a crash before the journal record. The MAC proves the controller wrote it.
+        this.journal.append('evidence.sealed', { taskId: t.id, attempt: end.attempt, mac });
+        return null;
+      }
+      return mac === sealed ? null : 'manifest differs from the journaled seal';
+    }
+    if (sealed !== undefined) return `sealed evidence no longer verifies: ${problems.join(', ')}`;
+    // Never sealed (a crash while writing it): write it now.
     const r = end.result;
-    if (r.kind !== 'completed') return;
+    if (r.kind !== 'completed') return null;
     const entries = [
       this.evidence.writeArtifact(t.id, end.attempt, 'runner-result.json', JSON.stringify(r, null, 2)),
       this.evidence.writeArtifact(
@@ -477,6 +541,12 @@ export class Controller {
     ];
     const m = this.evidence.seal(t.id, end.attempt, entries, { verification: r.verification.verdict, review: r.review.verdict, placeholder: 'M1' });
     this.journal.append('evidence.sealed', { taskId: t.id, attempt: end.attempt, mac: m.mac });
+    return null;
+  }
+
+  private sealedMac(taskId: string, attempt: number): string | undefined {
+    const recs = this.journal.ofType<{ taskId: string; attempt: number; mac: string }>('evidence.sealed').filter((r) => r.data.taskId === taskId && r.data.attempt === attempt);
+    return recs[recs.length - 1]?.data.mac;
   }
 
   /** The reservation recorded on the attempt-start transition. */
@@ -497,6 +567,62 @@ export class Controller {
     if (!t) throw new ControllerError(`unknown task ${id}`);
     return t;
   }
+}
+
+export interface PlannedTask {
+  epicId: string;
+  deps: string[];
+  repoPath: string;
+}
+
+/** Every task of every journaled plan, as approved. */
+export function journaledTasks(records: readonly JournalRecord[]): Map<string, PlannedTask> {
+  const out = new Map<string, PlannedTask>();
+  for (const r of records) {
+    if (r.type !== 'plan.import') continue;
+    const d = r.data as { plan: Plan; repoPath: string };
+    for (const t of d.plan.tasks) if (!out.has(t.id)) out.set(t.id, { epicId: d.plan.epicId, deps: [...t.deps], repoPath: d.repoPath });
+  }
+  return out;
+}
+
+/** Store tasks that are unknown to the journal, or whose epic or dependencies were changed. */
+export function planMismatches(tasks: readonly TaskRecord[], planned: ReadonlyMap<string, PlannedTask>): string[] {
+  const out: string[] = [];
+  for (const t of tasks) {
+    const p = planned.get(t.id);
+    if (!p) out.push(`${t.id} is not in any journaled plan`);
+    else {
+      if (t.epicId !== p.epicId) out.push(`${t.id} epic is ${t.epicId}, plan says ${p.epicId}`);
+      if ([...t.deps].sort().join(',') !== [...p.deps].sort().join(',')) out.push(`${t.id} dependencies differ from the plan`);
+    }
+  }
+  return out;
+}
+
+function policyRecords(records: readonly JournalRecord[]): { committed?: string; pending?: { hash: string; reason: string } } {
+  let committed: string | undefined;
+  let pending: { hash: string; reason: string } | undefined;
+  for (const r of records) {
+    if (r.type === 'policy.set') {
+      committed = (r.data as { hash: string }).hash;
+      pending = undefined;
+    } else if (r.type === 'policy.pending') pending = r.data as { hash: string; reason: string };
+  }
+  return { ...(committed !== undefined ? { committed } : {}), ...(pending ? { pending } : {}) };
+}
+
+function validAmount(c: unknown): boolean {
+  const x = c as { usd?: unknown; tokens?: unknown } | null;
+  return (
+    typeof x === 'object' && x !== null && typeof x.usd === 'number' && Number.isFinite(x.usd) && x.usd >= 0 &&
+    typeof x.tokens === 'number' && Number.isInteger(x.tokens) && x.tokens >= 0
+  );
+}
+
+/** A malformed reported cost becomes "unknown" (full reservation charged) before it is journaled. */
+function sanitizeCost(r: RunResult): RunResult {
+  return r.cost === null || validAmount(r.cost) ? r : { ...r, cost: null };
 }
 
 function costOf(r: AttemptEndRecord['result']): Amount | null {

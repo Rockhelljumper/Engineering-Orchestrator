@@ -7,7 +7,7 @@ import { loadPolicy, policyHash } from './policy.ts';
 import { readJournalKey, statePaths } from './stateRoot.ts';
 import { FakeStore } from './store/fake.ts';
 import type { TaskStore } from './store/types.ts';
-import { expectedStates, type EscalationRecord } from './controller.ts';
+import { expectedStates, journaledTasks, planMismatches, type EscalationRecord } from './controller.ts';
 
 export interface DoctorReport {
   ok: boolean;
@@ -25,7 +25,7 @@ export function doctor(root: string, store?: TaskStore): DoctorReport {
   const key = readJournalKey(p);
   const v = verifyJournalFile(p.journal, key);
   problems.push(...v.errors.map((e) => `journal: ${e}`));
-  if (v.tornTail) warnings.push('journal has a torn final line (crash during write); "eo resume" will remove it');
+  if (v.tornTail) warnings.push('journal has a torn final line (crash during write); the next command that opens the controller removes it');
 
   try {
     const pol = loadPolicy(p.policy);
@@ -43,7 +43,7 @@ export function doctor(root: string, store?: TaskStore): DoctorReport {
     if (!t) problems.push(`store: task ${id} missing (journal has it)`);
     else if (t.state !== exp.state) problems.push(`store: ${id} is ${t.state}, journal says ${exp.state} (resume will repair)`);
   }
-  for (const t of s.list()) if (!expected.has(t.id)) problems.push(`store: task ${t.id} not in journal`);
+  for (const m of planMismatches(s.list(), journaledTasks(v.records))) problems.push(`store: ${m}`);
 
   try {
     const ledger = BudgetLedger.fromRecords(v.records);

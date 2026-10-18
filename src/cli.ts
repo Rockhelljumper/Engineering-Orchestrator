@@ -21,6 +21,7 @@ Usage: eo <command> [options]   (global: --state-root <dir>, or EO_STATE_ROOT)
   init                              create a state root (policy, journal key, store)
   policy show                       print the policy
   policy approve-repo <path>        approve a repository (interactive confirmation)
+  policy accept                     accept a hand-edited policy.json (interactive confirmation)
   plan import <file> --repo <path>  import and approve a plan (interactive confirmation)
   run --repo <path> --runner fake --script <file> [--max-steps n]
   resume                            reconcile after a crash or interruption
@@ -65,6 +66,17 @@ async function main(argv: string[]): Promise<number> {
       if (sub === 'show') {
         out(fs.readFileSync(statePaths(root).policy, 'utf8'));
         return 0;
+      }
+      if (sub === 'accept') {
+        out(fs.readFileSync(statePaths(root).policy, 'utf8'));
+        await confirmHuman('Accept the policy above as the new controller policy? Type "accept" to continue: ', 'accept');
+        const c = Controller.open(root, { allowPolicyDrift: true });
+        try {
+          out(`accepted policy ${c.acceptPolicy(os.userInfo().username)}`);
+          return 0;
+        } finally {
+          c.close();
+        }
       }
       if (sub === 'approve-repo' && arg) {
         await confirmHuman(`Approve repository ${arg} for eo? Type "approve" to continue: `, 'approve');

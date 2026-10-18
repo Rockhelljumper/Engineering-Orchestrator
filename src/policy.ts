@@ -164,7 +164,7 @@ export function savePolicy(file: string, p: Policy): void {
   writeFileAtomic(file, JSON.stringify(p, null, 2) + '\n');
 }
 
-function canonicalRepoPath(p: string): string {
+export function canonicalRepoPath(p: string): string {
   const real = fs.realpathSync.native(path.resolve(p));
   return process.platform === 'win32' ? real.toLowerCase() : real;
 }
@@ -176,13 +176,9 @@ export function isRepositoryApproved(p: Policy, repoPath: string): boolean {
   } catch {
     return false;
   }
-  return p.approvedRepositories.some((r) => {
-    try {
-      return canonicalRepoPath(r.path) === target;
-    } catch {
-      return false;
-    }
-  });
+  // Compare with the path canonicalised at approval time. Re-resolving the stored path would
+  // let a later symlink swap redirect the approval.
+  return p.approvedRepositories.some((r) => (process.platform === 'win32' ? r.path.toLowerCase() : r.path) === target);
 }
 
 export function assertRepositoryApproved(p: Policy, repoPath: string): void {

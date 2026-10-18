@@ -133,3 +133,32 @@ test('usage errors exit 2', () => {
   const sb = imported();
   assert.equal(runCli(['run', '--state-root', sb.root, '--repo', sb.repo, '--runner', 'claude']).status, 2);
 });
+
+test('sealed evidence tampered with after a crash is escalated, not silently rewritten', () => {
+  // Find the run's journal append that seals T1's evidence, using an identical scenario.
+  const probe = imported();
+  const script = (dir: string): string => writeJson(path.join(dir, 'script.json'), { default: { behaviour: 'pass' } });
+  const jf = (root: string): string[] => fs.readFileSync(path.join(root, 'journal.jsonl'), 'utf8').split('\n').filter(Boolean);
+  const before = jf(probe.root).length;
+  assert.equal(runCli(['run', '--state-root', probe.root, '--repo', probe.repo, '--runner', 'fake', '--script', script(probe.dir)]).status, 0);
+  const k = jf(probe.root).slice(before).findIndex((l) => l.includes('"type":"evidence.sealed"')) + 1;
+  assert.ok(k > 0);
+
+  const sb = imported();
+  const crashed = runCli(['run', '--state-root', sb.root, '--repo', sb.repo, '--runner', 'fake', '--script', script(sb.dir)], { EO_CRASH_AT: String(k) });
+  assert.equal(crashed.status, 137, crashed.stderr);
+  const evFile = path.join(sb.root, 'evidence', 'T1', 'a1', 'verification.json');
+  fs.writeFileSync(evFile, fs.readFileSync(evFile, 'utf8').replace('"pass"', '"PASS"'));
+  assert.equal(runCli(['resume', '--state-root', sb.root]).status, 0);
+  const st = JSON.parse(runCli(['status', '--json', '--state-root', sb.root]).stdout) as { tasks: Array<{ id: string; state: string }>; escalations: Array<{ category: string; detail: string }> };
+  assert.equal(st.tasks.find((t) => t.id === 'T1')?.state, 'blocked');
+  assert.equal(st.escalations[0]?.category, 'evidence');
+  assert.match(st.escalations[0]?.detail ?? '', /sealed evidence no longer verifies: verification.json hash mismatch/);
+});
+
+test('eo policy accept refuses without an interactive terminal', () => {
+  const sb = imported();
+  const r = runCli(['policy', 'accept', '--state-root', sb.root], {}, 'accept\n');
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /needs a human at an interactive terminal/);
+});
