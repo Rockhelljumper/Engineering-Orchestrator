@@ -36,7 +36,11 @@ export class FileLock {
         heldHere.add(this.file);
         return true;
       } catch (err) {
-        if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+        const code = (err as NodeJS.ErrnoException).code;
+        // Windows reports EPERM while a just-deleted lock file is still open elsewhere
+        // ("delete pending"); the lock is changing hands, so treat it as busy.
+        if (process.platform === 'win32' && (code === 'EPERM' || code === 'EACCES')) return false;
+        if (code !== 'EEXIST') throw err;
         if (!this.removeIfStale()) return false;
       }
     }

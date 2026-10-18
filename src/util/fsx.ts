@@ -25,8 +25,27 @@ export function writeFileAtomic(file: string, data: string | Buffer, mode = 0o60
   } finally {
     fs.closeSync(fd);
   }
-  fs.renameSync(tmp, file);
+  renameWithRetry(tmp, file);
   fsyncDir(dir);
+}
+
+/**
+ * On Windows a rename over a file that another process (or a scanner) has open fails
+ * transiently with EPERM/EACCES/EBUSY; retry briefly. Elsewhere rename never needs this.
+ */
+function renameWithRetry(from: string, to: string): void {
+  const deadline = Date.now() + 2_000;
+  for (;;) {
+    try {
+      fs.renameSync(from, to);
+      return;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      const transient = process.platform === 'win32' && (code === 'EPERM' || code === 'EACCES' || code === 'EBUSY');
+      if (!transient || Date.now() > deadline) throw err;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+    }
+  }
 }
 
 export function fsyncDir(dir: string): void {
