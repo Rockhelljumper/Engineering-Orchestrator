@@ -1,0 +1,252 @@
+TAP version 13
+# Subtest: eo init creates a state root and refuses to overwrite it
+ok 1 - eo init creates a state root and refuses to overwrite it
+  ---
+  duration_ms: 361.696851
+  type: 'test'
+  ...
+# Subtest: human gates refuse to run without an interactive terminal
+ok 2 - human gates refuse to run without an interactive terminal
+  ---
+  duration_ms: 559.960648
+  type: 'test'
+  ...
+# Subtest: M1-10: eo run refuses an unapproved repository and launches nothing
+ok 3 - M1-10: eo run refuses an unapproved repository and launches nothing
+  ---
+  duration_ms: 205.548273
+  type: 'test'
+  ...
+# Subtest: eo run with the fake runner completes the sample epic; status and doctor agree
+ok 4 - eo run with the fake runner completes the sample epic; status and doctor agree
+  ---
+  duration_ms: 926.634021
+  type: 'test'
+  ...
+# Subtest: M1-5: eo doctor detects an edited journal record and an altered evidence file
+ok 5 - M1-5: eo doctor detects an edited journal record and an altered evidence file
+  ---
+  duration_ms: 759.208808
+  type: 'test'
+  ...
+# Subtest: eo doctor reports a store that drifted from the journal, and resume repairs it
+ok 6 - eo doctor reports a store that drifted from the journal, and resume repairs it
+  ---
+  duration_ms: 573.934895
+  type: 'test'
+  ...
+# Subtest: usage errors exit 2
+ok 7 - usage errors exit 2
+  ---
+  duration_ms: 595.470238
+  type: 'test'
+  ...
+# Subtest: M1-3: 20 processes race for one ready task, exactly one winner, 100 rounds in a row
+ok 8 - M1-3: 20 processes race for one ready task, exactly one winner, 100 rounds in a row
+  ---
+  duration_ms: 5009.125144
+  type: 'test'
+  ...
+# Subtest: a lock left by a killed process is taken over, and a live one is not
+ok 9 - a lock left by a killed process is taken over, and a live one is not
+  ---
+  duration_ms: 114.583172
+  type: 'test'
+  ...
+# Subtest: M1-6: the preload detector catches a connection attempt (positive control)
+ok 10 - M1-6: the preload detector catches a connection attempt (positive control)
+  ---
+  duration_ms: 120.580605
+  type: 'test'
+  ...
+# Subtest: M1-6: no network API is used during crash, resume and run
+ok 11 - M1-6: no network API is used during crash, resume and run
+  ---
+  duration_ms: 1007.385247
+  type: 'test'
+  ...
+# Subtest: M1-6: strace detector sees a connect() inside the namespace (positive control)
+ok 12 - M1-6: strace detector sees a connect() inside the namespace (positive control)
+  ---
+  duration_ms: 112.99473
+  type: 'test'
+  ...
+# Subtest: M1-6: no connect() syscall to an IP address during crash, resume and run, in an isolated network namespace
+ok 13 - M1-6: no connect() syscall to an IP address during crash, resume and run, in an isolated network namespace
+  ---
+  duration_ms: 1925.677976
+  type: 'test'
+  ...
+# Subtest: TaskStore contract: FakeStore (memory)
+    # Subtest: create: new tasks are planned with zeroed counters; ids and deps are validated
+    ok 1 - create: new tasks are planned with zeroed counters; ids and deps are validated
+      ---
+      duration_ms: 2.460731
+      type: 'test'
+      ...
+    # Subtest: deps: dependencies are stored and returned
+    ok 2 - deps: dependencies are stored and returned
+      ---
+      duration_ms: 1.289537
+      type: 'test'
+      ...
+    # Subtest: compare-and-set changes state only from the expected state
+    ok 3 - compare-and-set changes state only from the expected state
+      ---
+      duration_ms: 0.43526
+      type: 'test'
+      ...
+    # Subtest: counters can be updated without a state change, and unknown fields are ignored
+    ok 4 - counters can be updated without a state change, and unknown fields are ignored
+      ---
+      duration_ms: 0.267518
+      type: 'test'
+      ...
+    # Subtest: ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+    ok 5 - ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+      ---
+      duration_ms: 0.467939
+      type: 'test'
+      ...
+    # Subtest: claim: exclusive while the lease is live; re-claim by the holder renews
+    ok 6 - claim: exclusive while the lease is live; re-claim by the holder renews
+      ---
+      duration_ms: 0.209249
+      type: 'test'
+      ...
+    # Subtest: heartbeat: extends only the live holder's lease
+    ok 7 - heartbeat: extends only the live holder's lease
+      ---
+      duration_ms: 0.232097
+      type: 'test'
+      ...
+    # Subtest: reclaim: expired claims are cleared and the task can be claimed again
+    ok 8 - reclaim: expired claims are cleared and the task can be claimed again
+      ---
+      duration_ms: 0.314022
+      type: 'test'
+      ...
+    # Subtest: release: only the holder can release
+    ok 9 - release: only the holder can release
+      ---
+      duration_ms: 0.324456
+      type: 'test'
+      ...
+    # Subtest: notes: appended in order
+    ok 10 - notes: appended in order
+      ---
+      duration_ms: 0.764456
+      type: 'test'
+      ...
+    # Subtest: close: a done task is never offered as ready
+    ok 11 - close: a done task is never offered as ready
+      ---
+      duration_ms: 0.146558
+      type: 'test'
+      ...
+    # Subtest: returned records are copies: mutating them does not change the store
+    ok 12 - returned records are copies: mutating them does not change the store
+      ---
+      duration_ms: 0.145157
+      type: 'test'
+      ...
+    1..12
+ok 14 - TaskStore contract: FakeStore (memory)
+  ---
+  duration_ms: 8.424695
+  type: 'suite'
+  ...
+# Subtest: TaskStore contract: FakeStore (file)
+    # Subtest: create: new tasks are planned with zeroed counters; ids and deps are validated
+    ok 1 - create: new tasks are planned with zeroed counters; ids and deps are validated
+      ---
+      duration_ms: 3.322934
+      type: 'test'
+      ...
+    # Subtest: deps: dependencies are stored and returned
+    ok 2 - deps: dependencies are stored and returned
+      ---
+      duration_ms: 3.134574
+      type: 'test'
+      ...
+    # Subtest: compare-and-set changes state only from the expected state
+    ok 3 - compare-and-set changes state only from the expected state
+      ---
+      duration_ms: 4.359803
+      type: 'test'
+      ...
+    # Subtest: counters can be updated without a state change, and unknown fields are ignored
+    ok 4 - counters can be updated without a state change, and unknown fields are ignored
+      ---
+      duration_ms: 3.863537
+      type: 'test'
+      ...
+    # Subtest: ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+    ok 5 - ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+      ---
+      duration_ms: 15.714507
+      type: 'test'
+      ...
+    # Subtest: claim: exclusive while the lease is live; re-claim by the holder renews
+    ok 6 - claim: exclusive while the lease is live; re-claim by the holder renews
+      ---
+      duration_ms: 5.978958
+      type: 'test'
+      ...
+    # Subtest: heartbeat: extends only the live holder's lease
+    ok 7 - heartbeat: extends only the live holder's lease
+      ---
+      duration_ms: 5.948721
+      type: 'test'
+      ...
+    # Subtest: reclaim: expired claims are cleared and the task can be claimed again
+    ok 8 - reclaim: expired claims are cleared and the task can be claimed again
+      ---
+      duration_ms: 16.766065
+      type: 'test'
+      ...
+    # Subtest: release: only the holder can release
+    ok 9 - release: only the holder can release
+      ---
+      duration_ms: 4.614487
+      type: 'test'
+      ...
+    # Subtest: notes: appended in order
+    ok 10 - notes: appended in order
+      ---
+      duration_ms: 3.744411
+      type: 'test'
+      ...
+    # Subtest: close: a done task is never offered as ready
+    ok 11 - close: a done task is never offered as ready
+      ---
+      duration_ms: 3.829227
+      type: 'test'
+      ...
+    # Subtest: returned records are copies: mutating them does not change the store
+    ok 12 - returned records are copies: mutating them does not change the store
+      ---
+      duration_ms: 1.48107
+      type: 'test'
+      ...
+    # Subtest: durability: a new instance on the same directory sees every change
+    ok 13 - durability: a new instance on the same directory sees every change
+      ---
+      duration_ms: 4.849527
+      type: 'test'
+      ...
+    1..13
+ok 15 - TaskStore contract: FakeStore (file)
+  ---
+  duration_ms: 78.251443
+  type: 'suite'
+  ...
+1..15
+# tests 38
+# suites 2
+# pass 38
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13101.823533

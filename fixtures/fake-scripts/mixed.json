@@ -1,0 +1,20 @@
+{
+  "default": {
+    "behaviour": "pass",
+    "costUsd": 0.05,
+    "tokens": 2000
+  },
+  "tasks": {
+    "T2": [
+      {
+        "behaviour": "verify-fail",
+        "signature": "test:T2"
+      }
+    ],
+    "T3": [
+      {
+        "behaviour": "crash"
+      }
+    ]
+  }
+}

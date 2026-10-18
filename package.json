@@ -1,0 +1,24 @@
+{
+  "name": "engineering-orchestrator",
+  "version": "0.1.0",
+  "description": "Secure multi-agent software-development orchestrator for Claude Code (eo)",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "bin": {
+    "eo": "src/cli.ts"
+  },
+  "scripts": {
+    "eo": "node src/cli.ts",
+    "test": "node --test \"tests/unit/**/*.test.ts\"",
+    "test:integration": "node --test --test-concurrency=1 \"tests/integration/**/*.test.ts\"",
+    "test:behavioral": "node --test --test-concurrency=1 \"tests/behavioral/**/*.test.ts\"",
+    "test:all": "node --test --test-concurrency=1 \"tests/**/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

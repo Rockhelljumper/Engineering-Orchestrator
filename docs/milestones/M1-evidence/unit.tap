@@ -1,0 +1,424 @@
+TAP version 13
+# Subtest: unmeasured reservation is max(10 x cap, cap + extra) per dimension
+ok 1 - unmeasured reservation is max(10 x cap, cap + extra) per dimension
+  ---
+  duration_ms: 2.173911
+  type: 'test'
+  ...
+# Subtest: measured reservation is cap + largest measured turn
+ok 2 - measured reservation is cap + largest measured turn
+  ---
+  duration_ms: 0.150266
+  type: 'test'
+  ...
+# Subtest: affordable work is admitted and its reservation is journaled before reserve() returns
+ok 3 - affordable work is admitted and its reservation is journaled before reserve() returns
+  ---
+  duration_ms: 4.793735
+  type: 'test'
+  ...
+# Subtest: unaffordable work is rejected and nothing is reserved
+ok 4 - unaffordable work is rejected and nothing is reserved
+  ---
+  duration_ms: 2.682725
+  type: 'test'
+  ...
+# Subtest: a reservation that lands exactly on the cap is admitted; one cent more is rejected
+ok 5 - a reservation that lands exactly on the cap is admitted; one cent more is rejected
+  ---
+  duration_ms: 3.666185
+  type: 'test'
+  ...
+# Subtest: work that fits once running work settles is deferred, not rejected, and later admitted
+ok 6 - work that fits once running work settles is deferred, not rejected, and later admitted
+  ---
+  duration_ms: 5.041841
+  type: 'test'
+  ...
+# Subtest: the epic cap rejects a task whose own cap would still allow it
+ok 7 - the epic cap rejects a task whose own cap would still allow it
+  ---
+  duration_ms: 1.947518
+  type: 'test'
+  ...
+# Subtest: tokens are checked independently of USD
+ok 8 - tokens are checked independently of USD
+  ---
+  duration_ms: 2.937393
+  type: 'test'
+  ...
+# Subtest: settling with a reported cost charges it and releases the reservation
+ok 9 - settling with a reported cost charges it and releases the reservation
+  ---
+  duration_ms: 2.137864
+  type: 'test'
+  ...
+# Subtest: an unknown cost (crash, kill) charges the full reservation
+ok 10 - an unknown cost (crash, kill) charges the full reservation
+  ---
+  duration_ms: 1.445585
+  type: 'test'
+  ...
+# Subtest: a reservation proven never launched charges nothing
+ok 11 - a reservation proven never launched charges nothing
+  ---
+  duration_ms: 2.398125
+  type: 'test'
+  ...
+# Subtest: an overshoot beyond the reservation is journaled and counts against later admissions
+ok 12 - an overshoot beyond the reservation is journaled and counts against later admissions
+  ---
+  duration_ms: 1.197787
+  type: 'test'
+  ...
+# Subtest: negative reported costs are refused
+ok 13 - negative reported costs are refused
+  ---
+  duration_ms: 2.432197
+  type: 'test'
+  ...
+# Subtest: budget state is rebuilt identically from the journal after reopening
+ok 14 - budget state is rebuilt identically from the journal after reopening
+  ---
+  duration_ms: 2.651786
+  type: 'test'
+  ...
+# Subtest: the ledger refuses duplicate reservations and settlement of unknown ids
+ok 15 - the ledger refuses duplicate reservations and settlement of unknown ids
+  ---
+  duration_ms: 0.167742
+  type: 'test'
+  ...
+# Subtest: a policy whose single reservation exceeds the task cap is invalid
+ok 16 - a policy whose single reservation exceeds the task cap is invalid
+  ---
+  duration_ms: 1.198768
+  type: 'test'
+  ...
+# Subtest: property: over random caps and spend, every decision matches the reservation rule
+ok 17 - property: over random caps and spend, every decision matches the reservation rule
+  ---
+  duration_ms: 939.456082
+  type: 'test'
+  ...
+# Subtest: decide() is pure: evaluating does not reserve
+ok 18 - decide() is pure: evaluating does not reserve
+  ---
+  duration_ms: 0.376393
+  type: 'test'
+  ...
+# Subtest: happy path: every task reaches done in dependency order with verified evidence
+ok 19 - happy path: every task reaches done in dependency order with verified evidence
+  ---
+  duration_ms: 162.063859
+  type: 'test'
+  ...
+# Subtest: a task never starts before its dependencies are done
+ok 20 - a task never starts before its dependencies are done
+  ---
+  duration_ms: 155.584056
+  type: 'test'
+  ...
+# Subtest: the same plan and script produce the same journal sequence (determinism)
+ok 21 - the same plan and script produce the same journal sequence (determinism)
+  ---
+  duration_ms: 323.616314
+  type: 'test'
+  ...
+# Subtest: failed verification returns the task to implementation and it then completes
+ok 22 - failed verification returns the task to implementation and it then completes
+  ---
+  duration_ms: 50.241765
+  type: 'test'
+  ...
+# Subtest: review changes-requested returns the task to implementation
+ok 23 - review changes-requested returns the task to implementation
+  ---
+  duration_ms: 55.425545
+  type: 'test'
+  ...
+# Subtest: correction attempts are bounded: the third distinct failure blocks with an escalation
+ok 24 - correction attempts are bounded: the third distinct failure blocks with an escalation
+  ---
+  duration_ms: 93.826461
+  type: 'test'
+  ...
+# Subtest: the same failure twice in a row escalates early
+ok 25 - the same failure twice in a row escalates early
+  ---
+  duration_ms: 53.559732
+  type: 'test'
+  ...
+# Subtest: infra failures are retried separately and then block
+ok 26 - infra failures are retried separately and then block
+  ---
+  duration_ms: 46.114096
+  type: 'test'
+  ...
+# Subtest: a hanging worker is aborted at the timeout and retried as an infra failure
+ok 27 - a hanging worker is aborted at the timeout and retried as an infra failure
+  ---
+  duration_ms: 221.000944
+  type: 'test'
+  ...
+# Subtest: budget: affordable work starts while unaffordable work is rejected before launch
+ok 28 - budget: affordable work starts while unaffordable work is rejected before launch
+  ---
+  duration_ms: 62.498007
+  type: 'test'
+  ...
+# Subtest: budget: unknown costs charge the full reservation, so the budget can stop retries first
+ok 29 - budget: unknown costs charge the full reservation, so the budget can stop retries first
+  ---
+  duration_ms: 59.749165
+  type: 'test'
+  ...
+# Subtest: budget: the epic cap stops new tasks once the epic is spent
+ok 30 - budget: the epic cap stops new tasks once the epic is spent
+  ---
+  duration_ms: 63.794967
+  type: 'test'
+  ...
+# Subtest: M1-10: run and plan import refuse a repository that is not approved
+ok 31 - M1-10: run and plan import refuse a repository that is not approved
+  ---
+  duration_ms: 10.170382
+  type: 'test'
+  ...
+# Subtest: blocked requires an escalation record, and only unblock leaves it
+ok 32 - blocked requires an escalation record, and only unblock leaves it
+  ---
+  duration_ms: 95.820056
+  type: 'test'
+  ...
+# Subtest: a transition to blocked without an escalation id is refused
+ok 33 - a transition to blocked without an escalation id is refused
+  ---
+  duration_ms: 8.639329
+  type: 'test'
+  ...
+# Subtest: a second controller on the same state root is refused in the same process
+ok 34 - a second controller on the same state root is refused in the same process
+  ---
+  duration_ms: 5.562698
+  type: 'test'
+  ...
+# Subtest: a policy edited outside the controller is refused until accepted
+ok 35 - a policy edited outside the controller is refused until accepted
+  ---
+  duration_ms: 4.991073
+  type: 'test'
+  ...
+# Subtest: importing the same task twice is refused
+ok 36 - importing the same task twice is refused
+  ---
+  duration_ms: 7.182556
+  type: 'test'
+  ...
+# Subtest: the run summary reports tasks stalled behind a blocked dependency
+ok 37 - the run summary reports tasks stalled behind a blocked dependency
+  ---
+  duration_ms: 47.198663
+  type: 'test'
+  ...
+# Subtest: sealed evidence verifies
+ok 38 - sealed evidence verifies
+  ---
+  duration_ms: 14.69418
+  type: 'test'
+  ...
+# Subtest: M1-5: changing an artefact, the manifest or its identity is detected
+ok 39 - M1-5: changing an artefact, the manifest or its identity is detected
+  ---
+  duration_ms: 6.801389
+  type: 'test'
+  ...
+# Subtest: M1-5: a manifest copied from another attempt is detected
+ok 40 - M1-5: a manifest copied from another attempt is detected
+  ---
+  duration_ms: 3.999323
+  type: 'test'
+  ...
+# Subtest: M1-5: a forged manifest without the key is detected
+ok 41 - M1-5: a forged manifest without the key is detected
+  ---
+  duration_ms: 4.686484
+  type: 'test'
+  ...
+# Subtest: evidence paths cannot escape the ledger
+ok 42 - evidence paths cannot escape the ledger
+  ---
+  duration_ms: 0.654316
+  type: 'test'
+  ...
+# Subtest: the default policy is valid and round-trips
+ok 43 - the default policy is valid and round-trips
+  ---
+  duration_ms: 3.06332
+  type: 'test'
+  ...
+# Subtest: invalid policies are refused
+ok 44 - invalid policies are refused
+  ---
+  duration_ms: 0.589017
+  type: 'test'
+  ...
+# Subtest: M1-10: repository approval is by canonical path
+ok 45 - M1-10: repository approval is by canonical path
+  ---
+  duration_ms: 0.582701
+  type: 'test'
+  ...
+# Subtest: the sample plan is valid and orders dependencies first
+ok 46 - the sample plan is valid and orders dependencies first
+  ---
+  duration_ms: 0.57136
+  type: 'test'
+  ...
+# Subtest: invalid plans are refused
+ok 47 - invalid plans are refused
+  ---
+  duration_ms: 0.595021
+  type: 'test'
+  ...
+# Subtest: plan hash is independent of key order
+ok 48 - plan hash is independent of key order
+  ---
+  duration_ms: 0.319655
+  type: 'test'
+  ...
+# Subtest: appends are chained, sequential and verify
+ok 49 - appends are chained, sequential and verify
+  ---
+  duration_ms: 6.241944
+  type: 'test'
+  ...
+# Subtest: reopening continues the chain
+ok 50 - reopening continues the chain
+  ---
+  duration_ms: 2.277981
+  type: 'test'
+  ...
+# Subtest: M1-5: editing a record is detected
+ok 51 - M1-5: editing a record is detected
+  ---
+  duration_ms: 4.640182
+  type: 'test'
+  ...
+# Subtest: M1-5: deleting a record is detected
+ok 52 - M1-5: deleting a record is detected
+  ---
+  duration_ms: 2.443985
+  type: 'test'
+  ...
+# Subtest: M1-5: deleting the final record is not detectable from the file alone (documented limit)
+ok 53 - M1-5: deleting the final record is not detectable from the file alone (documented limit)
+  ---
+  duration_ms: 3.367781
+  type: 'test'
+  ...
+# Subtest: M1-5: reordering records is detected
+ok 54 - M1-5: reordering records is detected
+  ---
+  duration_ms: 2.274295
+  type: 'test'
+  ...
+# Subtest: M1-5: a record re-MACed with a different key is detected
+ok 55 - M1-5: a record re-MACed with a different key is detected
+  ---
+  duration_ms: 2.817969
+  type: 'test'
+  ...
+# Subtest: the wrong key fails every record
+ok 56 - the wrong key fails every record
+  ---
+  duration_ms: 2.333964
+  type: 'test'
+  ...
+# Subtest: a torn final line is reported, refused without repair, and removed with repair
+ok 57 - a torn final line is reported, refused without repair, and removed with repair
+  ---
+  duration_ms: 4.470355
+  type: 'test'
+  ...
+# Subtest: garbage in the middle of the journal is tampering, not a torn tail
+ok 58 - garbage in the middle of the journal is tampering, not a torn tail
+  ---
+  duration_ms: 2.576256
+  type: 'test'
+  ...
+# Subtest: a complete final record without its newline is accepted (its MAC proves it whole)
+ok 59 - a complete final record without its newline is accepted (its MAC proves it whole)
+  ---
+  duration_ms: 1.530455
+  type: 'test'
+  ...
+# Subtest: ofType filters and records() reflects appends
+ok 60 - ofType filters and records() reflects appends
+  ---
+  duration_ms: 1.421365
+  type: 'test'
+  ...
+# Subtest: appending after a final record that lost its newline keeps the journal valid
+ok 61 - appending after a final record that lost its newline keeps the journal valid
+  ---
+  duration_ms: 2.223933
+  type: 'test'
+  ...
+# Subtest: M1-5: a record spliced in from a diverged copy (same key) with its prev rewritten is detected
+ok 62 - M1-5: a record spliced in from a diverged copy (same key) with its prev rewritten is detected
+  ---
+  duration_ms: 4.135974
+  type: 'test'
+  ...
+# Subtest: accepts a valid value
+ok 63 - accepts a valid value
+  ---
+  duration_ms: 2.308296
+  type: 'test'
+  ...
+# Subtest: reports each kind of violation
+ok 64 - reports each kind of violation
+  ---
+  duration_ms: 0.471473
+  type: 'test'
+  ...
+# Subtest: rejects non-finite numbers
+ok 65 - rejects non-finite numbers
+  ---
+  duration_ms: 0.188166
+  type: 'test'
+  ...
+# Subtest: M1-1: every ordered pair of states is allowed exactly when the spec allows it
+ok 66 - M1-1: every ordered pair of states is allowed exactly when the spec allows it
+  ---
+  duration_ms: 3.340963
+  type: 'test'
+  ...
+# Subtest: M1-1: the spec table matches the architecture diagram edge for edge
+ok 67 - M1-1: the spec table matches the architecture diagram edge for edge
+  ---
+  duration_ms: 4.098068
+  type: 'test'
+  ...
+# Subtest: no self-transitions and done is terminal
+ok 68 - no self-transitions and done is terminal
+  ---
+  duration_ms: 0.301795
+  type: 'test'
+  ...
+# Subtest: only "blocked -> ready" leaves blocked
+ok 69 - only "blocked -> ready" leaves blocked
+  ---
+  duration_ms: 0.430367
+  type: 'test'
+  ...
+1..69
+# tests 69
+# suites 0
+# pass 69
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1749.919036

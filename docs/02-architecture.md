@@ -102,6 +102,7 @@ stateDiagram-v2
   planned --> ready: deps done
   planned --> blocked: open question
   ready --> implementing: atomic claim (lease)
+  ready --> blocked: budget can never fit / policy refusal before launch
   implementing --> verifying: worker exits with commit
   implementing --> ready: interrupted (infra retry left)
   implementing --> blocked: infra retries exhausted / budget / timeout / policy violation / invalid output twice

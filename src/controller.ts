@@ -1,0 +1,533 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { Journal, verifyJournalFile, type JournalRecord } from './journal.ts';
+import { EvidenceLedger } from './evidence.ts';
+import { BudgetGovernor, type Amount } from './budget.ts';
+import { assertRepositoryApproved, loadPolicy, policyHash, savePolicy, withApprovedRepository, type Policy } from './policy.ts';
+import { readJournalKey, statePaths, type StateRootPaths } from './stateRoot.ts';
+import { assertTransition, type TaskState } from './states.ts';
+import { FakeStore } from './store/fake.ts';
+import type { TaskCounters, TaskRecord, TaskStore } from './store/types.ts';
+import { planHash, topoOrder, validatePlan, type Plan } from './plan.ts';
+import { FileLock } from './util/lock.ts';
+import { writeFileAtomic } from './util/fsx.ts';
+import type { RunResult, Runner } from './runner/types.ts';
+
+export interface TransitionRecord {
+  taskId: string;
+  from: TaskState;
+  to: TaskState;
+  reason: string;
+  counters?: Partial<TaskCounters>;
+  /** Set on ready -> implementing: this record is the attempt start. */
+  attempt?: number;
+  reservationId?: string;
+  escalationId?: string;
+}
+
+export interface AttemptEndRecord {
+  taskId: string;
+  attempt: number;
+  result: RunResult | { kind: 'infra'; reason: 'interrupted'; cost: null };
+  synthesized: boolean;
+}
+
+export type EscalationCategory = 'budget' | 'attempts' | 'repeated-failure' | 'infra' | 'evidence' | 'policy';
+
+export interface EscalationRecord {
+  id: string;
+  taskId: string;
+  category: EscalationCategory;
+  detail: string;
+  question: string;
+}
+
+export interface ResumeReport {
+  tornTailRepaired: boolean;
+  tasksCreated: string[];
+  transitionsReplayed: string[];
+  interrupted: string[];
+  reservationsNotStarted: string[];
+  claimsReleased: string[];
+  advanced: string[];
+}
+
+export interface RunSummary {
+  steps: number;
+  states: Record<string, TaskState>;
+  stalled: string[];
+}
+
+export class ControllerError extends Error {}
+
+/**
+ * The controller owns every state change. It is single-instance per state root (controller
+ * lock), journals each intent before acting, and can resume from any step boundary.
+ */
+export class Controller {
+  readonly paths: StateRootPaths;
+  policy: Policy;
+  readonly journal: Journal;
+  readonly store: TaskStore;
+  readonly evidence: EvidenceLedger;
+  readonly budget: BudgetGovernor;
+  readonly owner: string;
+  readonly tornTailRepaired: boolean;
+  private readonly lock: FileLock;
+
+  private constructor(paths: StateRootPaths, lock: FileLock, opts: { store?: TaskStore; allowPolicyDrift?: boolean }) {
+    this.paths = paths;
+    this.lock = lock;
+    this.owner = `ctl:${os.hostname()}:${process.pid}:${randomUUID().slice(0, 8)}`;
+    const key = readJournalKey(paths);
+    const before = verifyJournalFile(paths.journal, key);
+    this.journal = Journal.open(paths.journal, key, { repairTornTail: true });
+    this.tornTailRepaired = before.tornTail;
+    this.policy = loadPolicy(paths.policy);
+    this.store = opts.store ?? FakeStore.atDir(paths.store);
+    this.evidence = new EvidenceLedger(paths.evidence, key);
+    this.budget = new BudgetGovernor(this.journal, this.policy.budget);
+    const sets = this.journal.ofType<{ hash: string }>('policy.set');
+    const journaledHash = sets[sets.length - 1]?.data.hash;
+    if (journaledHash === undefined) {
+      this.journal.append('policy.set', { hash: policyHash(this.policy), reason: 'initial' });
+    } else if (journaledHash !== policyHash(this.policy) && !opts.allowPolicyDrift) {
+      throw new ControllerError('policy.json differs from the last policy recorded in the journal; a human must accept the change ("eo policy accept")');
+    }
+  }
+
+  /** Acquire the controller lock and open state. Throws if another controller is running. */
+  static open(root: string, opts: { store?: TaskStore; allowPolicyDrift?: boolean } = {}): Controller {
+    const paths = statePaths(root);
+    fs.mkdirSync(paths.locks, { recursive: true });
+    const lock = new FileLock(paths.controllerLock, `controller:${process.pid}`);
+    if (!lock.tryAcquire()) throw new ControllerError(`another controller holds ${paths.controllerLock}`);
+    try {
+      return new Controller(paths, lock, opts);
+    } catch (err) {
+      lock.release();
+      throw err;
+    }
+  }
+
+  close(): void {
+    this.lock.release();
+  }
+
+  // ---------------------------------------------------------------- policy
+
+  /** Approve a repository. The CLI only calls this after an interactive human confirmation. */
+  approveRepository(repoPath: string, approvedBy: string): Policy {
+    const next = withApprovedRepository(this.policy, repoPath, approvedBy);
+    savePolicy(this.paths.policy, next);
+    this.journal.append('policy.set', { hash: policyHash(next), reason: `approve-repo ${path.resolve(repoPath)} by ${approvedBy}` });
+    this.policy = next;
+    return next;
+  }
+
+  // ---------------------------------------------------------------- plan
+
+  /** Import an approved plan. Write-ahead: the journal record precedes store creation. */
+  importPlan(planValue: unknown, repoPath: string, approvedBy: string): Plan {
+    assertRepositoryApproved(this.policy, repoPath);
+    const plan = validatePlan(planValue);
+    for (const t of plan.tasks) {
+      if (this.store.get(t.id)) throw new ControllerError(`task ${t.id} already exists`);
+    }
+    this.journal.append('plan.import', { epicId: plan.epicId, planHash: planHash(plan), approvedBy, repoPath: path.resolve(repoPath), plan });
+    this.materialisePlan(plan);
+    return plan;
+  }
+
+  private materialisePlan(plan: Plan): string[] {
+    const created: string[] = [];
+    for (const t of topoOrder(plan.tasks)) {
+      if (!this.store.get(t.id)) {
+        this.store.createTask({ id: t.id, epicId: plan.epicId, title: t.title, deps: t.deps });
+        created.push(t.id);
+      }
+    }
+    return created;
+  }
+
+  // ---------------------------------------------------------------- transitions
+
+  /** Journal the transition, then apply it to the store. */
+  transition(rec: TransitionRecord): void {
+    const t = this.mustGet(rec.taskId);
+    if (t.state !== rec.from) throw new ControllerError(`${rec.taskId} is ${t.state}, expected ${rec.from}`);
+    assertTransition(rec.taskId, rec.from, rec.to);
+    if (rec.to === 'blocked' && !rec.escalationId) throw new ControllerError('a transition to blocked needs an escalation record');
+    this.journal.append('task.transition', rec);
+    const counters = { ...(rec.counters ?? {}), ...(rec.attempt !== undefined ? { attempt: rec.attempt } : {}) };
+    if (!this.store.compareAndSetState(rec.taskId, rec.from, rec.to, counters)) {
+      throw new ControllerError(`store changed under the controller for ${rec.taskId}`);
+    }
+  }
+
+  escalate(taskId: string, from: TaskState, category: EscalationCategory, detail: string, question: string, counters?: Partial<TaskCounters>): EscalationRecord {
+    // Reuse an escalation journaled for this task whose blocking transition never landed (crash in between).
+    const pending = this.pendingEscalation(taskId, category);
+    const esc: EscalationRecord = pending ?? { id: `esc-${taskId}-${this.journal.records().length + 1}`, taskId, category, detail, question };
+    if (!pending) this.journal.append('escalation', esc);
+    this.writeEscalationFile(esc);
+    this.transition({ taskId, from, to: 'blocked', reason: `escalation ${category}`, escalationId: esc.id, ...(counters ? { counters } : {}) });
+    return esc;
+  }
+
+  private pendingEscalation(taskId: string, category: EscalationCategory): EscalationRecord | undefined {
+    const recs = this.journal.records();
+    for (let i = recs.length - 1; i >= 0; i--) {
+      const r = recs[i] as JournalRecord;
+      if (r.type === 'task.transition' && (r.data as TransitionRecord).taskId === taskId) return undefined;
+      if (r.type === 'escalation') {
+        const e = r.data as EscalationRecord;
+        if (e.taskId === taskId) return e.category === category ? e : undefined;
+      }
+    }
+    return undefined;
+  }
+
+  private writeEscalationFile(esc: EscalationRecord): void {
+    writeFileAtomic(path.join(this.paths.escalations, `${esc.id}.json`), JSON.stringify(esc, null, 2));
+  }
+
+  /** Human action: move a blocked task back to ready. The CLI confirms interactively first. */
+  unblock(taskId: string, by: string, note: string): void {
+    this.journal.append('human.unblock', { taskId, by, note });
+    this.transition({ taskId, from: 'blocked', to: 'ready', reason: `unblocked by ${by}: ${note}`, counters: { correctionFailures: 0, infraFailures: 0, repeatCount: 0, lastFailureSignature: null } });
+  }
+
+  // ---------------------------------------------------------------- resume
+
+  /**
+   * Bring the store in line with the journal and settle anything a crash left open.
+   * Safe to run any number of times.
+   */
+  resume(): ResumeReport {
+    const report: ResumeReport = {
+      tornTailRepaired: this.tornTailRepaired,
+      tasksCreated: [],
+      transitionsReplayed: [],
+      interrupted: [],
+      reservationsNotStarted: [],
+      claimsReleased: [],
+      advanced: [],
+    };
+    const records = [...this.journal.records()];
+
+    // 1. Tasks from imported plans.
+    for (const r of records) {
+      if (r.type === 'plan.import') report.tasksCreated.push(...this.materialisePlan((r.data as { plan: Plan }).plan));
+    }
+
+    // 2. Escalation files and the latest journaled state of every task.
+    for (const r of records) {
+      if (r.type === 'escalation') {
+        const esc = r.data as EscalationRecord;
+        if (!fs.existsSync(path.join(this.paths.escalations, `${esc.id}.json`))) this.writeEscalationFile(esc);
+      }
+    }
+    const expected = expectedStates(records);
+    for (const [taskId, exp] of expected) {
+      const t = this.mustGet(taskId);
+      if (t.state !== exp.state || !countersMatch(t, exp.counters)) {
+        this.store.compareAndSetState(taskId, t.state, exp.state, exp.counters);
+        report.transitionsReplayed.push(`${taskId}:${t.state}->${exp.state}`);
+      }
+    }
+
+    // 3. Claims: no other controller can be alive (we hold the lock), so every claim is stale.
+    for (const t of this.store.list()) {
+      if (t.claim) {
+        this.store.release(t.id, t.claim.owner);
+        report.claimsReleased.push(t.id);
+      }
+    }
+
+    // 4. Reservations journaled without an attempt start never launched anything.
+    const startedReservations = new Set(
+      records.filter((r) => r.type === 'task.transition' && (r.data as TransitionRecord).reservationId).map((r) => (r.data as TransitionRecord).reservationId as string),
+    );
+    for (const res of this.budget.ledger.openReservations()) {
+      if (!startedReservations.has(res.id)) {
+        this.budget.settle(res.id, null, true);
+        report.reservationsNotStarted.push(res.id);
+      }
+    }
+
+    // 5. Attempts started without an outcome were interrupted.
+    const ends = new Set(records.filter((r) => r.type === 'attempt.end').map((r) => attemptKey(r.data as AttemptEndRecord)));
+    for (const r of records) {
+      if (r.type !== 'task.transition') continue;
+      const tr = r.data as TransitionRecord;
+      if (tr.to !== 'implementing' || tr.attempt === undefined) continue;
+      const key = `${tr.taskId}#${tr.attempt}`;
+      if (ends.has(key)) continue;
+      const end: AttemptEndRecord = { taskId: tr.taskId, attempt: tr.attempt, result: { kind: 'infra', reason: 'interrupted', cost: null }, synthesized: true };
+      this.journal.append('attempt.end', end);
+      ends.add(key);
+      report.interrupted.push(key);
+    }
+
+    // 6. Finish post-attempt processing for every task that has an ended latest attempt.
+    for (const t of this.store.list()) {
+      if (['implementing', 'verifying', 'reviewing', 'security_review', 'accepted', 'integrating'].includes(t.state)) {
+        if (this.advance(t.id)) report.advanced.push(t.id);
+      }
+    }
+    this.journal.append('resume', report);
+    return report;
+  }
+
+  // ---------------------------------------------------------------- scheduling
+
+  /** Promote planned tasks whose dependencies are all done. */
+  promote(): string[] {
+    const tasks = this.store.list();
+    const states = new Map(tasks.map((t) => [t.id, t.state]));
+    const promoted: string[] = [];
+    for (const t of tasks) {
+      if (t.state === 'planned' && t.deps.every((d) => states.get(d) === 'done')) {
+        this.transition({ taskId: t.id, from: 'planned', to: 'ready', reason: 'dependencies done' });
+        promoted.push(t.id);
+      }
+    }
+    return promoted;
+  }
+
+  /**
+   * Run until no task can make progress. Sequential (one worker at a time) in M1; M5 adds
+   * concurrency. Always resumes first.
+   */
+  async run(runner: Runner, opts: { maxSteps?: number; repoPath: string }): Promise<RunSummary> {
+    assertRepositoryApproved(this.policy, opts.repoPath);
+    this.resume();
+    this.journal.append('run.start', { owner: this.owner, runner: runner.kind });
+    let steps = 0;
+    const deferred = new Set<string>();
+    for (;;) {
+      if (opts.maxSteps !== undefined && steps >= opts.maxSteps) break;
+      this.promote();
+      const t = this.store.claimReady(this.owner, this.policy.leaseMs, Date.now(), deferred);
+      if (!t) break;
+      steps++;
+      await this.runAttempt(t, runner, deferred);
+    }
+    const summary = this.summary(steps);
+    this.journal.append('run.end', summary);
+    return summary;
+  }
+
+  summary(steps = 0): RunSummary {
+    const tasks = this.store.list();
+    const states = Object.fromEntries(tasks.map((t) => [t.id, t.state])) as Record<string, TaskState>;
+    const stalled = tasks.filter((t) => t.state === 'planned' && t.deps.some((d) => states[d] === 'blocked')).map((t) => t.id);
+    return { steps, states, stalled };
+  }
+
+  private async runAttempt(t: TaskRecord, runner: Runner, deferred: Set<string>): Promise<void> {
+    const attempt = t.attempt + 1;
+    // Unique per reservation: a reservation released by resume (never launched) must not
+    // collide with the retry of the same attempt number.
+    const reservationId = `${t.id}#${attempt}@${this.journal.records().length + 1}`;
+    const decision = this.budget.reserve(reservationId, t.id, t.epicId);
+    if (decision.kind !== 'admit') {
+      this.store.release(t.id, this.owner);
+      if (decision.kind === 'defer') {
+        deferred.add(t.id);
+        this.journal.append('budget.defer', { taskId: t.id, reason: decision.reason });
+      } else {
+        this.escalate(t.id, 'ready', 'budget', decision.reason, 'Raise the budget cap in policy, or descope the task?');
+      }
+      return;
+    }
+    // This transition record is the attempt start. Nothing is launched before it is durable.
+    this.transition({ taskId: t.id, from: 'ready', to: 'implementing', reason: `attempt ${attempt}`, attempt, reservationId });
+
+    const controller = new AbortController();
+    const heartbeat = setInterval(() => this.store.heartbeat(t.id, this.owner, this.policy.leaseMs, Date.now()), Math.max(50, Math.floor(this.policy.leaseMs / 3)));
+    let timer: NodeJS.Timeout | undefined;
+    let result: RunResult;
+    try {
+      const timeout = new Promise<RunResult>((resolve) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          resolve({ kind: 'infra', reason: `timeout after ${this.policy.timeouts.invocationMs}ms`, cost: null });
+        }, this.policy.timeouts.invocationMs);
+      });
+      result = await Promise.race([
+        runner.run({ taskId: t.id, attempt, role: 'implementer', signal: controller.signal }).catch(
+          (err: unknown): RunResult => ({ kind: 'infra', reason: `runner error: ${(err as Error).message}`, cost: null }),
+        ),
+        timeout,
+      ]);
+    } finally {
+      clearInterval(heartbeat);
+      if (timer) clearTimeout(timer);
+      controller.abort();
+    }
+    const end: AttemptEndRecord = { taskId: t.id, attempt, result, synthesized: false };
+    this.journal.append('attempt.end', end);
+    this.advance(t.id);
+    this.store.release(t.id, this.owner);
+  }
+
+  /**
+   * Drive a task forward from wherever it stands after its latest attempt ended. Idempotent:
+   * every step checks the current state and journal, so resume can call it after a crash at
+   * any boundary. Returns true if anything changed.
+   */
+  advance(taskId: string): boolean {
+    let changed = false;
+    for (let guard = 0; guard < 16; guard++) {
+      const t = this.mustGet(taskId);
+      const end = this.latestEnd(taskId, t.attempt);
+      if (!end) return changed;
+      const resId = this.attemptReservation(taskId, end.attempt);
+      if (resId !== undefined && this.budget.ledger.isOpen(resId)) {
+        this.budget.settle(resId, costOf(end.result));
+        changed = true;
+        continue;
+      }
+      const L = this.policy.limits;
+      const r = end.result;
+      if (r.kind === 'infra') {
+        if (t.state !== 'implementing') return changed;
+        const infraFailures = t.infraFailures + 1;
+        if (infraFailures > L.maxInfraRetries) {
+          this.escalate(taskId, 'implementing', 'infra', `infra failures exhausted (${infraFailures}): ${r.reason}`, 'Investigate the worker environment, then unblock?', { infraFailures });
+        } else {
+          this.transition({ taskId, from: 'implementing', to: 'ready', reason: `infra retry: ${r.reason}`, counters: { infraFailures } });
+        }
+        return true;
+      }
+      switch (t.state) {
+        case 'implementing':
+          this.transition({ taskId, from: 'implementing', to: 'verifying', reason: `attempt ${end.attempt} completed` });
+          changed = true;
+          continue;
+        case 'verifying': {
+          this.ensureEvidence(t, end);
+          if (r.verification.verdict === 'pass') {
+            this.transition({ taskId, from: 'verifying', to: 'reviewing', reason: 'verification passed (M1: scripted)' });
+          } else {
+            this.correctionFailure(t, 'verifying', r.verification.signature ?? 'unspecified');
+          }
+          changed = true;
+          continue;
+        }
+        case 'reviewing':
+          if (r.review.verdict === 'approve') {
+            this.transition({ taskId, from: 'reviewing', to: 'accepted', reason: 'review approved (M1: scripted)' });
+          } else {
+            this.correctionFailure(t, 'reviewing', 'review:changes-requested');
+          }
+          changed = true;
+          continue;
+        case 'accepted':
+          this.transition({ taskId, from: 'accepted', to: 'integrating', reason: 'queued for integration (M1: no-op)' });
+          changed = true;
+          continue;
+        case 'integrating': {
+          const problems = this.evidence.verify(taskId, end.attempt);
+          if (problems.length > 0) {
+            this.escalate(taskId, 'integrating', 'evidence', `evidence invalid: ${problems.join(', ')}`, 'Evidence failed verification; investigate tampering?');
+          } else {
+            this.transition({ taskId, from: 'integrating', to: 'done', reason: 'evidence verified' });
+          }
+          return true;
+        }
+        default:
+          return changed;
+      }
+    }
+    throw new ControllerError(`advance did not settle for ${taskId}`);
+  }
+
+  private correctionFailure(t: TaskRecord, from: 'verifying' | 'reviewing', signature: string): void {
+    const L = this.policy.limits;
+    const correctionFailures = t.correctionFailures + 1;
+    const repeatCount = t.lastFailureSignature === signature ? t.repeatCount + 1 : 1;
+    const counters = { correctionFailures, repeatCount, lastFailureSignature: signature };
+    if (correctionFailures >= L.maxAttempts) {
+      this.escalate(t.id, from, 'attempts', `${correctionFailures} correction attempts used; last failure ${signature}`, 'Clarify the requirement or fix manually?', counters);
+    } else if (repeatCount >= L.repeatedFailureStop) {
+      this.escalate(t.id, from, 'repeated-failure', `same failure ${repeatCount} times in a row: ${signature}`, 'The same failure keeps recurring; what is missing?', counters);
+    } else {
+      this.transition({ taskId: t.id, from, to: 'ready', reason: `correction needed: ${signature}`, counters });
+    }
+  }
+
+  /** Evidence for the attempt, written by the controller (never by a worker). Idempotent. */
+  private ensureEvidence(t: TaskRecord, end: AttemptEndRecord): void {
+    if (this.evidence.read(t.id, end.attempt) && this.evidence.verify(t.id, end.attempt).length === 0) return;
+    const r = end.result;
+    if (r.kind !== 'completed') return;
+    const entries = [
+      this.evidence.writeArtifact(t.id, end.attempt, 'runner-result.json', JSON.stringify(r, null, 2)),
+      this.evidence.writeArtifact(
+        t.id,
+        end.attempt,
+        'verification.json',
+        JSON.stringify({ source: 'scripted (M1 placeholder for the M3 verifier)', verdict: r.verification.verdict, signature: r.verification.signature }, null, 2),
+      ),
+    ];
+    const m = this.evidence.seal(t.id, end.attempt, entries, { verification: r.verification.verdict, review: r.review.verdict, placeholder: 'M1' });
+    this.journal.append('evidence.sealed', { taskId: t.id, attempt: end.attempt, mac: m.mac });
+  }
+
+  /** The reservation recorded on the attempt-start transition. */
+  private attemptReservation(taskId: string, attempt: number): string | undefined {
+    const starts = this.journal
+      .ofType<TransitionRecord>('task.transition')
+      .filter((r) => r.data.taskId === taskId && r.data.to === 'implementing' && r.data.attempt === attempt);
+    return starts[starts.length - 1]?.data.reservationId;
+  }
+
+  private latestEnd(taskId: string, attempt: number): AttemptEndRecord | undefined {
+    const ends = this.journal.ofType<AttemptEndRecord>('attempt.end').filter((r) => r.data.taskId === taskId && r.data.attempt === attempt);
+    return ends[ends.length - 1]?.data;
+  }
+
+  private mustGet(id: string): TaskRecord {
+    const t = this.store.get(id);
+    if (!t) throw new ControllerError(`unknown task ${id}`);
+    return t;
+  }
+}
+
+function costOf(r: AttemptEndRecord['result']): Amount | null {
+  return r.cost ? { usd: r.cost.usd, tokens: r.cost.tokens } : null;
+}
+
+function attemptKey(e: { taskId: string; attempt: number }): string {
+  return `${e.taskId}#${e.attempt}`;
+}
+
+const COUNTER_KEYS = ['attempt', 'correctionFailures', 'infraFailures', 'lastFailureSignature', 'repeatCount'] as const;
+
+/** Fold transitions into the state and counters the store should hold for each task. */
+export function expectedStates(records: readonly JournalRecord[]): Map<string, { state: TaskState; counters: Partial<TaskCounters> }> {
+  const out = new Map<string, { state: TaskState; counters: Partial<TaskCounters> }>();
+  for (const r of records) {
+    if (r.type === 'plan.import') {
+      for (const t of (r.data as { plan: Plan }).plan.tasks) {
+        if (!out.has(t.id)) out.set(t.id, { state: 'planned', counters: {} });
+      }
+    } else if (r.type === 'task.transition') {
+      const tr = r.data as TransitionRecord;
+      const cur = out.get(tr.taskId) ?? { state: 'planned' as TaskState, counters: {} };
+      cur.state = tr.to;
+      Object.assign(cur.counters, tr.counters ?? {}, tr.attempt !== undefined ? { attempt: tr.attempt } : {});
+      out.set(tr.taskId, cur);
+    }
+  }
+  return out;
+}
+
+function countersMatch(t: TaskRecord, c: Partial<TaskCounters>): boolean {
+  return COUNTER_KEYS.every((k) => c[k] === undefined || t[k] === c[k]);
+}
