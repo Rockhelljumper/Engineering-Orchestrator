@@ -1,40 +1,62 @@
 # M0 report — architecture and planning
 
+Revision 2. It incorporates the owner's changes-requested review of revision 1 and a second independent review.
+
 ## Acceptance criteria
 
 | AC | Result | Evidence |
 |---|---|---|
-| M0-1 Seven documents exist and trace requirements 1–10, the security constraints and the demo deliverables | PASS | `docs/00`–`06`; traceability table in `03-dependency-map.md` §4 |
-| M0-2 Third-party evaluations cite pinned commits and file:line evidence | PASS | `01-component-evaluation.md`; key claims re-checked by hand and by the independent reviewer (14 claims, 13 correct, 1 corrected below) |
-| M0-3 Nothing installed, no host configuration changed | PASS | This PR changes only `README.md` and `docs/`. Third-party repos were cloned into a scratch directory and read; none of their scripts, builds or binaries were run |
-| M0-4 User approves the PR | PENDING | PR review |
+| M0-1 Eight documents (00–07) exist and trace requirements 1–10, the security constraints and the demo deliverables | PASS | `docs/00`–`07`; traceability table in `03-dependency-map.md` §4 |
+| M0-2 Third-party evaluations cite pinned commits and file:line evidence | PASS | `01-component-evaluation.md`. Key claims were re-checked by hand and by two independent reviewers. In round 1, 13 of 14 claims checked out and one (the Go version) was corrected. In round 2, 9 further claims were checked and the corrections are listed below |
+| M0-3 Nothing installed, no host configuration changed | PASS | This PR changes only `README.md` and `docs/`. Third-party repositories were cloned into a scratch directory and read; none of their scripts, builds or binaries were run. On the user's PC only folder names were listed (home, `Program Files`, `Program Files (x86)`, `%LOCALAPPDATA%`); no command ran there and no access was requested |
+| M0-4 User approves the PR | PENDING | Revision 1 received "changes requested"; revision 2 awaits review |
 
-## Independent review
-
-A separate read-only reviewer session (which did not write the documents) checked the drafts against the brief and the vendor source. Findings and how each was resolved:
+## Round 1: independent review of revision 1
 
 | Severity | Finding | Resolution |
 |---|---|---|
-| Critical | Verification ran agent-written code with controller privilege, so code under test could rewrite state or forge results | Principle 8: workers and verification run as a separate sandbox principal; state root outside workspaces; HMAC-keyed journal and manifests; controller-owned reporter + inventory cross-check; residual risk stated (arch §1, §3, §6.3; threats T18) |
-| Critical | Git worktrees share `.git`, so a worker could plant hooks or `core.fsmonitor` that run in the controller | Per-attempt independent clones from a bare mirror; fetch with hooks and fsmonitor disabled (arch §3; T19; M2-7) |
-| Critical | Test command itself was not protected (`"test": "exit 0"`) | Controller-owned test command from policy; `package.json`, runner config, `tsconfig` protected (arch §6.3; T20; S3e; M3-9) |
-| High | Go 1.24.7 claimed sufficient for beads; `go.mod` needs 1.26.5 / toolchain 1.26.7, and `GOTOOLCHAIN=auto` would download silently | Corrected; pin Go 1.26.7 with `GOTOOLCHAIN=local` (00, 01, 03; M1-9) |
-| High | `--setting-sources` does not stop `CLAUDE.md` loading; `--restricted` and `--bare` not considered | Documented; M2-5 measures all three options with a CLAUDE.md canary |
-| High | Invalid settings files are silently ignored, so the guard hook could vanish | Hook canary at the start of every worker run (arch §3; T21; M2-8) |
-| High | Integration and infra-retry loops had no bound | Counters table and `blocked` transitions for every loop (arch §5; M3-8) |
-| Medium | Approval of existing repos was text only | `approvedRepositories` in controller-side policy (arch §9; T22; M1-10) |
-| Medium | No escalation channel for unattended runs | Status branch, optional issue (arch §9; M8-7) |
-| Medium | Import errors could count as red evidence | Assertion-level red evidence + reviewer check of tests (arch §6.2; M4-5) |
-| Medium | Traceability omitted security constraints, demo deliverables and token budgets | Rows added; governor tracks tokens as well as USD |
-| Medium | Several criteria not third-party verifiable (M2-6, M4-2, M6-4, M7-3/4, M7-7, M7-9, M8-4, M8-6) | Rewritten as scripted checks with stored output, reference plan for scoring, `prompt-injection` finding definition |
-| Low | Inconsistencies: document count, missing approval points for M4/M6, test-first optional vs mandatory, policy inside target repo | Fixed; test-first is the default with a reasoned opt-out; policy moved to the state root |
+| Critical | Verification ran agent-written code with controller privilege | Principle 8: workers and verification run inside an isolation boundary; state root outside it; HMAC-keyed journal and manifests (arch §1, §3; T18) |
+| Critical | Git worktrees share `.git`, so planted hooks could run in the controller | Per-attempt independent clones; fetch with hooks and fsmonitor disabled (arch §3; T19; M2-7) |
+| Critical | Test command not protected (`"test": "exit 0"`) | Controller-owned test command; `package.json`, runner config and `tsconfig` protected (arch §6.3; T20; M3-9) |
+| High | Go version claim wrong (beads needs 1.26.x) | Pin Go 1.26.7, `GOTOOLCHAIN=local` (M1-9) |
+| High | `--setting-sources` does not stop `CLAUDE.md`; `--restricted`/`--bare` not considered | Measured in M2-5 |
+| High | Invalid settings silently drop the guard hook | Hook canary (M2-8) |
+| High | Unbounded integration and infra loops | Counters and `blocked` transitions for every loop (arch §5; M3-8) |
+| Medium | Repo approval, unattended escalation, red-evidence quality, traceability gaps, unverifiable criteria, inconsistencies | Fixed (see revision 1 history in git) |
+
+## Round 2: owner's requested changes
+
+| # | Request | Resolution |
+|---|---|---|
+| 1 | WSL2 alone is not a strong sandbox; document host access, interop, drive mounts, credential exposure, and the difference between Windows users, WSL2, containers and VMs | New `07-isolation-and-credentials.md` §2 compares all five options on each property. WSL2 is never an isolation tier. New tiers: P (supervised pilot, separate Windows user, sample project only), L1 (hardened container), L2 (local VM, preferred), PX (Proxmox). Tools were inspected read-only first (§1), with read-only commands listed for the user to settle the choice. Threats T6, T7, T23, T24; criterion M2-10 adds escape probes |
+| 2 | Deploy keys do not restrict pushes to `eo/*` | Corrected (`07` §4). Before M8 the controller holds no GitHub credentials. Unattended pushes go to a separate staging repository using rulesets A1, A2 and B. Only the controller holds the key, Actions are disabled, and staging content is treated as untrusted. M8-6 tests every forbidden ref update with the real credential and stores GitHub's rejections |
+| 3 | Budget flag and reported usage are not hard billing limits | `07` §5. The governor reserves `cap + maxTurnCost` before each launch, adds wall-clock timeouts and token caps, and uses a Console spend limit as the provider-side backstop. M2-6 now tests governor behaviour; M2-6b measures overshoot as information; M7-8 no longer asserts a dollar ceiling |
+| 4 | Independent acceptance and mutation controls for test integrity, including helpers and result forgery | Arch §6.4. Adds holdout tests (only criterion ID and pass/fail are returned), forgery canaries, piped result collection, a mutation check with a sentinel mutant (built on the TypeScript compiler API, so nothing new to install), a base cross-run, protected test support code and a tamper scan. New scenario S10; criteria M3-10 to M3-15 |
+| 5 | Preserve the M1 approval gate | Standing authorisation rule in `05` §1 and in the README: no installation, live spend, merge, production access or Proxmox change until approved |
+
+## Round 2: second independent review
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| High | One ruleset cannot target both branches and tags | Split into A1 (branches except `eo/**`), A2 (all tags) and B (`eo/**`). Bypass lists are checked for deploy keys from the exported JSON |
+| High | Unclear who holds the staging key; `eo/**` fast-forwards; refs and workflow files outside the rulesets | Only the controller holds the key, outside every container. Actions are disabled on staging, and staging content is untrusted. M8-6 covers notes and custom refs and probes for the key |
+| High | Reservation factor of 3× was below the 8.4× already observed | Reserve `cap + maxTurnCost`, initially `max(10 × cap, cap + $1)`. The between-turns mechanism is marked as a hypothesis |
+| High | Holdout assertion messages leak expected values | Only criterion ID and pass/fail are returned; M3-11 adds a leakage test |
+| High | The nonce is readable inside the boundary, and a result file there could be overwritten | Results are streamed over a pipe. Canaries are documented as catching naive forgery only, and invariant 11 is weakened to match. A tamper scan of the diff is added (M3-15). Deliberate in-boundary forgery is stated as a residual risk |
+| Medium | Pilot tier had no process-control mechanism | Broker run as the pilot user (interactive `runas`, no saved password), named pipe ACL, Job Object kill-on-close |
+| Medium | Epic overshoot described as a guarantee | Reworded as an estimate from measurements |
+| Medium | "Non-equivalent mutants" not measurable; M6-1 manual | Excluded mutants must be listed with reasons; M6-1 is a scripted headless run |
+| Low | Stale wording (T2, Tier-1, deploy key vs PAT, "hard spend limit", S1–S9, controller principal, list break) and this report | Fixed |
 
 ## Remaining limitations
 
-- No container runtime was available in the planning environment, and nothing on the Windows PC or Proxmox was inspected beyond top-level folder names. Open questions are listed in `00-environment-inspection.md` §5.
-- Code under test can still forge its own tests' results inside the test process (T18 residual).
-- Whether beads builds on Windows is unknown until M1.
+- Deliberately written forgery code inside the isolation boundary can defeat runtime checks. It must appear in the diff and is caught only by the tamper scan, the security reviewer and human PR review (T18 residual).
+- The supervised pilot tier relies on NTFS ACLs between two local accounts and shares network and drives with permissive ACLs. It is limited to the sample project with a person watching.
+- Client-side budget overshoot per invocation is measured, not prevented. The Console spend limit's enforcement timing is the provider's.
+- Folder names suggest Docker Desktop, WSL, Hyper-V and VirtualBox are present on the PC. Their versions and enabled state are unverified until the user runs the read-only checks in `07` §1.
+- Whether beads builds on Windows is unknown until M1. The L2 VM (Linux) avoids the question.
+- Rulesets on a private staging repository would need GitHub Pro, Team or Enterprise.
 
 ## Spend
 
-No live agent workers were run for the orchestrator. Planning used this Claude session and three read-only helper sessions (two source reviews, one independent document review).
+No live orchestrator workers were run. Planning used this Claude session plus four read-only helper sessions: two source reviews and two independent document reviews (one per revision).

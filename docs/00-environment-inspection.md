@@ -44,7 +44,7 @@ Two further flags matter for isolation and are evaluated in M2:
 | Virtualisation | `.VirtualBox`, `VirtualBox VMs` |
 | Folders shared with this session | none |
 
-Only top-level folder names were visible. No folder contents were read and no access was requested. Whether WSL2, Docker Desktop or tmux are installed on the PC is **unknown** and is listed as an open question.
+Only folder names were visible (home folder, `Program Files`, `Program Files (x86)`, `%LOCALAPPDATA%`). No folder contents were read, no command was run and no access was requested. See `07-isolation-and-credentials.md` §1 for what those names suggest about isolation tooling; versions and enabled state remain unverified.
 
 Consequences for the design:
 
@@ -58,7 +58,7 @@ No Proxmox host is reachable from here and no details were supplied. Requirement
 
 ## 5. Open questions for the user
 
-1. Is WSL2 and/or Docker Desktop available on `rh-dt-m3`? (Affects whether the Tier-1 container sandbox can be used locally.)
-2. Proxmox: version, whether a dedicated non-production node or VLAN is available, and how the worker should reach GitHub (deploy key vs fine-grained PAT scoped to the sandbox repo only).
-3. Is creating a separate low-privilege local Windows user (or using WSL2) for workers acceptable? The security design needs agent-written code to run as a different principal from the controller (architecture §1, principle 8).
-4. Which Claude authentication the unattended worker should use (an API key with a hard spend limit is recommended over the user's personal OAuth login).
+1. Results of the read-only checks in `07-isolation-and-credentials.md` §1 (WSL, Docker Desktop backend, Hyper-V, VirtualBox versions).
+2. Proxmox: version, whether a dedicated non-production node or VLAN is available, and the staging repository for unattended pushes (`07` §4). These can wait until M8.
+3. Which local isolation tier to build first. A follow-up read-only listing found Docker Desktop, WSL, Hyper-V and VirtualBox folders on the PC; the comparison, the recommendation (a local Linux VM) and the read-only commands that settle the choice are in `07-isolation-and-credentials.md`.
+4. Which Claude authentication the unattended worker should use (a dedicated API key whose Console workspace has a spend limit is recommended over the user's personal OAuth login; that limit is a provider-side backstop, not a guaranteed hard cap, `07` §5).

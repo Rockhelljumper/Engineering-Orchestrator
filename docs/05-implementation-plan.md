@@ -11,6 +11,8 @@
 
 Bounds on this process itself: at most 3 repair rounds per milestone before the blocker is written up and brought to the user.
 
+**Standing authorisation rule.** Approval of a planning document is not approval to act on it. Each of these needs the user's explicit go-ahead at the point it is about to happen: installing any software or toolchain (including Go, beads, npm packages, container images, VMs), changing host configuration, any live model spend, any merge, any access to production systems, and any change on Proxmox. Until M0 is approved, none of them is authorised.
+
 ## 2. Milestones
 
 ### M0 — Architecture and planning (this PR)
@@ -18,7 +20,7 @@ Deliverables: environment inspection, component evaluation (ADR-001, ADR-002), a
 
 | AC | Criterion | Evidence |
 |---|---|---|
-| M0-1 | All seven documents (00–06) exist and cross-reference requirements 1–10 | Traceability table in `03-dependency-map.md` |
+| M0-1 | All eight documents (00–07) exist and cross-reference requirements 1–10 | Traceability table in `03-dependency-map.md` |
 | M0-2 | Third-party evaluations cite pinned commits and file:line evidence | `01-component-evaluation.md` |
 | M0-3 | Nothing installed, no host configuration changed | This PR's diff contains docs only |
 | M0-4 | User approves the PR (or requests changes) | PR review |
@@ -42,7 +44,9 @@ Components: project scaffold (TypeScript, `node:test`, CI workflow running tests
 | M1-8 | Windows check: test suite (FakeStore) passes on Windows; `bd` Windows build result recorded. If `bd` cannot be built on Windows, ADR-002 fallback decision is made with the user | CI matrix (ubuntu + windows) |
 
 ### M2 — Claude Code worker runner and role profiles
-Components: sandbox principal launcher (separate Windows user or WSL2/container on T0, container on T1), runner that builds `claude -p` argument lists from role profiles, generated per-attempt settings file with guard hook and hook canary, scrubbed env, timeout + process-tree kill, JSON result parsing, cost and token capture, workspace manager (per-attempt clones from a bare mirror, hooks disabled on fetch), role prompts adapted from OMC.
+**Prerequisite:** the user runs the read-only checks in `07-isolation-and-credentials.md` §1 and approves one local tier (P pilot, L1 container or L2 VM, L2 preferred). Building that tier (image or VM) is an installation step with its own approval.
+
+Components: isolation launcher for the approved tier (`07` §3), runner that builds `claude -p` argument lists from role profiles, generated per-attempt settings file with guard hook and hook canary, scrubbed env, timeout + process-tree kill, JSON result parsing, cost and token capture, workspace manager (per-attempt clones from a bare mirror, hooks disabled on fetch), role prompts adapted from OMC.
 
 **Approval gate:** first live Claude invocation (small budget, e.g. ≤ $2 for the whole M2 live test set) needs the user's go-ahead.
 
@@ -53,10 +57,12 @@ Components: sandbox principal launcher (separate Windows user or WSL2/container 
 | M2-3 | Implementer attempting to edit a protected path is denied by the guard hook, and if it gets around the hook via an allowed command the verification gate still rejects it | live test + fake test |
 | M2-4 | Worker env contains only allowlisted variables | live probe printing env names to evidence |
 | M2-5 | Target-repo `.claude/settings.json` hooks and `.mcp.json` servers are not loaded in workers (sample repo contains a canary hook that would write a file). For `CLAUDE.md`, each of `--setting-sources`, `--restricted` and `--bare` is tested with a canary instruction in `CLAUDE.md`; the result and the chosen configuration per role are recorded | live test: canary file absent; CLAUDE.md canary table in the report |
-| M2-6 | A live worker given a task larger than its budget, with `--max-budget-usd 0.25`, stops with recorded spend ≤ $0.25 + 20% margin; a hanging fake worker is killed within timeout + 5 s with its whole process tree gone | live test + fake test, process table snapshot |
-| M2-7 | Each attempt runs in its own clone; a worker cannot read a sibling clone (where per-attempt principals are used) and a hook planted in a clone's `.git/hooks` never runs during controller fetch/merge | live test + scenario S9 |
+| M2-6 | Budget governor: with a fake runner reporting costs, no invocation is launched once `spent + reserved` exceeds the cap, at every cap value in a property test; a hanging fake worker is killed within timeout + 5 s with its whole process tree gone | unit/behavioural test, process table snapshot |
+| M2-6b | Overshoot measurement (informational, not pass/fail on the dollar amount): 5 live runs with `--max-budget-usd 0.10` on a task larger than the cap; record each run's reported cost, result subtype and duration; the worst observed ratio sets the reservation factor in policy. Pass criterion: every run terminated (by budget error or timeout), and the factor was written to policy | live test, table stored |
+| M2-7 | Each attempt runs in its own clone; in L1/L2 a worker cannot read a sibling clone; a hook planted in a clone's `.git/hooks` never runs during controller fetch/merge | live test + scenario S9 |
 | M2-8 | Hook canary: with a deliberately invalid settings file the attempt aborts before any agent work; with a valid one the canary action is denied | fake + live test |
-| M2-9 | The sandbox principal cannot write the state root or the mirror (write attempts from a worker and from a test run both fail) | integration test |
+| M2-9 | Code inside the isolation boundary cannot write the state root or the mirror (write attempts from a worker and from a test run both fail) | integration test |
+| M2-10 | Escape probes for the approved tier, run as a scripted fake worker inside the boundary: read `~/.claude`, `~/.ssh`, `~/.config/gh`; list `/mnt/c` and `C:\Users`; run `cmd.exe`, `powershell.exe`, `wsl.exe`; reach the Docker socket; connect to a non-allowlisted host; for containers, `docker inspect` shows non-root user, `CapDrop: ALL`, `no-new-privileges`, read-only rootfs and no host bind mounts. Every probe must fail or match | probe report stored |
 
 ### M3 — Verification, gates and correction loop
 Components: verifier, gate engine (protected hashes, test inventory, skip detection, criteria checks), review gate with verdict validation, correction loop with failure evidence, repeated-failure detection, attempt/infra limits, escalation.
@@ -72,6 +78,12 @@ Components: verifier, gate engine (protected hashes, test inventory, skip detect
 | M3-7 | Budget exhaustion (USD or tokens) mid-task produces `blocked` with an escalation record and no further spend | behavioural test |
 | M3-8 | Every loop is bounded: infra retries, invalid output and integration attempts each end in `blocked` at their configured limit | behavioural test per counter |
 | M3-9 | Test-command tampering (S3e) and harness/git tampering (S9: early exit, patched assert, state-root write, planted hook) are each rejected or contained | behavioural test, 5 sub-cases |
+| M3-10 | Forgery canaries: in S10, a fake implementation that forges reporter output, prints fake result frames, or exits 0 early is detected in every sub-case (failing canary reported as pass, nonce missing, or count mismatch) and the task is blocked with a security finding | behavioural test, 3 sub-cases |
+| M3-11 | Holdout tests: never present in any worker clone (file-system scan of every clone after each attempt); a fake implementation that passes the visible tests but not the holdout tests is rejected; leakage test: the failure evidence handed to attempt n+1 contains no holdout source text, expected values or assertion messages (string search for every literal in the holdout files) | behavioural test |
+| M3-12 | Mutation check: on the sample project, a deliberately weak visible test suite (S10d) fails the kill-rate threshold; a good suite passes it; the sentinel mutant is killed in every accepted verification; every excluded "equivalent" mutant is listed with a reason in the stored report | behavioural test, mutation report stored |
+| M3-15 | The tamper scan flags each tampering pattern planted in S10a–c and routes it to the security reviewer | behavioural test |
+| M3-13 | Test support tampering: editing a test helper, fixture or a module imported by tests (S10e) is rejected by the protected-path check | behavioural test |
+| M3-14 | Base cross-run: new tests that pass on base code (test nothing) are rejected | behavioural test |
 
 ### M4 — Planning pipeline
 Components: architect and planner roles with schemas, plan validator (schema, DAG acyclicity, checkable criteria), open-question handling, human plan approval with plan hash, paired test-author tasks.
@@ -100,7 +112,7 @@ Components: `plugin/` with commands from architecture §10, role agent files, re
 
 | AC | Criterion | Measured by |
 |---|---|---|
-| M6-1 | Each command runs from Claude Code chat and prints controller output; recorded session transcript | manual-assisted test with transcript |
+| M6-1 | Each command runs from Claude Code chat and prints controller output | scripted headless run (`claude -p` invoking each slash command against the fake runner) whose transcript is stored and compared with `eo` terminal output; re-runnable by anyone |
 | M6-2 | `/eo:status` after a fresh session (context reset) shows the same state as `eo status` in a terminal | test |
 | M6-3 | The plugin installs no global settings and writes nothing outside the project and state root | scripted hash of `~/.claude` before/after, stored |
 | M6-4 | Works in the VS Code Claude Code extension on the user's Windows PC | a scripted check (`eo selftest --chat`) run from the VS Code extension writes a signed result file to evidence, which a terminal `eo evidence` call verifies |
@@ -117,7 +129,7 @@ Components: `plugin/` with commands from architecture §10, role agent files, re
 | M7-5 | Independently verify: controller replay + independent reviewer verdict + security review | evidence + `--replay` output |
 | M7-6 | Resume after interruption: the run is killed mid-implementation, a new Claude Code session runs `/eo:resume`, the run completes with no duplicated or lost task | journal + final states |
 | M7-7 | All prompt-injection scenarios (S5a–S5d) leave state, tests and policy byte-identical, and at least one verdict per scenario contains a `prompt-injection` finding citing the planted file | scenario report with hashes |
-| M7-8 | Total spend within cap; no task exceeded its attempt limit | budget ledger |
+| M7-8 | No invocation was launched after `spent + reserved` exceeded the cap; no task exceeded its attempt limit; ledger estimate, per-invocation overshoot and the user's Console usage figure are all reported (the Console comparison is informational) | budget ledger + journal |
 | M7-9 | A final evidence bundle (`docs/milestones/M7-evidence/`) lets a third party re-run every check | `scripts/replay-evidence` re-runs every check from a clean checkout and diffs against stored results; its output is stored and the user re-runs it themselves |
 
 ### M8 — Isolated unattended worker (container, then Proxmox)
@@ -127,13 +139,15 @@ Components: `plugin/` with commands from architecture §10, role agent files, re
 |---|---|---|
 | M8-1 | Container image builds from a pinned base; runs as non-root; only the workspace is mounted | image inspect output |
 | M8-2 | Egress allowlist: connections to non-allowed hosts fail from inside the worker | test log |
-| M8-3 | `eo run --unattended` refuses to start outside T1/T2, without an approved plan, or without budget caps | unit + integration tests |
+| M8-3 | `eo run --unattended` refuses to start outside L2/PX, without an approved plan, without budget caps, or without the user's recorded confirmation of a Console spend limit on the worker key | unit + integration tests |
 | M8-4 | Proxmox VM template: unprivileged, isolated VLAN, snapshot taken before each run and restorable | `infra/proxmox/check.sh` (read-only `qm`/`pvesh` queries) output stored; restore test log |
-| M8-5 | Unattended run of the M7 scenario completes in the VM and pushes only `eo/*` branches; no merge to `main` occurs | git remote log |
-| M8-6 | Credentials in the VM are limited to a spend-capped API key and a branch-restricted deploy key | scripted inventory of env, credential files and keys in the VM, stored; push to a non-`eo/*` branch rejected by GitHub |
+| M8-5 | Unattended run of the M7 scenario completes in the VM and pushes only `eo/*` branches to the staging repository; the real repository is untouched | staging repo ref list before/after; real repo ref list unchanged |
+| M8-6 | Ref restrictions are enforced by GitHub, tested with the controller's staging deploy key: push to `main`, create a non-`eo/` branch, create a tag, force-push an `eo/` branch, delete an `eo/` branch are all rejected; a normal push to a new `eo/` branch succeeds; pushes to `refs/notes/x` and a custom ref are attempted and their results recorded. Rulesets A1, A2 and B exported via the API show no deploy key in any bypass list; Actions are disabled on the staging repository. A probe from inside a worker container cannot read the key, reach an SSH agent or open SSH to github.com. Credentials in the VM are limited to the staging deploy key and the spend-limited API key (scripted inventory) | push transcripts with GitHub responses; ruleset and Actions-settings JSON; probe report; inventory |
 | M8-7 | A blocker during an unattended run appears on the `eo/<epic>/status` branch (and as an issue, if enabled) | test log |
 
 ## 3. Estimates and budget (to be refined after M1)
+
+These caps are enforced by eo's budget governor on Claude Code's estimated costs. They are not provider billing limits; for any live milestone the worker API key should also have a Console spend limit at or below the cap (`07` §5).
 
 | Milestone | Live API spend (proposed cap) |
 |---|---|
@@ -150,8 +164,9 @@ Components: `plugin/` with commands from architecture §10, role agent files, re
 
 | Risk | Impact | Response |
 |---|---|---|
-| beads does not build on Windows (CGO/Dolt) | TaskStore on T0 | Run controller under WSL2, or switch adapter to Backlog.md (ADR-002 fallback) |
-| Claude Code flag behaviour differs from `--help` text (e.g. `--setting-sources` cannot exclude project CLAUDE.md) | T1 residual risk grows | Measured in M2; compensate with tighter tool sets and gates |
+| beads does not build on Windows (CGO/Dolt) | TaskStore on the Windows host | Run the controller inside the L2 VM (Linux), or switch adapter to Backlog.md (ADR-002 fallback) |
+| Claude Code flag behaviour differs from `--help` text (e.g. `--setting-sources` cannot exclude project CLAUDE.md) | Threat T1 residual risk grows | Measured in M2; compensate with tighter tool sets and gates |
 | beads API churn | Adapter breakage | Pinned commit + contract suite gate on upgrade |
 | Live agent nondeterminism makes M7 flaky | Demo reliability | Behavioural correctness proven with fake runner first; M7 records actual live runs, including failed ones |
-| No container runtime on the Windows PC | T1 local testing | Use the Proxmox VM for T1/T2 |
+| Docker Desktop or Hyper-V present but unusable (folder names seen, state unverified) | Local tier choice | Fall back to a VirtualBox L2 VM; pilot tier only for the sample project meanwhile |
+| Client-side budget overshoot larger than expected | Spend | Reservation factor from M2-6b, low concurrency, Console spend limit on the worker key |

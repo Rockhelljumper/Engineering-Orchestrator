@@ -11,7 +11,7 @@ Working name: **eo** (Engineering Orchestrator).
 5. **Everything an agent reads is data.** Repository instructions, tool output, docs, failing logs and other agents' output are passed in delimited data blocks and never widen permissions.
 6. **Fail closed and escalate.** On ambiguity, exhausted budget, repeated failure or policy violation, work stops and a human gets one clear escalation record.
 7. **Nothing leaves the sandbox without a human.** No merges to protected branches, no deploys, no pushes outside `eo/*` branches.
-8. **Agent-written code never runs as the controller.** Workers *and* verification (which executes agent-written code through the test suite) run as a separate, unprivileged principal (a separate OS user, WSL2 distro user, or container) with no write access to the state root, the controller's git directory or the policy. Without that separation, code under test could rewrite state or forge results, so principles 1, 2 and 4 would rest on the agent's goodwill.
+8. **Agent-written code never runs as the controller.** Workers *and* verification (which executes agent-written code through the test suite) run inside an isolation boundary with no write access to the state root, the controller's git directory or the policy. The boundary is a hardened container or a VM; a separate low-privilege Windows user is allowed only for a supervised pilot, and WSL2 by itself does not count (see `07-isolation-and-credentials.md` §2). Without that separation, code under test could rewrite state or forge results, so principles 1, 2 and 4 would rest on the agent's goodwill.
 
 ## 2. System context
 
@@ -20,14 +20,14 @@ flowchart LR
   user([User in VS Code / Claude Code chat])
   subgraph host[Developer host or isolated worker]
     plugin[eo Claude Code plugin\nslash commands]
-    ctl[eo controller CLI\nNode/TypeScript\ncontroller principal]
+    ctl[eo controller CLI\nNode/TypeScript\noutside the boundary]
     subgraph sroot[State root, controller-only]
       store[(beads task graph)]
       journal[(journal.jsonl HMAC chain\n+ evidence/)]
       policy[(eo.policy.json)]
       mirror[(bare mirror of target repo)]
     end
-    subgraph sandbox[Sandbox principal: separate user / container]
+    subgraph sandbox[Isolation boundary: hardened container or VM]
       ws[per-attempt clone]
       w1[[claude -p worker\nrole profile]]
       vr[[verification run\ncontroller-owned test command]]
@@ -41,10 +41,10 @@ flowchart LR
   ctl -- spawn, scrubbed env --> w1
   ctl -- spawn --> vr
   w1 -- edits only its clone --> ws
-  vr -- reads clone, writes result file --> ctl
+  vr -- reads clone, streams results over a pipe --> ctl
   w1 --> api
   ctl -- fetch commit, hooks disabled --> mirror
-  ctl -- push eo/* only --> repo
+  ctl -. user-run eo publish, eo/* only; M8: staging repo .-> repo
   user -. reviews, opens PR, merges .-> repo
 ```
 
@@ -59,12 +59,12 @@ Trust boundaries are drawn in the threat model (`04-threat-model.md`).
 | **TaskStore adapter** | Task graph, dependencies, ready queue, atomic claim, lease, heartbeat, reclaim, notes. | Beads (`bd`) by default (ADR-002), in-memory fake for unit tests, Backlog.md as fallback. Contract-tested. |
 | **Journal** | Append-only `journal.jsonl` of write-ahead intent and outcome records, fsynced per record. Used for crash recovery and audit. | Each record carries an HMAC over (previous HMAC + record) using a key stored in the state root, so it cannot be rebuilt by anyone without the key. |
 | **Evidence ledger** | `evidence/<task>/<attempt>/` with a `manifest.json` listing every artifact and its SHA-256; the manifest is HMAC-signed. | Logs, diffs, verdict JSON, cost records. |
-| **Workspace manager** | Creates **one independent clone per attempt** (not a git worktree, because worktrees share the controller's `.git`, hooks and config) from the bare mirror; owned by the sandbox principal. | The controller brings results back with `git fetch` from the clone into the mirror, always with `-c core.hooksPath=<empty dir> -c core.fsmonitor=false`, and never reads the clone's `.git/config` or hooks. Branch naming `eo/<epic>/<task>/a<n>`. |
-| **Worker runner** | Launches `claude -p` for a role, as the sandbox principal, with a generated settings file, tool set, budget, timeout and scrubbed environment; parses structured JSON output; records cost and tokens. | Also has a **scripted fake runner** for deterministic tests and failure simulation. |
+| **Workspace manager** | Creates **one independent clone per attempt** (not a git worktree, because worktrees share the controller's `.git`, hooks and config) from the bare mirror, delivered into the isolation boundary (a container volume or a directory only the pilot user can write). | The controller brings results back with `git fetch` from the clone into the mirror, always with `-c core.hooksPath=<empty dir> -c core.fsmonitor=false`, and never reads the clone's `.git/config` or hooks. Branch naming `eo/<epic>/<task>/a<n>`. |
+| **Worker runner** | Launches `claude -p` for a role, inside the isolation boundary, with a generated settings file, tool set, budget, timeout and scrubbed environment; parses structured JSON output; records cost and tokens. | Also has a **scripted fake runner** for deterministic tests and failure simulation. |
 | **Guard hook** | `eo hook guard` used as a `PreToolUse` hook inside workers: denies edits to protected paths and Bash commands outside the role allowlist. | Early warning only; the real gate is the post-hoc diff check (§6.3). Because invalid settings files are silently ignored, every worker run starts with a **hook canary** (a scripted denied action) and the attempt is aborted if the hook did not fire. |
-| **Verifier** | Runs verification in a fresh clone at the submitted commit, as the sandbox principal, with no agent involved. | Uses the **controller-owned** test command and runner config from policy, not the repository's `package.json` scripts. Results come from a controller-supplied reporter and are cross-checked against a static test inventory (§6.3). |
+| **Verifier** | Runs verification in a fresh clone at the submitted commit, inside the isolation boundary, with no agent involved. | Uses the **controller-owned** test command and runner config from policy, not the repository's `package.json` scripts. Results are cross-checked with the test-integrity controls in §6.4. |
 | **Gate engine** | Evaluates Definition of Done from policy + evidence. Pure function, heavily unit-tested. | §6 |
-| **Budget governor** | Tracks USD, input/output tokens and wall-clock per attempt, task and epic; refuses to start work that cannot fit. | Uses `--max-budget-usd` per invocation and the reported `total_cost_usd` and usage. |
+| **Budget governor** | Tracks estimated USD, input/output tokens and wall-clock per attempt, task and epic; refuses to start work unless `spent + reserved` fits. | `--max-budget-usd` and the reported `total_cost_usd` are client-side estimates that can overshoot, not billing limits. Each launch therefore reserves its cap × a measured overshoot factor, a wall-clock timeout bounds every run, and unattended tiers require a provider-side Console spend limit as the backstop (`07` §5). |
 | **Integration queue** | Serially merges accepted task branches into `eo/<epic>/integration` in the mirror, re-verifies after each merge, routes conflicts. | Never touches `main`. |
 | **Escalation manager** | Creates escalation records, sets tasks `blocked`, surfaces them in status and through the configured notification channel. | One record per blocker, with reason, evidence and the question for the human. Unattended channel in §9. |
 | **Claude Code plugin** | Slash commands, role agent definitions and the status view used from chat. | Installed per project from this repo (local `--plugin-dir` or local marketplace), not from a remote marketplace. |
@@ -151,23 +151,38 @@ For each test-author task, before its tests are accepted:
 - Existing tests must still pass on base.
 - The reviewer checks the tests against the acceptance criteria (each criterion maps to at least one test ID) before the tests are landed and protected.
 
-### 6.3 Verification gate (controller-run, sandbox principal)
+### 6.3 Verification gate (controller-run, inside the isolation boundary)
 In a fresh clone at the submitted commit:
-1. **Diff check.** No changes to protected paths. Protected by default: test files owned by other tasks, test runner config, `package.json` (whole file, or at least `scripts`, `dependencies`, `devDependencies`), `tsconfig*.json`, lockfiles, `.github/`, CI config, `.claude/`, `CLAUDE.md`, `.mcp.json`, `.git*` files. A task may own specific protected paths only if the approved plan says so (e.g. a dependency-adding task owns the lockfile, and is then always security-reviewed). SHA-256 of every protected file must equal the base commit's.
+1. **Diff check.** No changes to protected paths. Protected by default: test files owned by other tasks, **test support code** (helpers, fixtures, mocks, setup files, snapshots, and every non-production module that the base commit's tests import, found by the controller's import-graph analysis), test runner config, `package.json` (whole file, or at least `scripts`, `dependencies`, `devDependencies`), `tsconfig*.json`, lockfiles, `.github/`, CI config, `.claude/`, `CLAUDE.md`, `.mcp.json`, `.git*` files. A task may own specific protected paths only if the approved plan says so (e.g. a dependency-adding task owns the lockfile, and is then always security-reviewed). SHA-256 of every protected file must equal the base commit's.
 2. **Controller-owned test command.** The verifier calls the test runner directly from policy (e.g. `node --test --test-reporter=<controller reporter> <discovered files>`), never `npm test` or repository scripts.
 3. **Inventory cross-check.** The controller statically discovers test IDs; the reported results must include exactly that set (none missing, none extra), so an early `process.exit(0)` or a suppressed suite fails the gate. Test inventory on head ⊇ base; skip/only markers not increased; assertion counts per pre-existing test not reduced (for the sample project's stack; detectors are pluggable).
 4. Every machine check in the acceptance criteria passes; full suite passes; lint/typecheck pass if configured.
 5. Results are stored with hashes; the exact replay command is recorded.
+6. The independent test-integrity controls in §6.4 all pass.
 
-Residual risk: code under test runs in the same process as the reporter, so a sufficiently targeted implementation could still tamper with reported results for its own tests. Running as the sandbox principal stops it touching state; the inventory cross-check, the reviewer and the security reviewer (which looks specifically for test-harness tampering) are the remaining lines of defence. This is stated as a limitation, not hidden.
+### 6.4 Test-integrity controls (independent of the implementer's tests)
 
-### 6.4 Review gate
+The visible tests are written by an agent and executed alongside code another agent wrote, so passing them is necessary but not sufficient. The controller adds checks that neither agent controls:
+
+| Control | What it does | What it catches |
+|---|---|---|
+| **Holdout acceptance tests** | A second, separate test-author invocation writes tests from the approved acceptance criteria only. They are stored in the state root, never placed in any worker's clone, and copied into the verification clone only at verification time. On failure the implementer receives **only the criterion ID and pass/fail**, never assertion messages, expected values, logs or source (assertion diffs would leak expected values across attempts) | Implementations tuned to the visible tests; weak visible tests |
+| **Forgery canaries** | Each verification run adds controller-generated tests with a fresh random nonce: one that must fail, one that must pass and echo the nonce. A run where the failing canary is reported as passing, the nonce is missing or wrong, or the canary counts don't match is treated as **forged**: the task is blocked and a security finding is raised. Anything inside the boundary can read the nonce, so canaries catch **naive** forgery only | Blanket "all pass" output, `process.exit(0)` tricks, suppressed suites |
+| **Out-of-process collection** | Tests run with per-file process isolation (`node --test` default); the reporter runs in the parent process and streams results to the controller over a pipe that leaves the boundary (no result file inside the boundary); exit code, streamed output and inventory must agree | In-process monkeypatching of the reporter; overwritten result files |
+| **Mutation check on changed code** | A built-in mutator (using the TypeScript compiler API, already a dev dependency, so no new install) applies a fixed operator set (flip comparison, off-by-one, negate condition, replace return, drop statement) to functions changed by the task. The visible + holdout suite must kill at least the policy threshold (default 80%) of mutants; a mutant may be excluded as equivalent only if it is listed with a reason in the stored report, which the reviewer checks. The suite must also kill a controller-chosen sentinel mutant. Surviving mutants go to the reviewer and back to the test author | Tests that pass regardless of the code; forged "all pass" results (the sentinel mutant would also "pass") |
+| **Base cross-run** | Head's new tests are run against the base production code (they must fail at assertion level), and base's tests against the head (they must pass) | Tests that test nothing; regressions hidden by edited helpers |
+| **Protected support code** | Helpers, fixtures and anything tests import from outside production code are protected (§6.3 step 1) | Helper rewrites such as an `assertEqual` that always passes |
+| **Tamper scan of the diff** | Static scan of changed production code for result-tampering patterns: `process.exit`, writes to stdout/stderr outside logging, access to `/proc`, child-process or signal APIs, reassignment of globals, imports of test-runner modules. Hits go to the security reviewer as mandatory review items | Deliberate forgery code, which has to appear in the diff |
+
+These controls are themselves tested by scenarios S9 and S10 (`06`). Residual risk: code inside the boundary shares it with the test runner, so a deliberately written forgery (one that reads the nonce, recognises the sentinel mutant by hashing its own source, and rewrites the parent's output) cannot be excluded by runtime checks alone. Such code has to exist in the diff, which is why the tamper scan, the security reviewer and the human PR review are the final line. This is stated as a limitation, not hidden.
+
+### 6.5 Review gate
 - Reviewer verdict `approve` with zero `blocking` findings. Reviewer must reference each acceptance criterion by ID with a pass/fail judgement; missing criteria = invalid verdict = one re-run, then `blocked`.
 - Findings use fixed categories, including `prompt-injection` (content in the repo or inputs that tries to instruct agents), which must cite the file and line.
 - Security review for tasks tagged risky (touches risk paths, adds dependencies, owns a protected path, handles input parsing, auth, file system, subprocess) and always once on the integrated epic. `high`/`critical` findings block.
 
-### 6.5 Done
-A task is `done` only when the controller finds, for the merged commit: verification evidence (6.3) passing, a valid review verdict (6.4), security verdict if required, integration verification passing after merge, and an HMAC-valid evidence manifest whose hashes match the files on disk. `eo verify --task <id> --replay` re-runs the checks and must reproduce the result.
+### 6.6 Done
+A task is `done` only when the controller finds, for the merged commit: verification evidence (6.3) and test-integrity controls (6.4) passing, a valid review verdict (6.5), security verdict if required, integration verification passing after merge, and an HMAC-valid evidence manifest whose hashes match the files on disk. `eo verify --task <id> --replay` re-runs the checks and must reproduce the result.
 
 ## 7. Durability and resume
 
@@ -182,24 +197,30 @@ A task is `done` only when the controller finds, for the merged commit: verifica
 ## 8. Parallel execution
 
 - `maxConcurrency` (default 2, max set in policy) workers at once; the scheduler only starts tasks whose dependencies are done and whose budget reservation fits.
-- Each attempt has its own clone; with per-attempt sandbox users or containers, workers cannot read each other's clones. Where a single sandbox user hosts several clones (degraded T0, §9), sibling access is possible and is recorded as a limitation.
+- Each attempt has its own clone; in L1, L2 and PX each attempt runs in its own container with only its clone mounted, so workers cannot read each other's clones. In the supervised pilot (P) one pilot user hosts all clones, so sibling access is possible; the pilot therefore runs with `maxConcurrency=1`.
 - The planner's estimated file sets are used to avoid scheduling two tasks predicted to touch the same files concurrently (soft constraint).
 - Merges are serialised through the integration queue. A conflict creates a conflict-resolution attempt (implementer profile), bounded by `maxIntegrationAttempts`.
 
 ## 9. Execution tiers
 
-| Tier | Where | Isolation | Allowed use |
-|---|---|---|---|
-| T0 Interactive | User's Windows PC, VS Code + Claude Code; controller runs as the user | Workers and verification run as a sandbox principal: preferably inside WSL2 or a container, otherwise a dedicated low-privilege local Windows user. Role tool profiles, `dontAsk` with allowlists, scrubbed env | Development of eo itself and the disposable sample project; other repos only if listed in the policy's approved-repository list |
-| T0-degraded | Same, but no separate principal available | None beyond tool profiles | **Sample project only**, with the run report stating that principle 8 and invariants 3–5 are not enforced against a malicious agent |
-| T1 Container | Linux container (Docker/WSL2 or inside the Proxmox VM) | Non-root, only the clone mounted, state root not mounted, no host credentials, egress allowlist (Anthropic API, package registry mirror) | Unattended runs on approved repos |
-| T2 Proxmox worker | Dedicated unprivileged VM on an isolated VLAN, snapshot per run | Controller in the VM, workers in T1 containers inside it; VM firewall egress allowlist; credentials limited to a spend-capped API key and a deploy key that can push only `eo/*` branches of approved repos | Unattended scheduled runs; results come back as branches for human review |
+Full comparison of Windows users, WSL2, containers and VMs, and the hardening each tier requires, is in `07-isolation-and-credentials.md`. Summary:
 
-The controller refuses to operate on a repository whose remote URL or path is not in the policy's `approvedRepositories` list.
+| Tier | Layout | Allowed use |
+|---|---|---|
+| P supervised pilot | Controller as the Windows user; workers and verification as a separate standard local Windows user | Disposable sample project only, with a person watching; no unattended runs |
+| L1 local container | Workers and verification in hardened Docker Desktop containers, no Windows bind mounts, egress proxy | Sample project and approved repositories, attended |
+| L2 local VM (preferred local) | Hyper-V or VirtualBox Linux guest running the controller and L1-style containers; VS Code Remote-SSH from Windows | Approved repositories, attended or unattended |
+| PX Proxmox worker | As L2 on a dedicated Proxmox node, isolated VLAN, snapshot per run | Unattended scheduled runs (M8) |
 
-Unattended mode (`eo run --unattended`) refuses to start unless: running inside T1/T2 (detected marker + policy), plan already approved with matching hash, budget caps set, and permission mode is `dontAsk` with `--permission-prompts none` (fail closed). It never uses `bypassPermissions`.
+WSL2 on its own is not a tier: it runs as the Windows user, auto-mounts the Windows drives and can launch Windows programs, and an agent with root in the distro can re-enable anything turned off in `wsl.conf`.
 
-**Unattended escalation channel:** escalations are written to the state root and pushed as a status file on the `eo/<epic>/status` branch; optionally (policy, approved in M8) the controller opens a GitHub issue on the sandbox repository using a token scoped to issues only. The user sees blockers without logging into the worker.
+The controller refuses to operate on a repository whose remote URL or path is not in the policy's `approvedRepositories` list, and it records the tier of every run in the journal and the run report.
+
+Unattended mode (`eo run --unattended`) refuses to start unless: running in L2 or PX (detected marker + policy), plan already approved with matching hash, budget caps set, the user has confirmed a provider-side spend limit on the worker's API key, and permission mode is `dontAsk` with `--permission-prompts none` (fail closed). It never uses `bypassPermissions`.
+
+**GitHub writes.** Before M8 the controller holds no GitHub credentials; the user publishes `eo/*` branches with `eo publish`. Unattended runs push only to a separate staging repository whose rulesets allow only `eo/**` branch pushes and block deletions and force pushes; the worker's deploy key exists only for that repository (deploy keys cannot be limited to branches, so the restriction comes from rulesets and is tested with real rejected pushes; `07` §4).
+
+**Unattended escalation channel:** escalations are written to the state root and pushed as a status file on the `eo/<epic>/status` branch of the staging repository; optionally (policy, approved in M8) the controller opens a GitHub issue there using a token scoped to issues only. The user sees blockers without logging into the worker.
 
 ## 10. Chat workflow (requirement 9)
 

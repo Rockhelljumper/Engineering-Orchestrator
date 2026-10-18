@@ -15,8 +15,10 @@ Nothing below is installed yet. Each item is installed only after the milestone 
 | typescript, @types/node | build | pinned | npm, `--ignore-scripts` | none | dev only |
 | node:test | test runner | built in | — | — | No Jest/Mocha |
 | Backlog.md | fallback TaskStore | v1.54.0 commit `75e9e97…` | only if ADR-002 fallback triggers | set `remoteOperations: false` | not installed by default |
-| Docker / Podman | T1 container tier | TBD | M8, after approval | egress allowlist | No daemon in this container; unknown on Windows PC |
-| Proxmox VE | T2 worker | TBD by user | user-provided | VLAN + firewall | M8, after approval |
+| Docker Desktop / Podman | L1 tier; containers inside L2/PX | TBD | Docker Desktop folders seen on the PC (state unverified); install or reconfigure only after approval | egress via allowlisting proxy | No daemon in this planning container |
+| Hyper-V or VirtualBox | L2 local VM | TBD after the read-only checks in `07` §1 | Both appear present on the PC; VM creation needs approval | NAT + guest firewall | Preferred local tier |
+| GitHub rulesets | Staging repo ref restrictions (M8) | — | User configures; eo exports and tests them | GitHub | Free on public repos; private repos need Pro/Team/Enterprise |
+| Proxmox VE | PX worker tier | TBD by user | user-provided | VLAN + firewall | M8, after approval |
 
 Policy for all npm installs: `npm ci --ignore-scripts`, lockfile committed, no `latest` tags, `npm audit` result recorded in the milestone report.
 
@@ -89,17 +91,17 @@ Approval points (work stops until the user says go): after M0 (before installing
 | 2 Durable state | beads + journal + evidence, resume | M1, M7 |
 | 3 Epic decomposition with dependencies | Planner + plan gate | M4 |
 | 4 Failed verification returns to implementation | Lifecycle attempts loop | M3, M7 |
-| 5 Reproducible evidence | Verifier + evidence ledger + replay | M3, M7 |
+| 5 Reproducible evidence | Verifier + evidence ledger + replay + test-integrity controls (holdout, canaries, mutation) | M3 (M3-6, M3-10…M3-14), M7 |
 | 6 Independent review, protected gates | Reviewer independence, protected paths, diff checks | M2, M3 |
-| 7 Controlled parallelism, isolated workspaces | Scheduler, per-attempt clones, sandbox principal, integration queue | M2, M5 |
+| 7 Controlled parallelism, isolated workspaces | Scheduler, per-attempt clones, isolation tiers (`07`), integration queue | M2, M5 |
 | 8 Bounded retries, budgets, escalation | Attempt/infra/integration/invalid-output limits, budget governor (USD and tokens), escalation manager | M1, M3 (M3-3, M3-7, M3-8) |
 | 9 Chat workflow | Plugin commands | M6 |
-| 10 Unattended Proxmox | Tiers T1/T2, unattended escalation channel | M8 |
+| 10 Unattended Proxmox | Tiers L2/PX, staging repository, unattended escalation channel | M8 |
 | S-1 Inspect downloaded install scripts before running | Build from pinned reviewed source; `--ignore-scripts`; `GOTOOLCHAIN=local` | M1-7, M1-9 |
 | S-2 Repo instructions, tool output, docs untrusted | Data blocks, tool profiles, protected `.claude/`/`CLAUDE.md`, settings isolation | M2-2, M2-5, M7-7 |
-| S-3 No privileged host access or production secrets | Sandbox principal, env scrub, no secrets in workspaces | M2-4, M2-9 |
+| S-3 No privileged host access or production secrets | Isolation tiers, env scrub, dedicated worker API key, no secrets in workspaces | M2-4, M2-9, M2-10 |
 | S-4 Don't weaken tests, CI, security policy | Protected paths, controller-owned test command, inventory checks, policy outside repo | M3-4, M3-9 |
 | S-5 No changes to production or existing repos without approval | `approvedRepositories` policy, `eo/*`-only pushes | M1-10, M5-4 |
-| S-6 No autonomous merges or deployment | No merge-to-`main` or deploy code path; branch-restricted deploy key | M5-4, M8-5 |
-| D-1 Disposable sample project with planted conditions | `fixtures/tinyledger`, scenarios S1–S9 | M1–M5 behavioural suites, M7 |
+| S-6 No autonomous merges or deployment | No merge-to-default-branch or deploy code path; unattended pushes only to a staging repo with tested rulesets | M5-4, M8-5, M8-6 |
+| D-1 Disposable sample project with planted conditions | `fixtures/tinyledger`, scenarios S1–S10 | M1–M5 behavioural suites, M7 |
 | D-2 Demo: plan, delegate, find defect, correct, verify, resume | M7 | M7-1 … M7-6 |
