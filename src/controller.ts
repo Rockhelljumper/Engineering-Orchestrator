@@ -8,7 +8,7 @@ import { BudgetGovernor, type Amount } from './budget.ts';
 import { assertRepositoryApproved, canonicalRepoPath, loadPolicy, policyHash, savePolicy, withApprovedRepository, type Policy } from './policy.ts';
 import { readJournalKey, statePaths, type StateRootPaths } from './stateRoot.ts';
 import { assertTransition, type TaskState } from './states.ts';
-import { FakeStore } from './store/fake.ts';
+import { openStore } from './store/open.ts';
 import type { TaskCounters, TaskRecord, TaskStore } from './store/types.ts';
 import { planHash, topoOrder, validatePlan, type Plan } from './plan.ts';
 import { FileLock } from './util/lock.ts';
@@ -88,7 +88,7 @@ export class Controller {
     this.journal = Journal.open(paths.journal, key, { repairTornTail: true });
     this.tornTailRepaired = before.tornTail;
     this.policy = loadPolicy(paths.policy);
-    this.store = opts.store ?? FakeStore.atDir(paths.store);
+    this.store = opts.store ?? openStore(paths);
     this.evidence = new EvidenceLedger(paths.evidence, key);
     this.budget = new BudgetGovernor(this.journal, this.policy.budget);
     const now = policyHash(this.policy);
@@ -103,6 +103,11 @@ export class Controller {
         throw new ControllerError('policy.json differs from the last policy recorded in the journal; a human must review it and run "eo policy accept"');
       }
     }
+    // The store kind is bound to the state root on first open; swapping it later would hide
+    // the journaled tasks from the controller.
+    const bound = this.journal.ofType<{ kind: string }>('store.bound')[0];
+    if (!bound) this.journal.append('store.bound', { kind: this.store.kind });
+    else if (bound.data.kind !== this.store.kind) throw new ControllerError(`this state root uses the ${bound.data.kind} store, not ${this.store.kind}`);
     this.planIndex = journaledTasks(this.journal.records());
   }
 

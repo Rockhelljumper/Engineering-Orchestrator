@@ -5,7 +5,7 @@ import { EvidenceLedger } from './evidence.ts';
 import { BudgetLedger } from './budget.ts';
 import { loadPolicy, policyHash } from './policy.ts';
 import { readJournalKey, statePaths } from './stateRoot.ts';
-import { FakeStore } from './store/fake.ts';
+import { openStore } from './store/open.ts';
 import type { TaskStore } from './store/types.ts';
 import { expectedStates, journaledTasks, planMismatches, type EscalationRecord } from './controller.ts';
 
@@ -36,7 +36,7 @@ export function doctor(root: string, store?: TaskStore): DoctorReport {
     problems.push(`policy: ${(err as Error).message}`);
   }
 
-  const s = store ?? FakeStore.atDir(p.store);
+  const s = store ?? openStore(p);
   const expected = expectedStates(v.records);
   for (const [id, exp] of expected) {
     const t = s.get(id);

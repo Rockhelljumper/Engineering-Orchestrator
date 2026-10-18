@@ -6,7 +6,7 @@ import { Controller, ControllerError, type EscalationRecord } from '../../src/co
 import { FakeRunner, type FakeScript } from '../../src/runner/fake.ts';
 import { PolicyError, loadPolicy, policyHash } from '../../src/policy.ts';
 import { doctor } from '../../src/doctor.ts';
-import { readExecLog, samplePlan, sandbox, tmpDir, type Sandbox } from '../support/helpers.ts';
+import { readExecLog, samplePlan, sandbox, TEST_STORE, tmpDir, type Sandbox } from '../support/helpers.ts';
 import type { Plan } from '../../src/plan.ts';
 
 interface Run {
@@ -384,7 +384,7 @@ function editStore(sb: Sandbox, fn: (tasks: Record<string, Record<string, unknow
   fs.writeFileSync(storeFile(sb), JSON.stringify(s));
 }
 
-test('a task injected into the store behind the controller is refused, not run', async () => {
+test('a task injected into the store behind the controller is refused, not run', { skip: TEST_STORE === 'beads' && 'edits the FakeStore file; the beads equivalent is in tests/integration/beads.test.ts' }, async () => {
   const sb = sandbox();
   const c0 = Controller.open(sb.root);
   c0.importPlan(twoIndependent, sb.repo, 'h');
@@ -403,7 +403,7 @@ test('a task injected into the store behind the controller is refused, not run',
   assert.match(doctor(sb.root).problems.join(';'), /X is not in any journaled plan/);
 });
 
-test('a task whose epic or dependencies were edited in the store is refused', async () => {
+test('a task whose epic or dependencies were edited in the store is refused', { skip: TEST_STORE === 'beads' && 'edits the FakeStore file; the beads equivalent is in tests/integration/beads.test.ts' }, async () => {
   for (const edit of [(t: Record<string, Record<string, unknown>>) => ((t['A'] as Record<string, unknown>)['epicId'] = 'OTHER'), (t: Record<string, Record<string, unknown>>) => ((t['T5'] as Record<string, unknown>)['deps'] = [])]) {
     const sb = sandbox();
     const c0 = Controller.open(sb.root);

@@ -20,7 +20,11 @@ export interface StateRootPaths {
   escalations: string;
   locks: string;
   controllerLock: string;
+  /** Which TaskStore backs this state root (absent: FakeStore, for state roots made before beads). */
+  storeConfig: string;
 }
+
+export type StoreConfig = { kind: 'fake' } | { kind: 'beads'; bin: string };
 
 export function defaultStateRoot(project = 'default'): string {
   if (process.platform === 'win32') {
@@ -43,6 +47,7 @@ export function statePaths(root: string): StateRootPaths {
     escalations: path.join(r, 'escalations'),
     locks: path.join(r, 'locks'),
     controllerLock: path.join(r, 'locks', 'controller.lock'),
+    storeConfig: path.join(r, 'store.json'),
   };
 }
 
@@ -52,13 +57,22 @@ export function isInitialised(root: string): boolean {
 }
 
 /** Create the layout, a fresh 256-bit journal key and the default policy. Refuses to overwrite. */
-export function initStateRoot(root: string): StateRootPaths {
+export function initStateRoot(root: string, store: StoreConfig = { kind: 'fake' }): StateRootPaths {
   const p = statePaths(root);
   if (isInitialised(root)) throw new Error(`state root already initialised: ${p.root}`);
   for (const dir of [p.root, p.store, p.evidence, p.escalations, p.locks]) fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   writeFileAtomic(p.journalKey, randomBytes(32).toString('hex'), 0o600);
+  writeFileAtomic(p.storeConfig, JSON.stringify(store.kind === 'beads' ? { kind: 'beads', bin: path.resolve(store.bin) } : store, null, 2) + '\n');
   savePolicy(p.policy, defaultPolicy());
   return p;
+}
+
+export function readStoreConfig(p: StateRootPaths): StoreConfig {
+  if (!fs.existsSync(p.storeConfig)) return { kind: 'fake' };
+  const c = JSON.parse(fs.readFileSync(p.storeConfig, 'utf8')) as Partial<{ kind: string; bin: string }>;
+  if (c.kind === 'fake') return { kind: 'fake' };
+  if (c.kind === 'beads' && typeof c.bin === 'string' && c.bin !== '') return { kind: 'beads', bin: c.bin };
+  throw new Error(`${p.storeConfig} is malformed`);
 }
 
 export function readJournalKey(p: StateRootPaths): Buffer {

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Controller } from '../../src/controller.ts';
+import { statePaths } from '../../src/stateRoot.ts';
+import { openStore } from '../../src/store/open.ts';
 import { readExecLog, runCli, samplePlan, sandbox, tmpDir, writeJson } from '../support/helpers.ts';
 
 function imported(): ReturnType<typeof sandbox> {
@@ -115,10 +117,8 @@ test('M1-5: eo doctor detects an edited journal record and an altered evidence f
 
 test('eo doctor reports a store that drifted from the journal, and resume repairs it', () => {
   const sb = imported();
-  const storeFile = path.join(sb.root, 'store', 'tasks.json');
-  const s = JSON.parse(fs.readFileSync(storeFile, 'utf8')) as { tasks: Record<string, { state: string }> };
-  (s.tasks['T5'] as { state: string }).state = 'done'; // someone marks work done behind the controller
-  fs.writeFileSync(storeFile, JSON.stringify(s));
+  // Someone marks work done behind the controller, directly in the store.
+  assert.equal(openStore(statePaths(sb.root)).compareAndSetState('T5', 'planned', 'done'), true);
   const d = runCli(['doctor', '--state-root', sb.root]);
   assert.equal(d.status, 1);
   assert.match(d.stdout, /T5 is done, journal says planned/);

@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { initStateRoot } from '../../src/stateRoot.ts';
+import { initStateRoot, type StoreConfig } from '../../src/stateRoot.ts';
 import { Controller } from '../../src/controller.ts';
 import { loadPolicy, savePolicy, policyHash, type Policy } from '../../src/policy.ts';
 import type { Plan } from '../../src/plan.ts';
@@ -11,8 +11,27 @@ import type { Plan } from '../../src/plan.ts';
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const CLI = path.join(REPO_ROOT, 'src', 'cli.ts');
 
+/**
+ * The pinned `bd` binary for BeadsStore tests. Without EO_BD_BIN those tests are skipped
+ * (CI has no bd build); with EO_REQUIRE_BD=1 a missing binary fails the run instead, which
+ * is how the M1 evidence is produced.
+ */
+export const BD_BIN: string | undefined = process.env['EO_BD_BIN'] || undefined;
+if (!BD_BIN && process.env['EO_REQUIRE_BD'] === '1') throw new Error('EO_REQUIRE_BD=1 but EO_BD_BIN is not set');
+
 export function tmpDir(prefix = 'eo-test-'): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+}
+
+/** EO_TEST_STORE=beads runs the controller-level suites on BeadsStore instead of FakeStore. */
+export const TEST_STORE = process.env['EO_TEST_STORE'] === 'beads' ? 'beads' : 'fake';
+if (TEST_STORE === 'beads' && !BD_BIN) throw new Error('EO_TEST_STORE=beads needs EO_BD_BIN');
+
+/** Each bd invocation costs ~0.3 s (it opens the embedded Dolt database), so beads runs get longer timeouts. */
+export const TIMEOUT_SCALE = TEST_STORE === 'beads' ? 15 : 1;
+
+export function testStore(): StoreConfig {
+  return TEST_STORE === 'beads' ? { kind: 'beads', bin: BD_BIN as string } : { kind: 'fake' };
 }
 
 export interface Sandbox {
@@ -30,7 +49,7 @@ export function sandbox(policyPatch?: (p: Policy) => Policy): Sandbox {
   const root = path.join(dir, 'state');
   const repo = path.join(dir, 'repo');
   fs.mkdirSync(repo);
-  initStateRoot(root);
+  initStateRoot(root, testStore());
   if (policyPatch) {
     const file = path.join(root, 'policy.json');
     savePolicy(file, policyPatch(loadPolicy(file)));
@@ -68,7 +87,7 @@ export function withController<T>(root: string, fn: (c: Controller) => T): T {
 export function runCli(args: string[], env: Record<string, string | undefined> = {}, input?: string): SpawnSyncReturns<string> {
   const childEnv: Record<string, string> = {};
   for (const [k, v] of Object.entries({ ...process.env, ...env })) if (v !== undefined) childEnv[k] = v;
-  return spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8', env: childEnv, ...(input !== undefined ? { input } : {}), timeout: 60_000 });
+  return spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8', env: childEnv, ...(input !== undefined ? { input } : {}), timeout: 60_000 * TIMEOUT_SCALE });
 }
 
 export function writeJson(file: string, value: unknown): string {

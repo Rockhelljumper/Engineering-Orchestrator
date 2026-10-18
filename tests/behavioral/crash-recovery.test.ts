@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { Controller } from '../../src/controller.ts';
 import { verifyJournalFile } from '../../src/journal.ts';
 import { readJournalKey, statePaths } from '../../src/stateRoot.ts';
-import { CLI, readExecLog, runCli, samplePlan, sandbox, writeJson, type Sandbox } from '../support/helpers.ts';
+import { CLI, readExecLog, runCli, samplePlan, sandbox, TIMEOUT_SCALE, writeJson, type Sandbox } from '../support/helpers.ts';
 import type { Policy } from '../../src/policy.ts';
 import type { Plan } from '../../src/plan.ts';
 
@@ -123,7 +123,7 @@ function recover(s: Scenario, label: string, crashAt?: number): void {
   assert.equal(run.status, 0, `${label}: run: ${run.stderr}`);
 }
 
-test('M1-4: crash after every journal step boundary of a 5-task run, then resume', { timeout: 900_000 }, (t) => {
+test('M1-4: crash after every journal step boundary of a 5-task run, then resume', { timeout: 900_000 * TIMEOUT_SCALE }, (t) => {
   const base = setup();
   const before = journalCount(base);
   const r = runCli(runArgs(base));
@@ -150,10 +150,18 @@ test('M1-4: crash after every journal step boundary of a 5-task run, then resume
   t.diagnostic(`boundaries tested: ${N} (${results.join(', ')}); +j = second crash during recovery at append j`);
 });
 
+/**
+ * SIGKILL the controller and, on POSIX, its whole process group, so a store helper process
+ * (bd) dies mid-operation too, as in a power loss.
+ */
 function runAndKill(s: Scenario, afterMs: number): Promise<number | null> {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [CLI, ...runArgs(s)], { stdio: 'ignore' });
-    const t = setTimeout(() => child.kill('SIGKILL'), afterMs);
+    const group = process.platform !== 'win32';
+    const child = spawn(process.execPath, [CLI, ...runArgs(s)], { stdio: 'ignore', detached: group });
+    const t = setTimeout(() => {
+      if (group && child.pid !== undefined) process.kill(-child.pid, 'SIGKILL');
+      else child.kill('SIGKILL');
+    }, afterMs);
     child.on('exit', (code) => {
       clearTimeout(t);
       resolve(code);
@@ -161,7 +169,7 @@ function runAndKill(s: Scenario, afterMs: number): Promise<number | null> {
   });
 }
 
-test('M1-4: random SIGKILLs during attempts, then resume', { timeout: 600_000 }, async (t) => {
+test('M1-4: random SIGKILLs during attempts, then resume', { timeout: 600_000 * TIMEOUT_SCALE }, async (t) => {
   const base = setup(150);
   const t0 = Date.now();
   assert.equal(runCli(runArgs(base)).status, 0);
@@ -187,7 +195,7 @@ test('M1-4: random SIGKILLs during attempts, then resume', { timeout: 600_000 },
   assert.ok(killed >= 8, `only ${killed} kills landed; the test is not exercising recovery`);
 });
 
-test('M1-4: crash at every boundary of a run that ends in an escalation, then resume', { timeout: 900_000 }, (t) => {
+test('M1-4: crash at every boundary of a run that ends in an escalation, then resume', { timeout: 900_000 * TIMEOUT_SCALE }, (t) => {
   const base = setup(0, 'escalation');
   const before = journalCount(base);
   assert.equal(runCli(runArgs(base)).status, 0);

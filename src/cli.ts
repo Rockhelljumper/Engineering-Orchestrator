@@ -7,7 +7,7 @@ import { Controller } from './controller.ts';
 import { doctor } from './doctor.ts';
 import { defaultStateRoot, initStateRoot, statePaths } from './stateRoot.ts';
 import { FakeRunner } from './runner/fake.ts';
-import { FakeStore } from './store/fake.ts';
+import { openStore } from './store/open.ts';
 import { BudgetLedger, reservationAmount } from './budget.ts';
 import { verifyJournalFile } from './journal.ts';
 import { readJournalKey } from './stateRoot.ts';
@@ -18,7 +18,9 @@ const USAGE = `eo — Engineering Orchestrator controller (M1)
 
 Usage: eo <command> [options]   (global: --state-root <dir>, or EO_STATE_ROOT)
 
-  init                              create a state root (policy, journal key, store)
+  init [--store fake|beads] [--bd-bin <path>]
+                                    create a state root (policy, journal key, store); beads
+                                    needs the pinned bd build (--bd-bin, or EO_BD_BIN)
   policy show                       print the policy
   policy approve-repo <path>        approve a repository (interactive confirmation)
   policy accept                     accept a hand-edited policy.json (interactive confirmation)
@@ -43,6 +45,8 @@ async function main(argv: string[]): Promise<number> {
       'max-steps': { type: 'string' },
       attempt: { type: 'string' },
       note: { type: 'string' },
+      store: { type: 'string' },
+      'bd-bin': { type: 'string' },
       json: { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
     },
@@ -56,7 +60,11 @@ async function main(argv: string[]): Promise<number> {
 
   switch (cmd) {
     case 'init': {
-      const p = initStateRoot(root);
+      const kind = values.store ?? 'fake';
+      if (kind !== 'fake' && kind !== 'beads') throw new UsageError('--store must be fake or beads');
+      const bin = values['bd-bin'] ?? process.env['EO_BD_BIN'];
+      if (kind === 'beads' && !bin) throw new UsageError('--store beads needs --bd-bin <path> (or EO_BD_BIN)');
+      const p = initStateRoot(root, kind === 'beads' ? { kind, bin: bin as string } : { kind });
       const c = Controller.open(p.root);
       c.close();
       out(`initialised ${p.root}\nNext: a human approves a repository with "eo policy approve-repo <path>".`);
@@ -141,7 +149,7 @@ async function main(argv: string[]): Promise<number> {
     case 'evidence': {
       if (!sub) throw new UsageError('usage: eo evidence <task> [--attempt n]');
       const p = statePaths(root);
-      const store = FakeStore.atDir(p.store);
+      const store = openStore(p);
       const t = store.get(sub);
       if (!t) throw new UsageError(`unknown task ${sub}`);
       const attempt = values.attempt ? Number(values.attempt) : t.attempt;
@@ -165,7 +173,7 @@ function withController(root: string, fn: (c: Controller) => number): number {
 
 function status(root: string, json: boolean): number {
   const p = statePaths(root);
-  const store = FakeStore.atDir(p.store);
+  const store = openStore(p);
   const key = readJournalKey(p);
   const v = verifyJournalFile(p.journal, key);
   const policy = loadPolicy(p.policy);

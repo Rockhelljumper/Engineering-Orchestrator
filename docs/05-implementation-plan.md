@@ -99,8 +99,11 @@ Components: architect and planner roles with schemas, plan validator (schema, DA
 ### M5 — Parallel execution and integration
 Components: scheduler concurrency, file-set aware scheduling, integration queue, conflict resolver path.
 
+**Blocker carried from M1:** the stale-lock takeover in `src/util/lock.ts` has a known race. A contender paused for more than 10 s inside the takeover can delete a fresh lock another process has just taken, so two holders can briefly coexist. The controller lock relies on it to keep one controller per state root, and FakeStore relies on it for claims. Production concurrent execution must not start until M5-0 passes.
+
 | AC | Criterion | Measured by |
 |---|---|---|
+| M5-0 | The stale-lock race is fixed (for example, takeover by atomic rename of a per-attempt lock file, or an OS advisory lock) and verified: a test that pauses a contender inside the takeover for longer than the breaker timeout never yields two holders; the 20-process claim and controller-lock races still pass on Linux and Windows | integration test, reproduced as failing before the fix |
 | M5-1 | With `maxConcurrency=2`, never more than 2 workers alive (sampled process table) in a 6-task run | behavioural test |
 | M5-2 | Two tasks editing the same function (S7) both reach `done` or the conflict escalates; never a silent overwrite (both changes present in final tree or escalation exists) | behavioural test |
 | M5-3 | Integration verification runs after every merge; a merge that breaks an earlier task's tests is reverted and routed back | behavioural test |
