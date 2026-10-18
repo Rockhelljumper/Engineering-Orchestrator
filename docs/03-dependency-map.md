@@ -78,10 +78,10 @@ flowchart LR
   M1 --> SP[Sample project + scenarios, built alongside M1-M5]
   M6 --> M7[M7 End-to-end live demonstration]
   SP --> M7
-  M7 --> M8[M8 Isolated unattended worker: container then Proxmox]
+  M7 --> M8[M8 Isolated unattended worker: containers in a VM, then Proxmox]
 ```
 
-Approval points (work stops until the user says go): after M0 (before installing anything), before the first live Claude spend in each of M2, M4, M6 and M7, and before any M8 infrastructure is created. The live spend caps are in `05-implementation-plan.md` §3.
+Approval points (work stops until the user says go): after M0 (before installing anything), before the first live Claude spend in each of M2, M4, M6, M7 and M8, and before any M8 infrastructure is created. The live spend caps are in `05-implementation-plan.md` §3.
 
 ## 4. Requirement traceability
 
@@ -91,16 +91,16 @@ Approval points (work stops until the user says go): after M0 (before installing
 | 2 Durable state | beads + journal + evidence, resume | M1, M7 |
 | 3 Epic decomposition with dependencies | Planner + plan gate | M4 |
 | 4 Failed verification returns to implementation | Lifecycle attempts loop | M3, M7 |
-| 5 Reproducible evidence | Verifier + evidence ledger + replay + test-integrity controls (holdout, canaries, mutation) | M3 (M3-6, M3-10…M3-14), M7 |
+| 5 Reproducible evidence | Verifier + evidence ledger + replay + test-integrity controls (holdout, canaries, mutation) | M3 (M3-6, M3-10…M3-15), M7 |
 | 6 Independent review, protected gates | Reviewer independence, protected paths, diff checks | M2, M3 |
 | 7 Controlled parallelism, isolated workspaces | Scheduler, per-attempt clones, isolation tiers (`07`), integration queue | M2, M5 |
-| 8 Bounded retries, budgets, escalation | Attempt/infra/integration/invalid-output limits, budget governor (USD and tokens), escalation manager | M1, M3 (M3-3, M3-7, M3-8) |
+| 8 Bounded retries, budgets, escalation | Attempt/infra/integration/invalid-output limits, budget governor (USD and tokens), escalation manager | M2 (M2-6), M3 (M3-3, M3-7, M3-8) |
 | 9 Chat workflow | Plugin commands | M6 |
 | 10 Unattended Proxmox | Tiers L2/PX, staging repository, unattended escalation channel | M8 |
 | S-1 Inspect downloaded install scripts before running | Build from pinned reviewed source; `--ignore-scripts`; `GOTOOLCHAIN=local` | M1-7, M1-9 |
 | S-2 Repo instructions, tool output, docs untrusted | Data blocks, tool profiles, protected `.claude/`/`CLAUDE.md`, settings isolation | M2-2, M2-5, M7-7 |
 | S-3 No privileged host access or production secrets | Isolation tiers, env scrub, dedicated worker API key, no secrets in workspaces | M2-4, M2-9, M2-10 |
-| S-4 Don't weaken tests, CI, security policy | Protected paths, controller-owned test command, inventory checks, policy outside repo | M3-4, M3-9 |
+| S-4 Don't weaken tests, CI, security policy | Protected paths, controller-owned test command, inventory checks, policy outside repo | M3-4, M3-9, M3-13 |
 | S-5 No changes to production or existing repos without approval | `approvedRepositories` policy, `eo/*`-only pushes | M1-10, M5-4 |
 | S-6 No autonomous merges or deployment | No merge-to-default-branch or deploy code path; unattended pushes only to a staging repo with tested rulesets | M5-4, M8-5, M8-6 |
 | D-1 Disposable sample project with planted conditions | `fixtures/tinyledger`, scenarios S1–S10 | M1–M5 behavioural suites, M7 |

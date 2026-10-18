@@ -2,7 +2,7 @@
 
 A secure, multi-agent software-development orchestrator for Claude Code: it takes an engineering epic through architecture, planning, implementation, independent testing, security review, correction and final verification, with durable state and evidence-based quality gates.
 
-**Status: M0 — architecture and planning, revision 2, awaiting review.** Nothing has been installed or built, and no installation, live model spend, merge, production access or Proxmox change is authorised until M0 is approved.
+**Status: M0 — architecture and planning, revision 2, architecturally approved by the owner on 2026-10-18.** M0 itself installs and builds nothing. Each later step that installs software, spends on live models, merges, touches production or changes Proxmox still needs its own approval (`05` §1).
 
 ## Documents
 
@@ -18,7 +18,7 @@ A secure, multi-agent software-development orchestrator for Claude Code: it take
 | [07 Isolation, credentials and spend limits](docs/07-isolation-and-credentials.md) | Windows user vs WSL2 vs containers vs VMs, GitHub ref restrictions, what budget flags guarantee |
 | [M0 report](docs/milestones/M0-report.md) | Acceptance results for this milestone and the independent review findings |
 
-## Decisions needing approval
+## Decisions approved with M0 revision 2
 
 1. **ADR-001:** don't install Oh My ClaudeCode; adapt its agent prompts and guardrail ideas into our own plugin.
 2. **ADR-002:** use beads (built from a pinned, reviewed commit, metrics disabled, controller-only writer) as the task store, with Backlog.md as fallback.
