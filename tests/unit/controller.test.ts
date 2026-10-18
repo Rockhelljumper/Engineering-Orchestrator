@@ -200,13 +200,17 @@ test('infra failures are retried separately and then block', async () => {
 
 test('a hanging worker is aborted at the timeout and retried as an infra failure', async () => {
   const sb = sandbox((p) => ({ ...p, timeouts: { invocationMs: 150 } }));
-  const started = Date.now();
   const { c, summary } = await runPlan(twoIndependent, { default: { behaviour: 'pass' }, tasks: { A: [{ behaviour: 'hang' }] } }, sb);
   try {
-    assert.ok(Date.now() - started < 5_000, 'the hang was bounded by the timeout');
     assert.equal(summary.states['A'], 'done');
     assert.equal(c.store.get('A')?.infraFailures, 1);
     const end = c.journal.ofType<{ taskId: string; attempt: number; result: { kind: string; reason: string } }>('attempt.end').find((r) => r.data.taskId === 'A' && r.data.attempt === 1);
+    // Bounded per attempt, from its journaled start to its end, so the store's own latency
+    // (bd takes ~0.3 s per call) does not count.
+    const start = c.journal
+      .ofType<{ taskId: string; to: string; attempt?: number }>('task.transition')
+      .find((r) => r.data.taskId === 'A' && r.data.to === 'implementing' && r.data.attempt === 1);
+    assert.ok(start && end && Date.parse(end.ts) - Date.parse(start.ts) < 5_000, 'the hang was bounded by the timeout');
     assert.match(end?.data.result.reason ?? '', /timeout after 150ms/);
     // A hang reports no cost, so the full reservation is charged.
     const settle = c.journal.ofType<{ id: string; basis: string }>('budget.settle').find((r) => r.data.id.startsWith('A#1@'));
