@@ -4,10 +4,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Controller, ControllerError, type EscalationRecord } from '../../src/controller.ts';
 import { FakeRunner, type FakeScript } from '../../src/runner/fake.ts';
-import { PolicyError, loadPolicy, policyHash } from '../../src/policy.ts';
+import { PolicyError, canonicalRepoPath, loadPolicy, policyHash } from '../../src/policy.ts';
 import { doctor } from '../../src/doctor.ts';
 import { readExecLog, samplePlan, sandbox, TEST_STORE, tmpDir, type Sandbox } from '../support/helpers.ts';
-import type { Plan } from '../../src/plan.ts';
+import { planHash, type Plan } from '../../src/plan.ts';
 
 interface Run {
   sb: Sandbox;
@@ -364,6 +364,48 @@ test('importing the same task twice is refused', () => {
   } finally {
     c.close();
   }
+});
+
+test('a task id from a journaled plan cannot be imported again, even if a crash kept it out of the store', () => {
+  const sb = sandbox();
+  // A crash right after the plan.import record, before its tasks were created.
+  const planA: Plan = { epicId: 'EA', title: 'a', tasks: [{ id: 'X', title: 'x', deps: [] }] };
+  const c1 = Controller.open(sb.root);
+  c1.journal.append('plan.import', { epicId: 'EA', planHash: planHash(planA), approvedBy: 'h', repoPath: canonicalRepoPath(sb.repo), plan: planA });
+  c1.close();
+  const c = Controller.open(sb.root);
+  try {
+    assert.equal(c.store.get('X') ?? null, null);
+    const planB: Plan = { epicId: 'EB', title: 'b', tasks: [{ id: 'X', title: 'x', deps: [] }] };
+    assert.throws(() => c.importPlan(planB, sb.repo, 'h'), /task X already exists/);
+    // The state root still resumes: X is created for plan A.
+    c.resume();
+    assert.equal(c.store.get('X')?.epicId, 'EA');
+  } finally {
+    c.close();
+  }
+});
+
+test('a truncated journal never rewinds finished work or runs it again', async () => {
+  const { sb, c, log } = await runPlan(twoIndependent, { default: { behaviour: 'pass' } });
+  c.close();
+  assert.equal(readExecLog(log).length, 2);
+  // Cut the journal back to before the first transition (a restore from an old copy, or
+  // anyone who can write the file: truncation needs no key).
+  const jf = path.join(sb.root, 'journal.jsonl');
+  const lines = fs.readFileSync(jf, 'utf8').split('\n');
+  const first = lines.findIndex((l) => l.includes('"type":"task.transition"'));
+  fs.writeFileSync(jf, lines.slice(0, first).join('\n') + '\n');
+  const c2 = Controller.open(sb.root);
+  try {
+    await assert.rejects(c2.run(new FakeRunner({ default: { behaviour: 'pass' }, execLog: log }), { repoPath: sb.repo }), /task store is ahead of or diverged from the journal/);
+    assert.throws(() => c2.resume(), ControllerError);
+    assert.equal(readExecLog(log).length, 2, 'nothing ran again');
+    for (const id of ['A', 'B']) assert.equal(c2.store.get(id)?.state, 'done', `${id} was not rewound`);
+  } finally {
+    c2.close();
+  }
+  assert.ok(doctor(sb.root).problems.some((p) => /A is done, journal says planned \(ahead of or off the journal/.test(p)));
 });
 
 test('the run summary reports tasks stalled behind a blocked dependency', async () => {

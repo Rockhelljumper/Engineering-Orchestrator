@@ -190,8 +190,19 @@ export function assertRepositoryApproved(p: Policy, repoPath: string): void {
 }
 
 /** Pure helper used by the interactive CLI command; returns a new policy. */
-export function withApprovedRepository(p: Policy, repoPath: string, approvedBy: string, now = new Date()): Policy {
+export function withApprovedRepository(p: Policy, repoPath: string, approvedBy: string, now = new Date(), stateRoot?: string): Policy {
   const resolved = fs.realpathSync.native(path.resolve(repoPath));
+  if (stateRoot !== undefined) {
+    // The state root must stay outside every workspace (architecture principle 4).
+    const root = fs.realpathSync.native(path.resolve(stateRoot));
+    const within = (inner: string, outer: string): boolean => {
+      const rel = path.relative(outer, inner);
+      return rel === '' || (rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel));
+    };
+    if (within(root, resolved) || within(resolved, root)) {
+      throw new PolicyError(`refusing to approve ${resolved}: it contains or lies inside the state root ${root}`);
+    }
+  }
   if (isRepositoryApproved(p, resolved)) return p;
   return { ...p, approvedRepositories: [...p.approvedRepositories, { path: resolved, approvedBy, approvedAt: now.toISOString() }] };
 }

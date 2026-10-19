@@ -18,7 +18,8 @@ export interface Plan {
   tasks: PlanTask[];
 }
 
-const idPattern = '^[A-Za-z0-9._-]{1,100}$';
+// Starts with a letter or digit: task ids name evidence directories, so '.' and '..' must never pass.
+const idPattern = '^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$';
 
 export const planSchema: Schema = {
   type: 'object',

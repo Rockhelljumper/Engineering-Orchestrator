@@ -5,8 +5,9 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import type { TaskState } from '../states.ts';
 import { StoreError, titleProblem, type Claim, type NewTask, type TaskCounters, type TaskNote, type TaskRecord, type TaskStore } from './types.ts';
+import { assertPrivateDir } from '../util/fsx.ts';
 
-const ID = /^[A-Za-z0-9._-]{1,100}$/;
+const ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
 const PREFIX = 'eo';
 /** `bd update --if-revision` exits with this code when the guard did not hold and nothing was written. */
 const EXIT_PRECONDITION = 13;
@@ -68,15 +69,23 @@ export function verifyBdBinary(bin: string, want = pinnedBdSha256()): void {
   if (got !== want) throw new StoreError(`bd binary ${bin} has SHA-256 ${got}, expected the pinned ${want}`);
 }
 
-/** Identity of a file for detecting replacement between spawns. */
-function fileId(file: string): string {
-  const st = fs.statSync(file, { bigint: true });
+/**
+ * Identity of a file for detecting replacement between spawns, or undefined when it is not a
+ * private regular file: a symlink, a file with other hard links (whose inode another path can
+ * reach), or on POSIX a file owned by another user.
+ */
+function fileId(file: string): string | undefined {
+  const st = fs.lstatSync(file, { bigint: true, throwIfNoEntry: false });
+  if (!st || !st.isFile() || st.nlink !== 1n) return undefined;
+  const euid = process.geteuid?.();
+  if (process.platform !== 'win32' && euid !== undefined && st.uid !== BigInt(euid)) return undefined;
   return `${st.dev}:${st.ino}:${st.size}:${st.mtimeNs}:${st.ctimeNs}`;
 }
 
-/** The file's identity if its bytes hash to `want` and it did not change while hashing. */
+/** The file's identity if it is private, its bytes hash to `want` and it did not change while hashing. */
 function verifiedId(file: string, want: string): string | undefined {
   const before = fileId(file);
+  if (before === undefined) return undefined;
   if (sha256(fs.readFileSync(file)) !== want) return undefined;
   return fileId(file) === before ? before : undefined;
 }
@@ -153,7 +162,15 @@ export class BeadsStore implements TaskStore {
     // so a write that lands while the file is being hashed is never recorded as verified.
     const binDir = path.join(dir, 'bin');
     fs.mkdirSync(binDir, { recursive: true, mode: 0o700 });
+    try {
+      assertPrivateDir(dir);
+      assertPrivateDir(binDir);
+    } catch (err) {
+      throw new StoreError(`unsafe beads store: ${(err as Error).message}`);
+    }
     this.bin = path.join(binDir, process.platform === 'win32' ? 'bd.exe' : 'bd');
+    // An existing entry is trusted only if it is still a private regular file with the pinned
+    // bytes; anything else (a symlink, a hard link from an older version, other bytes) is replaced.
     let id = fs.existsSync(this.bin) ? verifiedId(this.bin, want) : undefined;
     if (id === undefined) {
       const src = path.resolve(opts.bin);
@@ -165,8 +182,8 @@ export class BeadsStore implements TaskStore {
         fs.chmodSync(tmp, 0o500);
         const got = sha256(fs.readFileSync(tmp));
         if (got !== want) throw new StoreError(`bd binary ${src} has SHA-256 ${got}, expected the pinned ${want}`);
-        // On Windows a read-only file cannot be replaced by rename.
-        if (fs.existsSync(this.bin)) fs.chmodSync(this.bin, 0o700);
+        // On Windows a read-only file cannot be replaced by rename. lstat: never chmod a symlink's target.
+        if (fs.lstatSync(this.bin, { throwIfNoEntry: false })?.isFile()) fs.chmodSync(this.bin, 0o700);
         fs.renameSync(tmp, this.bin);
       } catch (err) {
         if (err instanceof StoreError) throw err;

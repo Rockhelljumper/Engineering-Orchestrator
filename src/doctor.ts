@@ -7,7 +7,7 @@ import { loadPolicy, policyHash } from './policy.ts';
 import { readJournalKey, statePaths } from './stateRoot.ts';
 import { openStore } from './store/open.ts';
 import type { TaskRecord, TaskStore } from './store/types.ts';
-import { expectedStates, journaledTasks, planMismatches, type EscalationRecord } from './controller.ts';
+import { expectedStates, storeDrift, journaledTasks, planMismatches, type EscalationRecord } from './controller.ts';
 
 export interface DoctorReport {
   ok: boolean;
@@ -50,7 +50,8 @@ export function doctor(root: string, store?: TaskStore): DoctorReport {
     for (const [id, exp] of expectedStates(v.records)) {
       const t = byId.get(id);
       if (!t) problems.push(`store: task ${id} missing (journal has it)`);
-      else if (t.state !== exp.state) problems.push(`store: ${id} is ${t.state}, journal says ${exp.state} (resume will repair)`);
+      else if (storeDrift(t, exp) === 'behind') problems.push(`store: ${id} is ${t.state}, journal says ${exp.state} (one step behind after a crash; resume will finish it)`);
+      else if (storeDrift(t, exp) === 'diverged') problems.push(`store: ${id} is ${t.state}, journal says ${exp.state} (ahead of or off the journal; resume refuses, a human must investigate)`);
     }
     for (const m of planMismatches(tasks, journaledTasks(v.records))) problems.push(`store: ${m}`);
   } catch (err) {

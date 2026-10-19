@@ -72,6 +72,9 @@ test('evidence paths cannot escape the ledger', () => {
   assert.throws(() => ev.writeArtifact('T1', 1, '../a', ''), /unsafe artifact name/);
   assert.throws(() => ev.writeArtifact('T1', 1, 'manifest.json', ''), /unsafe artifact name/);
   assert.throws(() => ev.writeArtifact('T1', 0, 'a', ''), /bad attempt/);
+  // '.' and '..' contain no separator but still name the ledger or its parent.
+  for (const id of ['.', '..', '.x']) assert.throws(() => ev.writeArtifact(id, 1, 'a', ''), /unsafe task id/, id);
+  for (const name of ['.', '..']) assert.throws(() => ev.writeArtifact('T1', 1, name, ''), /unsafe artifact name/, name);
 });
 
 // ------------------------------------------------------------------ policy
@@ -145,6 +148,9 @@ test('invalid plans are refused', () => {
     ],
     [{ ...base, tasks: [] }, /must have >= 1 items/],
     [{ ...base, epicId: '../x' }, /must match/],
+    [{ ...base, tasks: [{ id: '..', title: 'a', deps: [] }] }, /must match/],
+    [{ ...base, tasks: [{ id: '.', title: 'a', deps: [] }] }, /must match/],
+    [{ ...base, epicId: '..' }, /must match/],
     [{ ...base, tasks: [{ id: 'A', title: 'a', deps: [], run: 'rm -rf /' }] }, /unexpected property "run"/],
     [{ ...base, tasks: [{ id: 'A', title: '  ', deps: [] }] }, /task A: title is empty/],
     [{ ...base, tasks: [{ id: 'A', title: 'x'.repeat(501), deps: [] }] }, /task A: title is longer than 500 bytes/],
@@ -167,6 +173,18 @@ test('a corrupt or malformed manifest is reported, not thrown', () => {
   assert.deepEqual(ev.verify('T1', 1), ['manifest unreadable']);
   fs.writeFileSync(mf, JSON.stringify({ taskId: 'T1', attempt: 1, entries: 'x', mac: 'ab' }));
   assert.deepEqual(ev.verify('T1', 1), ['manifest malformed']);
+});
+
+test('a repository that contains the state root, or lies inside it, cannot be approved', () => {
+  const dir = tmpDir();
+  const root = path.join(dir, 'state');
+  fs.mkdirSync(path.join(root, 'inner'), { recursive: true });
+  const other = path.join(dir, 'other');
+  fs.mkdirSync(other);
+  assert.throws(() => withApprovedRepository(defaultPolicy(), dir, 'h', new Date(), root), /contains or lies inside the state root/);
+  assert.throws(() => withApprovedRepository(defaultPolicy(), root, 'h', new Date(), root), /contains or lies inside the state root/);
+  assert.throws(() => withApprovedRepository(defaultPolicy(), path.join(root, 'inner'), 'h', new Date(), root), /contains or lies inside the state root/);
+  assert.equal(withApprovedRepository(defaultPolicy(), other, 'h', new Date(), root).approvedRepositories.length, 1);
 });
 
 test('M1-10: replacing an approved directory with a symlink does not move the approval', () => {

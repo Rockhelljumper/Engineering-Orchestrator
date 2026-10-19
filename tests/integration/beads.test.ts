@@ -9,7 +9,7 @@ import { FakeRunner } from '../../src/runner/fake.ts';
 import { BeadsStore, bdEnv, pinnedBdSha256 } from '../../src/store/beads.ts';
 import { initStateRoot, statePaths } from '../../src/stateRoot.ts';
 import { doctor } from '../../src/doctor.ts';
-import { BD_BIN, CLI, readExecLog, samplePlan, tmpDir, writeJson } from '../support/helpers.ts';
+import { BD_BIN, CLI, readExecLog, requireTrace, samplePlan, tmpDir, writeJson } from '../support/helpers.ts';
 
 /**
  * BeadsStore against the real, pinned `bd` binary (M1-2, M1-6, M1-7). Skipped without
@@ -19,6 +19,7 @@ const skip = !BD_BIN && 'needs the pinned bd build (EO_BD_BIN)';
 const bin = BD_BIN as string;
 const LINUX_TRACE =
   process.platform === 'linux' && spawnSync('strace', ['-V'], { stdio: 'ignore' }).status === 0 && spawnSync('unshare', ['-n', 'true'], { stdio: 'ignore' }).status === 0;
+requireTrace(LINUX_TRACE);
 const EVIDENCE = process.env['EO_EVIDENCE_DIR'];
 
 /** A beads-backed state root with one approved repository. */
@@ -249,7 +250,7 @@ test('a bd init killed part-way is redone on the next open, and read-only opens 
   assert.equal(BeadsStore.atDir(dir, { bin, create: false }).get('A')?.state, 'planned');
 });
 
-test('the executed bd is a verified private entry: swapping the source path or modifying the binary cannot run other code', { skip: skip || (process.platform === 'win32' && 'POSIX permissions') }, () => {
+test('the executed bd is a verified private entry: a swapped source path is never run, and a modified entry is refused at the next spawn', { skip: skip || (process.platform === 'win32' && 'POSIX permissions') }, () => {
   const dir = tmpDir();
   const src = path.join(dir, 'bd-src');
   fs.copyFileSync(bin, src);
@@ -304,6 +305,38 @@ test('a store entry that is stale or tampered with is replaced on the next open,
   assert.equal(s.get('A')?.state, 'planned');
   assert.equal(createHash('sha256').update(fs.readFileSync(entry)).digest('hex'), pinnedBdSha256());
   assert.deepEqual(fs.readdirSync(binDir).filter((f) => f.endsWith('.tmp')), [], 'no temporary copy left behind');
+});
+
+test('a store entry that is a symlink or a hard link is replaced by a private copy on the next open', { skip: skip || (process.platform === 'win32' && 'symlinks need privileges on Windows') }, () => {
+  const dir = path.join(tmpDir(), 'store');
+  BeadsStore.atDir(dir, { bin, create: true }).createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
+  const entry = path.join(dir, 'bin', 'bd');
+  // Both point at a file with the pinned bytes, so only the link check can catch them.
+  const outside = path.join(tmpDir(), 'bd');
+  fs.copyFileSync(bin, outside);
+  for (const link of ['symlink', 'hardlink'] as const) {
+    fs.chmodSync(entry, 0o700);
+    fs.rmSync(entry);
+    if (link === 'symlink') fs.symlinkSync(outside, entry);
+    else fs.linkSync(outside, entry);
+    const s = BeadsStore.atDir(dir, { bin, create: false });
+    const st = fs.lstatSync(entry);
+    assert.ok(st.isFile(), `${link}: entry is a regular file again`);
+    assert.equal(st.nlink, 1, `${link}: entry has no other links`);
+    assert.notEqual(st.ino, fs.statSync(outside).ino, `${link}: entry no longer shares the outside file`);
+    assert.equal(s.get('A')?.state, 'planned');
+  }
+});
+
+test('a beads store whose directories others can write is refused', { skip: skip || (process.platform === 'win32' && 'POSIX permissions') }, () => {
+  const dir = path.join(tmpDir(), 'store');
+  BeadsStore.atDir(dir, { bin, create: true });
+  for (const d of [dir, path.join(dir, 'bin')]) {
+    fs.chmodSync(d, 0o777);
+    assert.throws(() => BeadsStore.atDir(dir, { bin, create: false }), /unsafe beads store: .* writable by group or others/);
+    fs.chmodSync(d, 0o700);
+  }
+  BeadsStore.atDir(dir, { bin, create: false });
 });
 
 test('a state root bound to the fake store is refused before any beads files are written', { skip }, () => {

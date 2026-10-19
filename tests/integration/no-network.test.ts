@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { Controller } from '../../src/controller.ts';
-import { CLI, REPO_ROOT, samplePlan, sandbox, TIMEOUT_SCALE, writeJson } from '../support/helpers.ts';
+import { CLI, REPO_ROOT, requireTrace, samplePlan, sandbox, TIMEOUT_SCALE, writeJson } from '../support/helpers.ts';
 
 /**
  * M1-6: no outbound network connection from the controller during the M1-4 scenario
@@ -24,6 +24,7 @@ function has(cmd: string, args: string[]): boolean {
   return spawnSync(cmd, args, { stdio: 'ignore' }).status === 0;
 }
 const STRACE = has('strace', ['-V']) && has('unshare', ['-n', 'true']);
+requireTrace(STRACE);
 
 function scenario(): { root: string; repo: string; script: string } {
   const sb = sandbox();

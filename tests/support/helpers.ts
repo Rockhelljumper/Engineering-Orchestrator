@@ -19,6 +19,14 @@ export const CLI = path.join(REPO_ROOT, 'src', 'cli.ts');
 export const BD_BIN: string | undefined = process.env['EO_BD_BIN'] || undefined;
 if (!BD_BIN && process.env['EO_REQUIRE_BD'] === '1') throw new Error('EO_REQUIRE_BD=1 but EO_BD_BIN is not set');
 
+/**
+ * EO_REQUIRE_TRACE=1 makes the strace-based network checks (M1-6) fail instead of skipping
+ * when strace or `unshare -n` is unavailable, so an evidence run cannot pass without them.
+ */
+export function requireTrace(available: boolean): void {
+  if (!available && process.env['EO_REQUIRE_TRACE'] === '1') throw new Error('EO_REQUIRE_TRACE=1 but strace or unshare -n is not available');
+}
+
 const made: string[] = [];
 // Beads stores are large; remove this process's temporary directories when it exits
 // (EO_KEEP_TMP=1 keeps them for debugging).

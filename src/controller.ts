@@ -138,7 +138,7 @@ export class Controller {
 
   /** Approve a repository. The CLI only calls this after an interactive human confirmation. */
   approveRepository(repoPath: string, approvedBy: string): Policy {
-    const next = withApprovedRepository(this.policy, repoPath, approvedBy);
+    const next = withApprovedRepository(this.policy, repoPath, approvedBy, new Date(), this.paths.root);
     const reason = `approve-repo ${path.resolve(repoPath)} by ${approvedBy}`;
     // Write-ahead: intent, file, commit. A crash in between is completed or ignored on open.
     this.journal.append('policy.pending', { hash: policyHash(next), reason });
@@ -164,8 +164,10 @@ export class Controller {
   importPlan(planValue: unknown, repoPath: string, approvedBy: string): Plan {
     assertRepositoryApproved(this.policy, repoPath);
     const plan = validatePlan(planValue);
+    // Ids from any journaled plan count as taken, even if a crash kept their tasks out of the store.
+    const journaled = journaledTasks(this.journal.records());
     for (const t of plan.tasks) {
-      if (this.store.get(t.id)) throw new ControllerError(`task ${t.id} already exists`);
+      if (this.store.get(t.id) || journaled.has(t.id)) throw new ControllerError(`task ${t.id} already exists`);
     }
     this.journal.append('plan.import', { epicId: plan.epicId, planHash: planHash(plan), approvedBy, repoPath: canonicalRepoPath(repoPath), plan });
     this.planIndex = journaledTasks(this.journal.records());
@@ -267,10 +269,22 @@ export class Controller {
       }
     }
     const expected = expectedStates(records);
+    const diverged: string[] = [];
     for (const [taskId, exp] of expected) {
       const t = this.mustGet(taskId);
-      if (t.state !== exp.state || !countersMatch(t, exp.counters)) {
-        this.store.compareAndSetState(taskId, t.state, exp.state, exp.counters);
+      if (storeDrift(t, exp) === 'diverged') diverged.push(`${taskId} is ${t.state}, journal says ${exp.state}`);
+    }
+    if (diverged.length > 0) {
+      throw new ControllerError(
+        `task store is ahead of or diverged from the journal (${diverged.join('; ')}); this needs a human: the store was changed behind the controller or the journal was truncated or restored. Investigate with "eo doctor"`,
+      );
+    }
+    for (const [taskId, exp] of expected) {
+      const t = this.mustGet(taskId);
+      if (storeDrift(t, exp) === 'behind') {
+        if (!this.store.compareAndSetState(taskId, t.state, exp.state, exp.counters)) {
+          throw new ControllerError(`store changed under the controller for ${taskId} during resume`);
+        }
         report.transitionsReplayed.push(`${taskId}:${t.state}->${exp.state}`);
       }
     }
@@ -395,7 +409,22 @@ export class Controller {
     this.transition({ taskId: t.id, from: 'ready', to: 'implementing', reason: `attempt ${attempt}`, attempt, reservationId });
 
     const controller = new AbortController();
-    const heartbeat = setInterval(() => this.store.heartbeat(t.id, this.owner, this.policy.leaseMs, Date.now()), Math.max(50, Math.floor(this.policy.leaseMs / 3)));
+    // A lease that cannot be renewed (lost, or the store failing) ends the attempt as an infra
+    // failure instead of letting it run unowned or crashing the controller from a timer.
+    let leaseLost: (r: RunResult) => void = () => {};
+    const lost = new Promise<RunResult>((resolve) => (leaseLost = resolve));
+    const heartbeat = setInterval(() => {
+      let reason: string | undefined;
+      try {
+        if (!this.store.heartbeat(t.id, this.owner, this.policy.leaseMs, Date.now())) reason = 'lease lost';
+      } catch (err) {
+        reason = `lease renewal failed: ${(err as Error).message}`;
+      }
+      if (reason !== undefined) {
+        controller.abort();
+        leaseLost({ kind: 'infra', reason, cost: null });
+      }
+    }, Math.max(50, Math.floor(this.policy.leaseMs / 3)));
     let timer: NodeJS.Timeout | undefined;
     let result: RunResult;
     try {
@@ -410,6 +439,7 @@ export class Controller {
           (err: unknown): RunResult => ({ kind: 'infra', reason: `runner error: ${(err as Error).message}`, cost: null }),
         ),
         timeout,
+        lost,
       ]);
     } finally {
       clearInterval(heartbeat);
@@ -643,8 +673,19 @@ function attemptKey(e: { taskId: string; attempt: number }): string {
 const COUNTER_KEYS = ['attempt', 'correctionFailures', 'infraFailures', 'lastFailureSignature', 'repeatCount'] as const;
 
 /** Fold transitions into the state and counters the store should hold for each task. */
-export function expectedStates(records: readonly JournalRecord[]): Map<string, { state: TaskState; counters: Partial<TaskCounters> }> {
-  const out = new Map<string, { state: TaskState; counters: Partial<TaskCounters> }>();
+export interface ExpectedState {
+  state: TaskState;
+  counters: Partial<TaskCounters>;
+  /**
+   * The state and counters before the task's last journaled transition. The journal is
+   * written ahead of the store, so a crash can leave the store here, one step behind, but
+   * never anywhere else.
+   */
+  prev?: { state: TaskState; counters: Partial<TaskCounters> };
+}
+
+export function expectedStates(records: readonly JournalRecord[]): Map<string, ExpectedState> {
+  const out = new Map<string, ExpectedState>();
   for (const r of records) {
     if (r.type === 'plan.import') {
       for (const t of (r.data as { plan: Plan }).plan.tasks) {
@@ -652,13 +693,27 @@ export function expectedStates(records: readonly JournalRecord[]): Map<string, {
       }
     } else if (r.type === 'task.transition') {
       const tr = r.data as TransitionRecord;
-      const cur = out.get(tr.taskId) ?? { state: 'planned' as TaskState, counters: {} };
+      const cur: ExpectedState = out.get(tr.taskId) ?? { state: 'planned', counters: {} };
+      cur.prev = { state: cur.state, counters: { ...cur.counters } };
       cur.state = tr.to;
       Object.assign(cur.counters, tr.counters ?? {}, tr.attempt !== undefined ? { attempt: tr.attempt } : {});
       out.set(tr.taskId, cur);
     }
   }
   return out;
+}
+
+/**
+ * Whether a store task is where the journal allows it to be: at the journaled state, or one
+ * transition behind it (a crash between the journal append and the store update). Anything
+ * else, a store ahead of the journal or off its path, means the store was changed behind the
+ * controller or the journal was truncated or restored from an older copy; replaying the
+ * journal onto it would rewind finished work and lose spend, so nobody may "repair" it.
+ */
+export function storeDrift(t: TaskRecord, exp: ExpectedState): 'none' | 'behind' | 'diverged' {
+  if (t.state === exp.state && countersMatch(t, exp.counters)) return 'none';
+  if (exp.prev && t.state === exp.prev.state && countersMatch(t, exp.prev.counters)) return 'behind';
+  return 'diverged';
 }
 
 function countersMatch(t: TaskRecord, c: Partial<TaskCounters>): boolean {

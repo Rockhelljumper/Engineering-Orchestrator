@@ -10,7 +10,7 @@ interface StoreFile {
   tasks: Record<string, TaskRecord>;
 }
 
-const ID = /^[A-Za-z0-9._-]{1,100}$/;
+const ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
 
 /**
  * Reference TaskStore. In memory for unit tests, or file-backed (one JSON file written

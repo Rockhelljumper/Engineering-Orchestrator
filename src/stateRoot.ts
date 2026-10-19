@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { writeFileAtomic } from './util/fsx.ts';
+import { assertPrivateDir, writeFileAtomic } from './util/fsx.ts';
 import { defaultPolicy, savePolicy } from './policy.ts';
 
 /**
@@ -56,15 +56,30 @@ export function isInitialised(root: string): boolean {
   return fs.existsSync(p.policy) && fs.existsSync(p.journalKey);
 }
 
-/** Create the layout, a fresh 256-bit journal key and the default policy. Refuses to overwrite. */
+/**
+ * Create the layout, a fresh 256-bit journal key and the default policy. Refuses a root that
+ * holds any part of an earlier state root (a key, a journal, a store or its config), even if
+ * policy.json is gone: a new key would make the existing journal and evidence unverifiable.
+ */
 export function initStateRoot(root: string, store: StoreConfig = { kind: 'fake' }): StateRootPaths {
   const p = statePaths(root);
   if (isInitialised(root)) throw new Error(`state root already initialised: ${p.root}`);
+  const leftovers = [p.journalKey, p.journal, p.storeConfig].filter((f) => fs.existsSync(f));
+  if (fs.existsSync(p.store) && fs.readdirSync(p.store).length > 0) leftovers.push(p.store);
+  if (leftovers.length > 0) throw new Error(`state root ${p.root} holds an earlier state root (${leftovers.join(', ')}); refusing to initialise over it`);
   for (const dir of [p.root, p.store, p.evidence, p.escalations, p.locks]) fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  assertPrivateDir(p.root);
+  assertPrivateDir(p.store);
   writeFileAtomic(p.journalKey, randomBytes(32).toString('hex'), 0o600);
   writeFileAtomic(p.storeConfig, JSON.stringify(store.kind === 'beads' ? { kind: 'beads', bin: path.resolve(store.bin) } : store, null, 2) + '\n');
   savePolicy(p.policy, defaultPolicy());
   return p;
+}
+
+/** Refuse a state root, or its store directory, that others could change (see assertPrivateDir). */
+export function assertPrivateStateRoot(p: StateRootPaths): void {
+  assertPrivateDir(p.root);
+  if (fs.existsSync(p.store)) assertPrivateDir(p.store);
 }
 
 export function readStoreConfig(p: StateRootPaths): StoreConfig {

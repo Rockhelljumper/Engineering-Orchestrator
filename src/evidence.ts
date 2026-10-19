@@ -20,8 +20,9 @@ export interface EvidenceManifest {
   mac: string;
 }
 
-const SAFE_NAME = /^[A-Za-z0-9._-]{1,100}$/;
-const SAFE_ID = /^[A-Za-z0-9._-]{1,100}$/;
+// Names and ids start with a letter or digit, so '.' and '..' can never name a path segment.
+const SAFE_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
+const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
 
 /**
  * Evidence lives in the state root under evidence/<task>/<attempt>/. The manifest lists

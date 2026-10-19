@@ -9,6 +9,25 @@ function writeAll(fd: number, data: string | Buffer): void {
 }
 
 /**
+ * Refuse a directory that someone other than its owner could change: it must be a real
+ * directory (not a symlink), owned by the current user, with no group or other write
+ * permission. The controller relies on the state root being out of reach of agents and other
+ * local users (threat model T10); this check makes a misconfigured root fail closed instead
+ * of silently trusting it. POSIX only: on Windows the state root's ACLs are set and checked
+ * before the pilot tier relies on them (M2).
+ */
+export function assertPrivateDir(dir: string): void {
+  if (process.platform === 'win32') return;
+  const st = fs.lstatSync(dir);
+  if (!st.isDirectory()) throw new Error(`${dir} must be a directory, not a link or file`);
+  const euid = process.geteuid?.();
+  if (euid !== undefined && st.uid !== euid) throw new Error(`${dir} is owned by uid ${st.uid}, not by the current user (${euid})`);
+  if ((st.mode & 0o022) !== 0) {
+    throw new Error(`${dir} is writable by group or others (mode ${(st.mode & 0o777).toString(8)}); run "chmod go-w" on it`);
+  }
+}
+
+/**
  * Write a file so that readers see either the old or the new content, never a mix:
  * write to a temp file, fsync it, rename over the target, then fsync the directory
  * where the platform allows it (not possible on Windows, where rename is still atomic

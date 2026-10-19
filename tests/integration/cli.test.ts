@@ -115,16 +115,49 @@ test('M1-5: eo doctor detects an edited journal record and an altered evidence f
   assert.match(res.stderr, /journal failed verification/);
 });
 
-test('eo doctor reports a store that drifted from the journal, and resume repairs it', () => {
+test('eo doctor reports a store that is ahead of the journal, and resume refuses to rewind it', () => {
   const sb = imported();
   // Someone marks work done behind the controller, directly in the store.
   assert.equal(openStore(statePaths(sb.root), { create: false }).compareAndSetState('T5', 'planned', 'done'), true);
   const d = runCli(['doctor', '--state-root', sb.root]);
   assert.equal(d.status, 1);
-  assert.match(d.stdout, /T5 is done, journal says planned/);
+  assert.match(d.stdout, /T5 is done, journal says planned \(ahead of or off the journal/);
   assert.match(d.stdout, /evidence T5: done without any attempt/);
-  assert.equal(runCli(['resume', '--state-root', sb.root]).status, 0);
-  assert.equal(runCli(['doctor', '--state-root', sb.root]).status, 0);
+  // A store ahead of a write-ahead journal is never a crash state, so resume must not "repair"
+  // it by rewinding: that would undo finished work and forget its spend. A human decides.
+  const r = runCli(['resume', '--state-root', sb.root]);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /task store is ahead of or diverged from the journal \(T5 is done, journal says planned\)/);
+  assert.equal(openStore(statePaths(sb.root), { create: false }).get('T5')?.state, 'done', 'the store was left as found');
+  assert.equal(runCli(['doctor', '--state-root', sb.root]).status, 1);
+});
+
+test('eo init refuses a root left over from an earlier state root, even without policy.json', () => {
+  const root = path.join(tmpDir(), 'state');
+  assert.equal(runCli(['init', '--state-root', root]).status, 0);
+  const key = fs.readFileSync(path.join(root, 'journal.key'), 'utf8');
+  fs.rmSync(path.join(root, 'policy.json'));
+  const again = runCli(['init', '--state-root', root]);
+  assert.equal(again.status, 1);
+  assert.match(again.stderr, /holds an earlier state root/);
+  assert.equal(fs.readFileSync(path.join(root, 'journal.key'), 'utf8'), key, 'the journal key was kept');
+});
+
+test('a state root that others can write is refused', { skip: process.platform === 'win32' && 'POSIX permissions' }, () => {
+  const sb = imported();
+  for (const d of [sb.root, statePaths(sb.root).store]) {
+    fs.chmodSync(d, 0o777);
+    const r = runCli(['status', '--state-root', sb.root]);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /writable by group or others/);
+    fs.chmodSync(d, 0o700);
+  }
+  assert.equal(runCli(['status', '--state-root', sb.root]).status, 0);
+  // eo init refuses to adopt one too.
+  const open = path.join(tmpDir(), 'open');
+  fs.mkdirSync(open, { mode: 0o700 });
+  fs.chmodSync(open, 0o777);
+  assert.equal(runCli(['init', '--state-root', open]).status, 1);
 });
 
 test('usage errors exit 2', () => {
