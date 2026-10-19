@@ -19,8 +19,23 @@ export const CLI = path.join(REPO_ROOT, 'src', 'cli.ts');
 export const BD_BIN: string | undefined = process.env['EO_BD_BIN'] || undefined;
 if (!BD_BIN && process.env['EO_REQUIRE_BD'] === '1') throw new Error('EO_REQUIRE_BD=1 but EO_BD_BIN is not set');
 
+const made: string[] = [];
+// Beads stores are large; remove this process's temporary directories when it exits
+// (EO_KEEP_TMP=1 keeps them for debugging).
+process.on('exit', () => {
+  if (process.env['EO_KEEP_TMP'] === '1') return;
+  for (const d of made) fs.rmSync(d, { recursive: true, force: true });
+});
+
 export function tmpDir(prefix = 'eo-test-'): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  made.push(d);
+  return d;
+}
+
+/** Remove a sandbox now (long sweeps create many). */
+export function disposeSandbox(sb: { dir: string }): void {
+  if (process.env['EO_KEEP_TMP'] !== '1') fs.rmSync(sb.dir, { recursive: true, force: true });
 }
 
 /** EO_TEST_STORE=beads runs the controller-level suites on BeadsStore instead of FakeStore. */

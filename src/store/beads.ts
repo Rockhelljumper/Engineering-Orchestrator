@@ -133,20 +133,30 @@ export class BeadsStore implements TaskStore {
     const want = opts.sha256 ?? pinnedBdSha256();
     if (!want) throw new StoreError(`no pinned bd build for ${platformKey()} in deps.lock.json`);
     this.want = want;
-    // Execute only a private copy whose bytes were hashed, so replacing the source path
-    // later cannot swap the binary under a running controller.
+    // Execute only a private entry inside the store whose bytes were hashed, so renaming
+    // something else onto the source path later cannot swap the binary. The entry is a hard
+    // link where possible (the binary is ~200 MB) and a copy otherwise; an in-place write to
+    // a linked file changes its ctime, which run() detects and re-hashes before every spawn.
     const binDir = path.join(dir, 'bin');
     fs.mkdirSync(binDir, { recursive: true, mode: 0o700 });
     this.bin = path.join(binDir, process.platform === 'win32' ? 'bd.exe' : 'bd');
-    const copyOk = fs.existsSync(this.bin) && sha256(fs.readFileSync(this.bin)) === want;
-    if (!copyOk) {
+    const ok = (): boolean => fs.existsSync(this.bin) && sha256(fs.readFileSync(this.bin)) === want;
+    if (!ok()) {
       const src = path.resolve(opts.bin);
       if (!fs.existsSync(src)) throw new StoreError(`bd binary not found: ${src}`);
-      const bytes = fs.readFileSync(src);
-      const got = sha256(bytes);
-      if (got !== want) throw new StoreError(`bd binary ${src} has SHA-256 ${got}, expected the pinned ${want}`);
       const tmp = `${this.bin}.${process.pid}.tmp`;
-      fs.writeFileSync(tmp, bytes, { mode: 0o500 });
+      fs.rmSync(tmp, { force: true });
+      try {
+        fs.linkSync(src, tmp);
+      } catch {
+        fs.copyFileSync(src, tmp);
+        fs.chmodSync(tmp, 0o500);
+      }
+      const got = sha256(fs.readFileSync(tmp));
+      if (got !== want) {
+        fs.rmSync(tmp, { force: true });
+        throw new StoreError(`bd binary ${src} has SHA-256 ${got}, expected the pinned ${want}`);
+      }
       fs.renameSync(tmp, this.bin);
     }
     this.binId = fileId(this.bin);

@@ -248,21 +248,26 @@ test('a bd init killed part-way is redone on the next open, and read-only opens 
   assert.equal(BeadsStore.atDir(dir, { bin, create: false }).get('A')?.state, 'planned');
 });
 
-test('the executed bd is a verified private copy: replacing it, or the source path, cannot swap the binary', { skip: skip || (process.platform === 'win32' && 'POSIX permissions') }, () => {
+test('the executed bd is a verified private entry: swapping the source path or modifying the binary cannot run other code', { skip: skip || (process.platform === 'win32' && 'POSIX permissions') }, () => {
   const dir = tmpDir();
   const src = path.join(dir, 'bd-src');
   fs.copyFileSync(bin, src);
+  fs.chmodSync(src, 0o755);
   const s = BeadsStore.atDir(path.join(dir, 'store'), { bin: src });
   s.createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
-  // Replacing the source after open has no effect: the copy is what runs.
-  fs.writeFileSync(src, '#!/bin/sh\necho pwned > ' + path.join(dir, 'pwned') + '\n');
+  const evil = `#!/bin/sh\necho pwned > ${path.join(dir, 'pwned')}\n`;
+  // Renaming another file onto the source path after open has no effect: the store's entry still runs the verified binary.
+  fs.writeFileSync(path.join(dir, 'evil'), evil, { mode: 0o755 });
+  fs.renameSync(path.join(dir, 'evil'), src);
   assert.equal(s.get('A')?.state, 'planned');
-  assert.equal(fs.existsSync(path.join(dir, 'pwned')), false);
-  // Replacing the private copy is detected before the next spawn.
-  const copy = path.join(dir, 'store', 'bin', 'bd');
-  fs.chmodSync(copy, 0o700);
-  fs.appendFileSync(copy, Buffer.from([0]));
+  // Writing into the store's entry in place (it may be a hard link) is detected before the next spawn.
+  const entry = path.join(dir, 'store', 'bin', 'bd');
+  fs.chmodSync(entry, 0o700);
+  fs.appendFileSync(entry, Buffer.from([0]));
   assert.throws(() => s.get('A'), /was replaced; refusing to run it/);
+  assert.equal(fs.existsSync(path.join(dir, 'pwned')), false, 'no other code ran');
+  // A new open refuses the modified entry and the swapped source alike.
+  assert.throws(() => BeadsStore.atDir(path.join(dir, 'store'), { bin: src }), /expected the pinned/);
 });
 
 test('eo init --store beads refuses an unpinned binary before writing anything', { skip }, () => {

@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { Controller } from '../../src/controller.ts';
 import { verifyJournalFile } from '../../src/journal.ts';
 import { readJournalKey, statePaths } from '../../src/stateRoot.ts';
-import { CLI, readExecLog, runCli, samplePlan, sandbox, TIMEOUT_SCALE, writeJson, type Sandbox } from '../support/helpers.ts';
+import { CLI, disposeSandbox, readExecLog, runCli, samplePlan, sandbox, TIMEOUT_SCALE, writeJson, type Sandbox } from '../support/helpers.ts';
 import type { Policy } from '../../src/policy.ts';
 import type { Plan } from '../../src/plan.ts';
 
@@ -144,6 +144,7 @@ test('M1-4: crash after every journal step boundary of a 5-task run, then resume
     const second = k % 3 === 0 ? 1 + ((k * 7) % 15) : undefined;
     recover(s, `boundary ${k}`, second);
     checkRecovered(s, baseline, `boundary ${k}`);
+    disposeSandbox(s.sb);
     results.push(`${k}${second ? `+${second}` : ''}`);
   }
   // Recorded for the evidence report.
@@ -190,6 +191,7 @@ test('M1-4: random SIGKILLs during attempts, then resume', { timeout: 600_000 * 
     }
     recover(s, `kill seed ${seed}`);
     checkRecovered(s, baseline, `kill seed ${seed}`);
+    disposeSandbox(s.sb);
   }
   t.diagnostic(`SIGKILLs delivered: ${killed} across 8 runs`);
   assert.ok(killed >= 8, `only ${killed} kills landed; the test is not exercising recovery`);
@@ -212,6 +214,7 @@ test('M1-4: crash at every boundary of a run that ends in an escalation, then re
     assert.deepEqual(escalationsOf(s), baseEsc, `escalation boundary ${k}: escalations`);
     const esc = fs.readdirSync(path.join(s.sb.root, 'escalations'));
     assert.equal(esc.length, 1, `escalation boundary ${k}: one escalation file`);
+    disposeSandbox(s.sb);
   }
   t.diagnostic(`escalation scenario boundaries tested: ${N}`);
 });

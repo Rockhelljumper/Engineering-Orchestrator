@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { Controller } from '../../src/controller.ts';
-import { CLI, REPO_ROOT, samplePlan, sandbox, writeJson } from '../support/helpers.ts';
+import { CLI, REPO_ROOT, samplePlan, sandbox, TIMEOUT_SCALE, writeJson } from '../support/helpers.ts';
 
 /**
  * M1-6: no outbound network connection from the controller during the M1-4 scenario
@@ -39,7 +39,7 @@ function scenario(): { root: string; repo: string; script: string } {
 
 function eo(args: string[], env: Record<string, string>, wrap: string[] = []): { status: number | null; stderr: string } {
   const cmd = [...wrap, process.execPath, '--import', PRELOAD, CLI, ...args];
-  const r = spawnSync(cmd[0] as string, cmd.slice(1), { encoding: 'utf8', env: { ...process.env, ...env }, timeout: 120_000 });
+  const r = spawnSync(cmd[0] as string, cmd.slice(1), { encoding: 'utf8', env: { ...process.env, ...env }, timeout: 120_000 * TIMEOUT_SCALE });
   return { status: r.status, stderr: r.stderr };
 }
 
