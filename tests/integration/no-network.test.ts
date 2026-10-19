@@ -14,7 +14,7 @@ import { CLI, REPO_ROOT, samplePlan, sandbox, TIMEOUT_SCALE, writeJson } from '.
  *   2. on Linux with strace and unshare: every connect() syscall of the process tree, inside
  *      a fresh network namespace that has no route out.
  * Each detector has a positive control proving it would have caught a connection.
- * `bd` is not part of M1 yet (its build is blocked), so only the controller is covered.
+ * The beads store's bd processes are covered by tests/integration/beads.test.ts (M1-6 on beads).
  */
 const PRELOAD = pathToFileURL(path.join(REPO_ROOT, 'tests', 'support', 'deny-network.ts')).href;
 const EVIDENCE = process.env['EO_EVIDENCE_DIR'];

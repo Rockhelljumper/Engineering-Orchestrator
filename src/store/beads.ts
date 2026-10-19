@@ -46,6 +46,7 @@ export function bdEnv(home: string, workspace = home): Record<string, string> {
 }
 
 export function platformKey(): string {
+  // Same names as scripts/build-bd.sh: amd64, arm64.
   return `${process.platform === 'win32' ? 'windows' : process.platform}-${process.arch === 'x64' ? 'amd64' : process.arch}`;
 }
 
@@ -73,6 +74,13 @@ function fileId(file: string): string {
   return `${st.dev}:${st.ino}:${st.size}:${st.mtimeNs}:${st.ctimeNs}`;
 }
 
+/** The file's identity if its bytes hash to `want` and it did not change while hashing. */
+function verifiedId(file: string, want: string): string | undefined {
+  const before = fileId(file);
+  if (sha256(fs.readFileSync(file)) !== want) return undefined;
+  return fileId(file) === before ? before : undefined;
+}
+
 /** Eo's fields, kept in the bead's metadata under "eo". */
 interface EoMeta extends TaskCounters {
   v: 1;
@@ -98,7 +106,10 @@ export interface BeadsStoreOptions {
   sha256?: string;
   /** Observer for every spawn (tests use it to check the environment, M1-7). */
   onSpawn?: (args: readonly string[], env: Readonly<Record<string, string>>) => void;
-  /** Create (or repair a half-created) workspace. Only the controller, under its lock, passes true. */
+  /**
+   * Create (or repair a half-created) workspace; default false. Only the controller, under
+   * its lock, passes true in production; tests pass it where they create a store.
+   */
   create?: boolean;
 }
 
@@ -137,29 +148,39 @@ export class BeadsStore implements TaskStore {
     // something else onto the source path later cannot swap the binary. The entry is a hard
     // link where possible (the binary is ~200 MB) and a copy otherwise; an in-place write to
     // a linked file changes its ctime, which run() detects and re-hashes before every spawn.
+    // The identity recorded for run() is taken before hashing and confirmed unchanged after,
+    // so a write that lands while the file is being hashed is never recorded as verified.
     const binDir = path.join(dir, 'bin');
     fs.mkdirSync(binDir, { recursive: true, mode: 0o700 });
     this.bin = path.join(binDir, process.platform === 'win32' ? 'bd.exe' : 'bd');
-    const ok = (): boolean => fs.existsSync(this.bin) && sha256(fs.readFileSync(this.bin)) === want;
-    if (!ok()) {
+    let id = fs.existsSync(this.bin) ? verifiedId(this.bin, want) : undefined;
+    if (id === undefined) {
       const src = path.resolve(opts.bin);
       if (!fs.existsSync(src)) throw new StoreError(`bd binary not found: ${src}`);
       const tmp = `${this.bin}.${process.pid}.tmp`;
-      fs.rmSync(tmp, { force: true });
       try {
-        fs.linkSync(src, tmp);
-      } catch {
-        fs.copyFileSync(src, tmp);
-        fs.chmodSync(tmp, 0o500);
-      }
-      const got = sha256(fs.readFileSync(tmp));
-      if (got !== want) {
         fs.rmSync(tmp, { force: true });
-        throw new StoreError(`bd binary ${src} has SHA-256 ${got}, expected the pinned ${want}`);
+        try {
+          fs.linkSync(src, tmp);
+        } catch {
+          fs.copyFileSync(src, tmp);
+          fs.chmodSync(tmp, 0o500);
+        }
+        const got = sha256(fs.readFileSync(tmp));
+        if (got !== want) throw new StoreError(`bd binary ${src} has SHA-256 ${got}, expected the pinned ${want}`);
+        // A read-only copy (the Windows fallback) cannot be replaced by rename.
+        if (fs.existsSync(this.bin)) fs.chmodSync(this.bin, 0o700);
+        fs.renameSync(tmp, this.bin);
+      } catch (err) {
+        if (err instanceof StoreError) throw err;
+        throw new StoreError(`could not install the verified bd entry ${this.bin}: ${(err as Error).message}`);
+      } finally {
+        fs.rmSync(tmp, { force: true });
       }
-      fs.renameSync(tmp, this.bin);
+      id = verifiedId(this.bin, want);
+      if (id === undefined) throw new StoreError(`bd binary ${this.bin} changed while it was being verified; refusing to run it`);
     }
-    this.binId = fileId(this.bin);
+    this.binId = id;
     const home = path.join(dir, 'bd-home');
     fs.mkdirSync(home, { recursive: true, mode: 0o700 });
     this.env = bdEnv(home, dir);
@@ -171,7 +192,7 @@ export class BeadsStore implements TaskStore {
    * refuse a workspace that is not fully initialised.
    */
   static atDir(dir: string, opts: BeadsStoreOptions): BeadsStore {
-    const create = opts.create ?? true;
+    const create = opts.create ?? false;
     if (!create && !fs.existsSync(path.join(dir, INIT_MARKER))) throw new StoreError(`beads store at ${dir} is not initialised`);
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     const s = new BeadsStore(path.resolve(dir), opts);
@@ -190,11 +211,13 @@ export class BeadsStore implements TaskStore {
   // ---------------------------------------------------------------- bd plumbing
 
   private run(args: string[], input?: string): { status: number; stdout: string; stderr: string } {
-    const id = fileId(this.bin);
-    if (id !== this.binId) {
-      if (sha256(fs.readFileSync(this.bin)) !== this.want) throw new StoreError(`bd binary ${this.bin} was replaced; refusing to run it`);
+    if (fileId(this.bin) !== this.binId) {
+      const id = verifiedId(this.bin, this.want);
+      if (id === undefined) throw new StoreError(`bd binary ${this.bin} was replaced; refusing to run it`);
       this.binId = id;
     }
+    // A write between this check and the spawn below is not detectable from here; the entry
+    // lives in the state root, which agents cannot reach (threat model T10).
     this.onSpawn?.(args, this.env);
     const r = spawnSync(this.bin, args, {
       cwd: this.dir,

@@ -27,7 +27,7 @@ const stores: Array<{ kind: 'fake' | 'beads'; open: (dir: string) => TaskStore; 
 ];
 if (BD_BIN) {
   const bin = BD_BIN;
-  stores.push({ kind: 'beads', open: (d) => BeadsStore.atDir(d, { bin }), roundMs: 600_000, timeout: 7_200_000 });
+  stores.push({ kind: 'beads', open: (d) => BeadsStore.atDir(d, { bin, create: true }), roundMs: 600_000, timeout: 7_200_000 });
 }
 
 for (const st of stores) {

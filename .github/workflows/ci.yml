@@ -98,7 +98,13 @@ jobs:
           got=$(cat "$RUNNER_TEMP/sha1")
           want=$(node -p 'require("./deps.lock.json").beads.binaries["windows-amd64"]?.sha256 ?? ""')
           if [ -z "$want" ]; then echo "::error::no pinned windows-amd64 bd build; this runner built $got"; exit 1; fi
-          [ "$got" = "$want" ] || { echo "::error::bd build $got does not match the pin $want"; exit 1; }
+          if [ "$got" != "$want" ]; then
+            # CGO links the runner image's MinGW, which nothing pins: name it so an image
+            # update is told apart from a changed source or Go toolchain.
+            pinned=$(node -p 'const b = require("./deps.lock.json").beads.binaries["windows-amd64"]; `${b.cc}, ${b.libc}`')
+            echo "::error::bd build $got does not match the pin $want (pinned with $pinned; this runner has gcc $(gcc -dumpfullversion), $(gcc -dumpmachine))"
+            exit 1
+          fi
           echo "bd build matches the pin $want"
       - name: Beads store tests (contract, beads, CLI, claim race)
         env:

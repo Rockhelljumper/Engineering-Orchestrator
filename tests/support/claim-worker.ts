@@ -7,7 +7,7 @@ import { BeadsStore } from '../../src/store/beads.ts';
 import { sleepSync } from '../../src/util/lock.ts';
 
 const [storeDir, barrierDir, workerId, roundsArg, kind, bdBin] = process.argv.slice(2) as [string, string, string, string, string, string];
-const store = kind === 'beads' ? BeadsStore.atDir(storeDir, { bin: bdBin }) : FakeStore.atDir(storeDir);
+const store = kind === 'beads' ? BeadsStore.atDir(storeDir, { bin: bdBin, create: false }) : FakeStore.atDir(storeDir);
 const rounds = Number(roundsArg);
 fs.writeFileSync(path.join(barrierDir, `up-${workerId}`), '');
 for (let r = 1; r <= rounds; r++) {

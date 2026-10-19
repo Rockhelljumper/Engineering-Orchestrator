@@ -16,7 +16,11 @@ export interface DoctorReport {
   journalRecords: number;
 }
 
-/** Read-only integrity check of a state root. Never modifies anything. */
+/**
+ * Integrity check of a state root. It never changes the journal, policy, evidence or tasks.
+ * Opening a beads store can still restore the store's private bd entry, and bd itself
+ * touches its lock and version files.
+ */
 export function doctor(root: string, store?: TaskStore): DoctorReport {
   const p = statePaths(root);
   const problems: string[] = [];

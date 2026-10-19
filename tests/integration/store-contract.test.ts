@@ -27,7 +27,7 @@ if (BD_BIN) {
     name: 'BeadsStore (file)',
     make: () => {
       const dir = path.join(tmpDir(), 'store');
-      return { store: BeadsStore.atDir(dir, { bin }), reopen: () => BeadsStore.atDir(dir, { bin }) };
+      return { store: BeadsStore.atDir(dir, { bin, create: true }), reopen: () => BeadsStore.atDir(dir, { bin, create: false }) };
     },
   });
 }

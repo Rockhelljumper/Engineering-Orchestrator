@@ -28,7 +28,8 @@ case "$(uname -s)" in
   MINGW*|MSYS*|CYGWIN*) plat=windows ;;
   *) plat=$(uname -s | tr '[:upper:]' '[:lower:]') ;;
 esac
-case "$(uname -m)" in x86_64|amd64) plat=$plat-amd64 ;; *) plat=$plat-$(uname -m) ;; esac
+# Same names as platformKey() in src/store/beads.ts.
+case "$(uname -m)" in x86_64|amd64) plat=$plat-amd64 ;; aarch64|arm64) plat=$plat-arm64 ;; *) plat=$plat-$(uname -m) ;; esac
 pin=$(lock beads.revision)
 want_go=$(lock go.version)
 

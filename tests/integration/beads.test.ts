@@ -28,7 +28,7 @@ function beadsSandbox(onSpawn?: (args: readonly string[], env: Readonly<Record<s
   const repo = path.join(dir, 'repo');
   fs.mkdirSync(repo);
   initStateRoot(root, { kind: 'beads', bin });
-  const store = BeadsStore.atDir(statePaths(root).store, { bin, ...(onSpawn ? { onSpawn } : {}) });
+  const store = BeadsStore.atDir(statePaths(root).store, { bin, create: true, ...(onSpawn ? { onSpawn } : {}) });
   const c = Controller.open(root, { store });
   c.approveRepository(repo, 'test-human');
   c.close();
@@ -53,8 +53,8 @@ test('M1-7: the bd binary is the pinned build, and any other binary is refused',
   fs.copyFileSync(bin, tampered);
   fs.appendFileSync(tampered, Buffer.from([0]));
   fs.chmodSync(tampered, 0o755);
-  assert.throws(() => BeadsStore.atDir(path.join(tmpDir(), 'store'), { bin: tampered }), /has SHA-256 [0-9a-f]{64}, expected the pinned/);
-  assert.throws(() => BeadsStore.atDir(path.join(tmpDir(), 'store'), { bin: path.join(tmpDir(), 'missing') }), /not found/);
+  assert.throws(() => BeadsStore.atDir(path.join(tmpDir(), 'store'), { bin: tampered, create: true }), /has SHA-256 [0-9a-f]{64}, expected the pinned/);
+  assert.throws(() => BeadsStore.atDir(path.join(tmpDir(), 'store'), { bin: path.join(tmpDir(), 'missing'), create: true }), /not found/);
 });
 
 test('M1-7: every bd spawn of a full controller run gets the metrics opt-out and a scrubbed environment', { skip, timeout: 900_000 }, async () => {
@@ -95,7 +95,7 @@ test('M1-7: the environment the bd process actually receives (wrapper records it
   const sha = createHash('sha256').update(fs.readFileSync(wrapper)).digest('hex');
   process.env['GITHUB_TOKEN'] = 'ghp_test_must_not_reach_bd';
   try {
-    const s = BeadsStore.atDir(path.join(dir, 'store'), { bin: wrapper, sha256: sha });
+    const s = BeadsStore.atDir(path.join(dir, 'store'), { bin: wrapper, sha256: sha, create: true });
     s.createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
     s.compareAndSetState('A', 'planned', 'ready');
     s.claimReady('w1', 60_000, Date.now());
@@ -201,7 +201,8 @@ test('a state root cannot be switched to a different store kind, and read-only c
   const sb = beadsSandbox();
   const cfg = statePaths(sb.root).storeConfig;
   fs.writeFileSync(cfg, JSON.stringify({ kind: 'fake' }));
-  assert.throws(() => Controller.open(sb.root), /uses the beads store, not fake/);
+  // The binding is checked when the store is opened, before anything is created in it.
+  assert.throws(() => Controller.open(sb.root), /store\.json says fake, but this state root is bound to the beads store/);
   assert.match(doctor(sb.root).problems.join(';'), /bound to the beads store/);
   const st = spawnSync(process.execPath, [CLI, 'status', '--state-root', sb.root], { encoding: 'utf8' });
   assert.equal(st.status, 1);
@@ -220,7 +221,7 @@ test('bd never touches a git repository that encloses the state root', { skip, t
   git('add', 'README');
   git('commit', '-q', '-m', 'outer');
   const before = { log: git('log', '--format=%H %s'), config: fs.readFileSync(path.join(outer, '.git', 'config'), 'utf8'), status: git('status', '--porcelain', '--ignored') };
-  const store = BeadsStore.atDir(path.join(outer, 'state', 'store'), { bin });
+  const store = BeadsStore.atDir(path.join(outer, 'state', 'store'), { bin, create: true });
   store.createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
   assert.equal(git('log', '--format=%H %s'), before.log, 'no commit in the enclosing repository');
   assert.equal(fs.readFileSync(path.join(outer, '.git', 'config'), 'utf8'), before.config, 'its config is unchanged');
@@ -243,7 +244,7 @@ test('a bd init killed part-way is redone on the next open, and read-only opens 
   await new Promise((r) => child.on('exit', r));
   assert.ok(fs.existsSync(path.join(dir, '.beads')), 'init was interrupted after it began writing');
   assert.throws(() => BeadsStore.atDir(dir, { bin, create: false }), /not initialised/);
-  const s = BeadsStore.atDir(dir, { bin });
+  const s = BeadsStore.atDir(dir, { bin, create: true });
   s.createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
   assert.equal(BeadsStore.atDir(dir, { bin, create: false }).get('A')?.state, 'planned');
 });
@@ -253,7 +254,7 @@ test('the executed bd is a verified private entry: swapping the source path or m
   const src = path.join(dir, 'bd-src');
   fs.copyFileSync(bin, src);
   fs.chmodSync(src, 0o755);
-  const s = BeadsStore.atDir(path.join(dir, 'store'), { bin: src });
+  const s = BeadsStore.atDir(path.join(dir, 'store'), { bin: src, create: true });
   s.createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
   const evil = `#!/bin/sh\necho pwned > ${path.join(dir, 'pwned')}\n`;
   // Renaming another file onto the source path after open has no effect: the store's entry still runs the verified binary.
@@ -267,7 +268,34 @@ test('the executed bd is a verified private entry: swapping the source path or m
   assert.throws(() => s.get('A'), /was replaced; refusing to run it/);
   assert.equal(fs.existsSync(path.join(dir, 'pwned')), false, 'no other code ran');
   // A new open refuses the modified entry and the swapped source alike.
-  assert.throws(() => BeadsStore.atDir(path.join(dir, 'store'), { bin: src }), /expected the pinned/);
+  assert.throws(() => BeadsStore.atDir(path.join(dir, 'store'), { bin: src, create: true }), /expected the pinned/);
+});
+
+test('a store entry that is stale or tampered with is replaced on the next open, even when read-only', { skip }, () => {
+  const dir = path.join(tmpDir(), 'store');
+  BeadsStore.atDir(dir, { bin, create: true }).createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
+  const binDir = path.join(dir, 'bin');
+  const entry = path.join(binDir, process.platform === 'win32' ? 'bd.exe' : 'bd');
+  // Replace the entry (never write through it: it may be a hard link to the pinned binary).
+  fs.chmodSync(entry, 0o700);
+  fs.rmSync(entry);
+  fs.writeFileSync(entry, 'not bd');
+  fs.chmodSync(entry, 0o400); // read-only, as the Windows copy fallback leaves it
+  const s = BeadsStore.atDir(dir, { bin, create: false });
+  assert.equal(s.get('A')?.state, 'planned');
+  assert.equal(createHash('sha256').update(fs.readFileSync(entry)).digest('hex'), pinnedBdSha256());
+  assert.deepEqual(fs.readdirSync(binDir).filter((f) => f.endsWith('.tmp')), [], 'no temporary copy left behind');
+});
+
+test('a state root bound to the fake store is refused before any beads files are written', { skip }, () => {
+  const root = path.join(tmpDir(), 'state');
+  initStateRoot(root, { kind: 'fake' });
+  Controller.open(root).close();
+  const p = statePaths(root);
+  fs.writeFileSync(p.storeConfig, JSON.stringify({ kind: 'beads', bin }));
+  const before = fs.readdirSync(p.store).sort();
+  assert.throws(() => Controller.open(root), /bound to the fake store/);
+  assert.deepEqual(fs.readdirSync(p.store).sort(), before, 'nothing created or repaired in the store directory');
 });
 
 test('eo init --store beads refuses an unpinned binary before writing anything', { skip }, () => {

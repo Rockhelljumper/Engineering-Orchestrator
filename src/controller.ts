@@ -88,7 +88,9 @@ export class Controller {
     this.journal = Journal.open(paths.journal, key, { repairTornTail: true });
     this.tornTailRepaired = before.tornTail;
     this.policy = loadPolicy(paths.policy);
-    this.store = opts.store ?? openStore(paths, { create: true });
+    // With the journal's records, openStore checks the store binding before it creates or
+    // repairs anything.
+    this.store = opts.store ?? openStore(paths, { create: true, records: this.journal.records() });
     this.evidence = new EvidenceLedger(paths.evidence, key);
     this.budget = new BudgetGovernor(this.journal, this.policy.budget);
     const now = policyHash(this.policy);
