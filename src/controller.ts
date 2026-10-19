@@ -202,8 +202,8 @@ export class Controller {
     if (t.state !== rec.from) throw new ControllerError(`${rec.taskId} is ${t.state}, expected ${rec.from}`);
     assertTransition(rec.taskId, rec.from, rec.to);
     if (rec.to === 'blocked' && !rec.escalationId) throw new ControllerError('a transition to blocked needs an escalation record');
-    this.journal.append('task.transition', rec);
-    const counters = { ...(rec.counters ?? {}), ...(rec.attempt !== undefined ? { attempt: rec.attempt } : {}) };
+    const appended = this.journal.append('task.transition', rec);
+    const counters = { ...(rec.counters ?? {}), ...(rec.attempt !== undefined ? { attempt: rec.attempt } : {}), journalSeq: appended.seq };
     if (!this.store.compareAndSetState(rec.taskId, rec.from, rec.to, counters)) {
       throw new ControllerError(`store changed under the controller for ${rec.taskId}`);
     }
@@ -244,6 +244,45 @@ export class Controller {
 
   // ---------------------------------------------------------------- resume
 
+  /** Every evidence attempt directory on disk, as "task#attempt". */
+  private evidenceAttempts(): string[] {
+    return listEvidenceAttempts(this.paths.evidence);
+  }
+
+  /** Every escalation file on disk, by escalation id. */
+  private escalationFiles(): string[] {
+    return listEscalationFiles(this.paths.escalations);
+  }
+
+  /**
+   * Keep what a human needs to investigate a refused recovery: the problems, the journal's
+   * head, and the store as found. Written beside the journal and the store, never into them.
+   */
+  private recordRefusal(kind: string, problems: string[]): string {
+    const recs = this.journal.records();
+    const last = recs[recs.length - 1];
+    const dir = path.join(this.paths.root, 'forensics');
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const file = path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}-${kind}-refused.json`);
+    writeFileAtomic(
+      file,
+      JSON.stringify(
+        {
+          kind,
+          at: new Date().toISOString(),
+          problems,
+          journal: { records: recs.length, lastSeq: last?.seq ?? 0, lastMac: last?.mac ?? null },
+          store: this.store.list(),
+          evidenceAttempts: this.evidenceAttempts(),
+          escalationFiles: this.escalationFiles(),
+        },
+        null,
+        2,
+      ),
+    );
+    return file;
+  }
+
   /**
    * Bring the store in line with the journal and settle anything a crash left open.
    * Safe to run any number of times.
@@ -260,16 +299,27 @@ export class Controller {
     };
     const records = [...this.journal.records()];
 
-    // 1. Tasks from imported plans.
+    // 1. Before anything is written: refuse any combination of store, evidence and journal that
+    //    no crash can produce (the journal is written ahead of both). Recovering from one would
+    //    rewind finished work, re-run attempts or lose spend, so a human must decide.
+    const mismatches = planMismatches(this.store.list(), this.planIndex);
+    if (mismatches.length > 0) {
+      const file = this.recordRefusal('resume', mismatches);
+      throw new ControllerError(`task store does not match the journaled plans (${mismatches.join('; ')}); nothing was changed. Forensic record: ${file}. Investigate with "eo doctor"`);
+    }
+    const problems = recoveryProblems(records, this.store.list(), this.evidenceAttempts(), this.escalationFiles());
+    if (problems.length > 0) {
+      const file = this.recordRefusal('resume', problems);
+      throw new ControllerError(
+        `task store is ahead of or diverged from the journal (${problems.join('; ')}); nothing was changed. This needs a human: the store, evidence or escalations were changed behind the controller, or the journal was truncated or restored from an older copy. Forensic record: ${file}. Investigate with "eo doctor"`,
+      );
+    }
+
+    // 2. Tasks from imported plans, escalation files, and the one transition a crash can leave
+    //    unapplied per task.
     for (const r of records) {
       if (r.type === 'plan.import') report.tasksCreated.push(...this.materialisePlan((r.data as { plan: Plan }).plan));
     }
-    const mismatches = planMismatches(this.store.list(), this.planIndex);
-    if (mismatches.length > 0) {
-      throw new ControllerError(`task store does not match the journaled plans (${mismatches.join('; ')}); investigate with "eo doctor"`);
-    }
-
-    // 2. Escalation files and the latest journaled state of every task.
     for (const r of records) {
       if (r.type === 'escalation') {
         const esc = r.data as EscalationRecord;
@@ -277,16 +327,6 @@ export class Controller {
       }
     }
     const expected = expectedStates(records);
-    const diverged: string[] = [];
-    for (const [taskId, exp] of expected) {
-      const t = this.mustGet(taskId);
-      if (storeDrift(t, exp) === 'diverged') diverged.push(`${taskId} is ${t.state}, journal says ${exp.state}`);
-    }
-    if (diverged.length > 0) {
-      throw new ControllerError(
-        `task store is ahead of or diverged from the journal (${diverged.join('; ')}); this needs a human: the store was changed behind the controller or the journal was truncated or restored. Investigate with "eo doctor"`,
-      );
-    }
     for (const [taskId, exp] of expected) {
       const t = this.mustGet(taskId);
       if (storeDrift(t, exp) === 'behind') {
@@ -678,7 +718,7 @@ function attemptKey(e: { taskId: string; attempt: number }): string {
   return `${e.taskId}#${e.attempt}`;
 }
 
-const COUNTER_KEYS = ['attempt', 'correctionFailures', 'infraFailures', 'lastFailureSignature', 'repeatCount'] as const;
+const COUNTER_KEYS = ['attempt', 'correctionFailures', 'infraFailures', 'lastFailureSignature', 'repeatCount', 'journalSeq'] as const;
 
 /** Fold transitions into the state and counters the store should hold for each task. */
 export interface ExpectedState {
@@ -697,14 +737,14 @@ export function expectedStates(records: readonly JournalRecord[]): Map<string, E
   for (const r of records) {
     if (r.type === 'plan.import') {
       for (const t of (r.data as { plan: Plan }).plan.tasks) {
-        if (!out.has(t.id)) out.set(t.id, { state: 'planned', counters: {} });
+        if (!out.has(t.id)) out.set(t.id, { state: 'planned', counters: { journalSeq: 0 } });
       }
     } else if (r.type === 'task.transition') {
       const tr = r.data as TransitionRecord;
-      const cur: ExpectedState = out.get(tr.taskId) ?? { state: 'planned', counters: {} };
+      const cur: ExpectedState = out.get(tr.taskId) ?? { state: 'planned', counters: { journalSeq: 0 } };
       cur.prev = { state: cur.state, counters: { ...cur.counters } };
       cur.state = tr.to;
-      Object.assign(cur.counters, tr.counters ?? {}, tr.attempt !== undefined ? { attempt: tr.attempt } : {});
+      Object.assign(cur.counters, tr.counters ?? {}, tr.attempt !== undefined ? { attempt: tr.attempt } : {}, { journalSeq: r.seq });
       out.set(tr.taskId, cur);
     }
   }
@@ -719,9 +759,63 @@ export function expectedStates(records: readonly JournalRecord[]): Map<string, E
  * journal onto it would rewind finished work and lose spend, so nobody may "repair" it.
  */
 export function storeDrift(t: TaskRecord, exp: ExpectedState): 'none' | 'behind' | 'diverged' {
+  // Counters include journalSeq, the journal record of the last transition the store applied,
+  // so "behind" means exactly the previous transition and "none" exactly the last one.
   if (t.state === exp.state && countersMatch(t, exp.counters)) return 'none';
   if (exp.prev && t.state === exp.prev.state && countersMatch(t, exp.prev.counters)) return 'behind';
   return 'diverged';
+}
+
+/**
+ * Everything about the store, evidence and escalation files that no crash can produce from
+ * this journal. The journal is written first, so a crash leaves each task at its journaled
+ * state or one transition behind, a task missing only if it has no transition yet, and
+ * evidence or escalation files only for attempts and escalations the journal records.
+ * Shared by resume (which refuses) and doctor (which reports).
+ */
+export function recoveryProblems(records: readonly JournalRecord[], tasks: readonly TaskRecord[], evidenceAttempts: readonly string[], escalationFiles: readonly string[]): string[] {
+  const problems: string[] = [];
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  for (const [id, exp] of expectedStates(records)) {
+    const t = byId.get(id);
+    if (!t) {
+      if (exp.prev) problems.push(`${id} is missing from the store, but the journal has transitions for it (last at seq ${exp.counters.journalSeq})`);
+      continue;
+    }
+    if (storeDrift(t, exp) === 'diverged') {
+      problems.push(`${id} is ${t.state} at journal seq ${t.journalSeq}, journal says ${exp.state} at seq ${exp.counters.journalSeq}${exp.prev ? ` (or ${exp.prev.state} at seq ${exp.prev.counters.journalSeq} after a crash)` : ''}`);
+    }
+  }
+  const ended = new Set(records.filter((r) => r.type === 'attempt.end').map((r) => attemptKey(r.data as AttemptEndRecord)));
+  for (const a of evidenceAttempts) if (!ended.has(a)) problems.push(`evidence for attempt ${a} exists, but the journal has no end for that attempt`);
+  const escalations = new Set(records.filter((r) => r.type === 'escalation').map((r) => (r.data as EscalationRecord).id));
+  for (const e of escalationFiles) if (!escalations.has(e)) problems.push(`escalation file ${e} exists, but the journal has no such escalation`);
+  return problems;
+}
+
+/** Evidence attempt directories under `dir` (evidence/<task>/a<n>), as "task#n". */
+export function listEvidenceAttempts(dir: string): string[] {
+  const out: string[] = [];
+  if (!fs.existsSync(dir)) return out;
+  for (const task of fs.readdirSync(dir).sort()) {
+    const td = path.join(dir, task);
+    if (!fs.statSync(td).isDirectory()) continue;
+    for (const a of fs.readdirSync(td).sort()) {
+      const m = /^a([1-9][0-9]*)$/.exec(a);
+      if (m) out.push(`${task}#${m[1]}`);
+    }
+  }
+  return out;
+}
+
+/** Escalation ids with a file under `dir`. */
+export function listEscalationFiles(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => f.slice(0, -'.json'.length))
+    .sort();
 }
 
 function countersMatch(t: TaskRecord, c: Partial<TaskCounters>): boolean {

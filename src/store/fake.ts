@@ -98,6 +98,7 @@ export class FakeStore implements TaskStore {
         infraFailures: 0,
         lastFailureSignature: null,
         repeatCount: 0,
+        journalSeq: 0,
       };
       s.tasks[t.id] = rec;
       dirty();
@@ -217,5 +218,6 @@ function pickCounters(c: Partial<TaskCounters>): Partial<TaskCounters> {
   if (c.infraFailures !== undefined) out.infraFailures = c.infraFailures;
   if (c.lastFailureSignature !== undefined) out.lastFailureSignature = c.lastFailureSignature;
   if (c.repeatCount !== undefined) out.repeatCount = c.repeatCount;
+  if (c.journalSeq !== undefined) out.journalSeq = c.journalSeq;
   return out;
 }

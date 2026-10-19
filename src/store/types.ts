@@ -21,6 +21,12 @@ export interface TaskCounters {
   /** Normalised signature of the last correction failure and how many times in a row it repeated. */
   lastFailureSignature: string | null;
   repeatCount: number;
+  /**
+   * Sequence number of the journal record of the last transition applied to this task (0 for
+   * none). It ties the store to one exact point in the journal, so a journal truncated or
+   * restored to an earlier point cannot pass for a crash that left the store behind.
+   */
+  journalSeq: number;
 }
 
 export interface TaskRecord extends TaskCounters {

@@ -341,6 +341,20 @@ test('a beads store whose directories others can write is refused', { skip: skip
   BeadsStore.atDir(dir, { bin, create: false });
 });
 
+test('a beads store that lost its initialisation marker after plans were imported is refused, not re-initialised', { skip }, () => {
+  const sb = beadsSandbox();
+  const c = Controller.open(sb.root, { store: sb.store });
+  c.importPlan(samplePlan(), sb.repo, 'h');
+  c.close();
+  const storeDir = statePaths(sb.root).store;
+  fs.rmSync(path.join(storeDir, '.eo-initialised'));
+  const beadsBefore = fs.readdirSync(path.join(storeDir, '.beads')).sort();
+  assert.throws(() => Controller.open(sb.root), /not initialised, but the journal has imported plans; refusing to re-initialise it/);
+  // Re-initialising would have deleted .beads and its tasks.
+  assert.deepEqual(fs.readdirSync(path.join(storeDir, '.beads')).sort(), beadsBefore);
+  assert.equal(bdRaw(storeDir, ['list', '--json', '--all']).includes('eo-T5'), true, 'the tasks are still there');
+});
+
 test('a state root bound to the fake store is refused before any beads files are written', { skip }, () => {
   const root = path.join(tmpDir(), 'state');
   initStateRoot(root, { kind: 'fake' });

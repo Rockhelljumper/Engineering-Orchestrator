@@ -10,7 +10,8 @@ import { readExecLog, samplePlan, sandbox, TEST_STORE, tmpDir, type Sandbox } fr
 import { planHash, type Plan } from '../../src/plan.ts';
 import { statePaths } from '../../src/stateRoot.ts';
 import { openStore } from '../../src/store/open.ts';
-import { StoreError, type TaskStore } from '../../src/store/types.ts';
+import { StoreError, type TaskRecord, type TaskStore } from '../../src/store/types.ts';
+import { BudgetLedger } from '../../src/budget.ts';
 
 interface Run {
   sb: Sandbox;
@@ -428,26 +429,177 @@ test('a task id from a journaled plan cannot be imported again, even if a crash 
   }
 });
 
-test('a truncated journal never rewinds finished work or runs it again', async () => {
-  const { sb, c, log } = await runPlan(twoIndependent, { default: { behaviour: 'pass' } });
+/** Every task as the store holds it, for comparing before and after a refused recovery. */
+function storeSnapshot(root: string): TaskRecord[] {
+  return openStore(statePaths(root), { create: false }).list();
+}
+
+test('restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record', async (t) => {
+  // A run with a verification failure, so tasks pass through several transitions and attempts.
+  const { sb, c, log } = await runPlan(samplePlan(), { default: { behaviour: 'pass' }, tasks: { T2: [{ behaviour: 'verify-fail', signature: 's' }] } });
   c.close();
-  assert.equal(readExecLog(log).length, 2);
-  // Cut the journal back to before the first transition (a restore from an old copy, or
-  // anyone who can write the file: truncation needs no key).
   const jf = path.join(sb.root, 'journal.jsonl');
-  const lines = fs.readFileSync(jf, 'utf8').split('\n');
-  const first = lines.findIndex((l) => l.includes('"type":"task.transition"'));
-  fs.writeFileSync(jf, lines.slice(0, first).join('\n') + '\n');
-  const c2 = Controller.open(sb.root);
-  try {
-    await assert.rejects(c2.run(new FakeRunner({ default: { behaviour: 'pass' }, execLog: log }), { repoPath: sb.repo }), /task store is ahead of or diverged from the journal/);
-    assert.throws(() => c2.resume(), ControllerError);
-    assert.equal(readExecLog(log).length, 2, 'nothing ran again');
-    for (const id of ['A', 'B']) assert.equal(c2.store.get(id)?.state, 'done', `${id} was not rewound`);
-  } finally {
-    c2.close();
+  const full = fs.readFileSync(jf);
+  const lines = full.toString('utf8').split('\n').filter(Boolean);
+  const before = storeSnapshot(sb.root);
+  const executions = readExecLog(log).length;
+  const spent = BudgetLedger.fromRecords(c.journal.records()).spent('epic', 'E1');
+  assert.ok(before.every((t) => t.state === 'done'));
+  const forensics = path.join(sb.root, 'forensics');
+  // Every earlier point of the journal from the plan import on (a valid prefix: its HMAC chain
+  // verifies, so it is exactly what restoring an older copy gives). On beads every third point.
+  const start = lines.findIndex((l) => l.includes('"type":"plan.import"')) + 1;
+  const stride = TEST_STORE === 'beads' ? 3 : 1;
+  let refused = 0;
+  let accepted = 0;
+  for (let k = start; k < lines.length; k += stride) {
+    const prefix = Buffer.from(lines.slice(0, k).join('\n') + '\n');
+    fs.writeFileSync(jf, prefix);
+    const reports = fs.existsSync(forensics) ? fs.readdirSync(forensics).length : 0;
+    const ck = Controller.open(sb.root);
+    let error: unknown;
+    try {
+      ck.resume();
+    } catch (err) {
+      error = err;
+    } finally {
+      ck.close();
+    }
+    const at = `journal cut to ${k} of ${lines.length} records`;
+    // Nothing finished was undone and nothing ran again, whichever way recovery went.
+    assert.deepEqual(storeSnapshot(sb.root), before, `${at}: the store is unchanged`);
+    assert.equal(readExecLog(log).length, executions, `${at}: nothing ran again`);
+    if (error !== undefined) {
+      refused++;
+      assert.ok(error instanceof ControllerError, `${at}: ${String(error)}`);
+      assert.match(error.message, /task store is ahead of or diverged from the journal \(.*journal says .* at seq \d+/, at);
+      assert.match(error.message, /nothing was changed/, at);
+      assert.deepEqual(fs.readFileSync(jf), prefix, `${at}: the journal is unchanged`);
+      // The forensic record names the inconsistency and keeps the store as found.
+      const files = fs.readdirSync(forensics).sort();
+      assert.equal(files.length, reports + 1, `${at}: one forensic record`);
+      const rec = JSON.parse(fs.readFileSync(path.join(forensics, files[files.length - 1] as string), 'utf8')) as { problems: string[]; journal: { lastSeq: number }; store: TaskRecord[] };
+      assert.ok(rec.problems.length > 0 && rec.problems.every((p) => error instanceof Error && error.message.includes(p)), at);
+      assert.equal(rec.journal.lastSeq, k, at);
+      assert.deepEqual(rec.store, before, at);
+    } else {
+      // Only a cut after every transition the store applied is indistinguishable from a crash,
+      // and recovering from it must keep all spend.
+      accepted++;
+      const after = Controller.open(sb.root);
+      try {
+        assert.ok(BudgetLedger.fromRecords(after.journal.records()).spent('epic', 'E1').usd >= spent.usd, `${at}: no spend lost`);
+      } finally {
+        after.close();
+      }
+    }
+    fs.writeFileSync(jf, full);
   }
-  assert.ok(doctor(sb.root).problems.some((p) => /A is done, journal says planned \(ahead of or off the journal/.test(p)));
+  t.diagnostic(`earlier journals tried: ${refused + accepted}; refused ${refused}; accepted ${accepted} (cuts after the last transition)`);
+  assert.ok(refused > 0, 'some restored journals were refused');
+  assert.ok(refused >= accepted * 5, `almost every earlier journal is refused (refused ${refused}, accepted ${accepted})`);
+  // Doctor names the same inconsistency.
+  const lastTransition = lines.map((l) => l.includes('"type":"task.transition"')).lastIndexOf(true);
+  fs.writeFileSync(jf, lines.slice(0, lastTransition).join('\n') + '\n');
+  assert.ok(doctor(sb.root).problems.some((p) => /T5 is done at journal seq \d+, journal says \w+ at seq \d+ .*resume refuses/.test(p)));
+  fs.writeFileSync(jf, full);
+});
+
+test('a journal cut back past a repeated block cannot undo the block by passing for a crash', async () => {
+  // The second review's case: blocked (budget), unblocked by a human, blocked again. Cut just
+  // after the unblock, the journal expects ready one step after blocked, and the store is
+  // blocked again; only the journal position recorded in the store tells the two blocks apart.
+  // As in the epic-cap test: X and Y spend $4 each, then Z (5 more) no longer fits in $12.
+  const sb = sandbox((p) => ({ ...p, budget: { ...p.budget, epic: { usd: 12, tokens: 20_000_000 } } }));
+  const plan: Plan = { epicId: 'E1', title: 'three', tasks: ['X', 'Y', 'Z'].map((id) => ({ id, title: id, deps: [] })) };
+  const runner = (): FakeRunner => new FakeRunner({ default: { behaviour: 'pass', costUsd: 4 } });
+  let c = Controller.open(sb.root);
+  try {
+    c.importPlan(plan, sb.repo, 'h');
+    assert.equal((await c.run(runner(), { repoPath: sb.repo })).states['Z'], 'blocked');
+    c.unblock('Z', 'h', 'try again');
+    assert.equal((await c.run(runner(), { repoPath: sb.repo })).states['Z'], 'blocked');
+  } finally {
+    c.close();
+  }
+  const jf = path.join(sb.root, 'journal.jsonl');
+  const lines = fs.readFileSync(jf, 'utf8').split('\n').filter(Boolean);
+  const unblocked = lines.findIndex((l) => l.includes('"type":"task.transition"') && l.includes('"from":"blocked"'));
+  fs.writeFileSync(jf, lines.slice(0, unblocked + 1).join('\n') + '\n');
+  c = Controller.open(sb.root);
+  try {
+    assert.throws(() => c.resume(), /Z is blocked at journal seq \d+, journal says ready at seq \d+ \(or blocked at seq \d+ after a crash\)/);
+    assert.equal(c.store.get('Z')?.state, 'blocked', 'the block stands');
+  } finally {
+    c.close();
+  }
+});
+
+test('evidence or escalation files the journal never recorded make recovery refuse', async () => {
+  const { sb, c } = await runPlan(twoIndependent, { default: { behaviour: 'pass' } });
+  c.close();
+  const ev = path.join(sb.root, 'evidence');
+  fs.cpSync(path.join(ev, 'A', 'a1'), path.join(ev, 'A', 'a2'), { recursive: true });
+  let ck = Controller.open(sb.root);
+  try {
+    assert.throws(() => ck.resume(), /evidence for attempt A#2 exists, but the journal has no end for that attempt/);
+  } finally {
+    ck.close();
+  }
+  fs.rmSync(path.join(ev, 'A', 'a2'), { recursive: true });
+  fs.writeFileSync(path.join(sb.root, 'escalations', 'esc-A-99.json'), '{}');
+  ck = Controller.open(sb.root);
+  try {
+    assert.throws(() => ck.resume(), /escalation file esc-A-99 exists, but the journal has no such escalation/);
+  } finally {
+    ck.close();
+  }
+});
+
+test('a legitimate crash between the journal append and the store update is recovered', () => {
+  const sb = sandbox();
+  let c = Controller.open(sb.root);
+  c.importPlan(twoIndependent, sb.repo, 'h');
+  // The transition is journaled, then the controller dies before the store applies it.
+  const rec = c.journal.append('task.transition', { taskId: 'A', from: 'planned', to: 'ready', reason: 'dependencies done' });
+  c.close();
+  assert.equal(storeSnapshot(sb.root).find((t) => t.id === 'A')?.state, 'planned');
+  assert.ok(doctor(sb.root).problems.some((p) => /A is planned, journal says ready \(one step behind after a crash/.test(p)));
+  c = Controller.open(sb.root);
+  try {
+    const report = c.resume();
+    assert.deepEqual(report.transitionsReplayed, ['A:planned->ready']);
+    const a = c.store.get('A');
+    assert.equal(a?.state, 'ready');
+    assert.equal(a?.journalSeq, rec.seq, 'the store records which journal record it applied');
+  } finally {
+    c.close();
+  }
+  assert.deepEqual(doctor(sb.root).problems, []);
+});
+
+test('known limit (M2-0b): restoring the journal and the store together to an older consistent snapshot is not detected', { skip: TEST_STORE === 'beads' && 'copies the FakeStore state root' }, async () => {
+  // Without a checkpoint outside the state root, an older copy of the whole state root is
+  // internally consistent and looks like a state root that simply stopped there. Recording
+  // the journal head somewhere a rollback of the state root cannot reach is M2-0b.
+  const sb = sandbox();
+  let c = Controller.open(sb.root);
+  c.importPlan(twoIndependent, sb.repo, 'h');
+  c.close();
+  const snapshot = path.join(sb.dir, 'snapshot');
+  fs.cpSync(sb.root, snapshot, { recursive: true });
+  c = Controller.open(sb.root);
+  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
+  c.close();
+  fs.rmSync(sb.root, { recursive: true });
+  fs.cpSync(snapshot, sb.root, { recursive: true });
+  c = Controller.open(sb.root);
+  try {
+    c.resume();
+    assert.deepEqual(c.store.list().map((t) => t.state), ['planned', 'planned'], 'the rollback went unnoticed');
+  } finally {
+    c.close();
+  }
 });
 
 test('the run summary reports tasks stalled behind a blocked dependency', async () => {

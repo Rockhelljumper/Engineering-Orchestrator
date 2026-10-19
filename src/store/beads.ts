@@ -207,6 +207,11 @@ export class BeadsStore implements TaskStore {
    * re-initialise one whose init never completed (a crash during `bd init`); without it,
    * refuse a workspace that is not fully initialised.
    */
+  /** Whether `dir` holds a beads store whose initialisation completed. */
+  static isInitialised(dir: string): boolean {
+    return fs.existsSync(path.join(dir, INIT_MARKER));
+  }
+
   static atDir(dir: string, opts: BeadsStoreOptions): BeadsStore {
     const create = opts.create ?? false;
     if (!create && !fs.existsSync(path.join(dir, INIT_MARKER))) throw new StoreError(`beads store at ${dir} is not initialised`);
@@ -307,7 +312,7 @@ export class BeadsStore implements TaskStore {
     if (bad) throw new StoreError(`invalid task ${t.id}: ${bad}`);
     if (this.show(t.id)) throw new StoreError(`task exists: ${t.id}`);
     for (const d of t.deps) if (!this.show(d)) throw new StoreError(`unknown dependency ${d} for ${t.id}`);
-    const meta: EoMeta = { v: 1, epicId: t.epicId, state: 'planned', claim: null, attempt: 0, correctionFailures: 0, infraFailures: 0, lastFailureSignature: null, repeatCount: 0 };
+    const meta: EoMeta = { v: 1, epicId: t.epicId, state: 'planned', claim: null, attempt: 0, correctionFailures: 0, infraFailures: 0, lastFailureSignature: null, repeatCount: 0, journalSeq: 0 };
     const args = ['create', '--id', bead(t.id), '--title', t.title, '--type', 'task', '--metadata', JSON.stringify({ eo: meta }), '--json'];
     if (t.deps.length) args.push('--deps', t.deps.map(bead).join(','));
     const r = this.run(args);
@@ -445,6 +450,8 @@ function toRecord(issue: BdIssue): TaskRecord {
     infraFailures: m.infraFailures,
     lastFailureSignature: m.lastFailureSignature,
     repeatCount: m.repeatCount,
+    // Absent only on beads written by an older eo; 0 never matches a journaled transition.
+    journalSeq: m.journalSeq ?? 0,
   };
 }
 
@@ -455,5 +462,6 @@ function pickCounters(c: Partial<TaskCounters>): Partial<TaskCounters> {
   if (c.infraFailures !== undefined) out.infraFailures = c.infraFailures;
   if (c.lastFailureSignature !== undefined) out.lastFailureSignature = c.lastFailureSignature;
   if (c.repeatCount !== undefined) out.repeatCount = c.repeatCount;
+  if (c.journalSeq !== undefined) out.journalSeq = c.journalSeq;
   return out;
 }

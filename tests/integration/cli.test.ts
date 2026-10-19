@@ -121,13 +121,14 @@ test('eo doctor reports a store that is ahead of the journal, and resume refuses
   assert.equal(openStore(statePaths(sb.root), { create: false }).compareAndSetState('T5', 'planned', 'done'), true);
   const d = runCli(['doctor', '--state-root', sb.root]);
   assert.equal(d.status, 1);
-  assert.match(d.stdout, /T5 is done, journal says planned \(ahead of or off the journal/);
+  assert.match(d.stdout, /T5 is done at journal seq 0, journal says planned at seq 0 \(ahead of or off the journal/);
   assert.match(d.stdout, /evidence T5: done without any attempt/);
   // A store ahead of a write-ahead journal is never a crash state, so resume must not "repair"
   // it by rewinding: that would undo finished work and forget its spend. A human decides.
   const r = runCli(['resume', '--state-root', sb.root]);
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /task store is ahead of or diverged from the journal \(T5 is done, journal says planned\)/);
+  assert.match(r.stderr, /task store is ahead of or diverged from the journal \(T5 is done at journal seq 0, journal says planned at seq 0\); nothing was changed/);
+  assert.match(r.stderr, /Forensic record: .*forensics/);
   assert.equal(openStore(statePaths(sb.root), { create: false }).get('T5')?.state, 'done', 'the store was left as found');
   assert.equal(runCli(['doctor', '--state-root', sb.root]).status, 1);
 });

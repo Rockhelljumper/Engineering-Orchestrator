@@ -17,5 +17,15 @@ export function openStore(paths: StateRootPaths, opts: { create: boolean; record
   const cfg = readStoreConfig(paths);
   const bound = opts.records?.find((r) => r.type === 'store.bound')?.data as { kind: string } | undefined;
   if (bound && bound.kind !== cfg.kind) throw new StoreError(`store.json says ${cfg.kind}, but this state root is bound to the ${bound.kind} store`);
-  return cfg.kind === 'beads' ? BeadsStore.atDir(paths.store, { bin: cfg.bin, create: opts.create }) : FakeStore.atDir(paths.store);
+  if (cfg.kind === 'beads') {
+    // A store is initialised once, before any plan is imported. Once the journal holds a plan,
+    // a store without its marker was damaged or replaced; re-initialising would erase what is
+    // left of it, so refuse and leave it for a human.
+    const planned = opts.records?.some((r) => r.type === 'plan.import') ?? false;
+    if (planned && !BeadsStore.isInitialised(paths.store)) {
+      throw new StoreError(`the beads store at ${paths.store} is not initialised, but the journal has imported plans; refusing to re-initialise it`);
+    }
+    return BeadsStore.atDir(paths.store, { bin: cfg.bin, create: opts.create && !planned });
+  }
+  return FakeStore.atDir(paths.store);
 }
