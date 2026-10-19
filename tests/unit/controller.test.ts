@@ -722,6 +722,32 @@ test('other refusals to open also leave a forensic record', () => {
   assert.throws(() => Controller.open(sb.root), /policy.json differs .* Forensic record: .*open-refused/);
 });
 
+test('an open that fails its policy check finishes no interrupted transition; the accepting open does', () => {
+  const sb = sandbox();
+  const c0 = Controller.open(sb.root);
+  c0.importPlan(twoIndependent, sb.repo, 'h');
+  c0.journal.append('task.transition', { taskId: 'A', from: 'planned', to: 'ready', reason: 'dependencies done' });
+  c0.close();
+  const pf = path.join(sb.root, 'policy.json');
+  fs.writeFileSync(pf, fs.readFileSync(pf, 'utf8').replace('"max": 2', '"max": 1'));
+  assert.throws(() => Controller.open(sb.root), /policy.json differs/);
+  assert.equal(storeSnapshot(sb.root).find((t) => t.id === 'A')?.state, 'planned', 'the failed open wrote no task');
+  const c1 = Controller.open(sb.root, { allowPolicyDrift: true });
+  c1.close();
+  assert.equal(storeSnapshot(sb.root).find((t) => t.id === 'A')?.state, 'ready');
+});
+
+test('a journal position that is not a number is refused as invalid, not as an older eo', { skip: TEST_STORE === 'beads' && 'edits the FakeStore file' }, () => {
+  const sb = sandbox();
+  const c0 = Controller.open(sb.root);
+  c0.importPlan(twoIndependent, sb.repo, 'h');
+  c0.close();
+  editStore(sb, (t) => {
+    (t['A'] as Record<string, unknown>)['journalSeq'] = null;
+  });
+  assert.throws(() => Controller.open(sb.root), /A has an invalid journal position \(null\)/);
+});
+
 test('a legitimate crash between the journal append and the store update is recovered', () => {
   const sb = sandbox();
   let c = Controller.open(sb.root);

@@ -12,7 +12,7 @@ import { openStore } from './store/open.ts';
 import type { TaskCounters, TaskRecord, TaskStore } from './store/types.ts';
 import { planHash, topoOrder, validatePlan, type Plan } from './plan.ts';
 import { FileLock } from './util/lock.ts';
-import { assertPrivateDir, writeFileAtomic } from './util/fsx.ts';
+import { assertPrivateDir, fsyncDir, writeAll, writeFileAtomic } from './util/fsx.ts';
 import type { RunResult, Runner } from './runner/types.ts';
 
 export interface TransitionRecord {
@@ -80,7 +80,15 @@ function writeForensic(root: string, kind: string, body: unknown): string {
     assertPrivateDir(dir);
     // Random suffix and exclusive create: a record never replaces an earlier one.
     const file = path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}-${randomUUID().slice(0, 8)}-${kind}.json`);
-    fs.writeFileSync(file, JSON.stringify(body, null, 2), { flag: 'wx', mode: 0o600 });
+    const fd = fs.openSync(file, 'wx', 0o600);
+    try {
+      writeAll(fd, JSON.stringify(body, null, 2));
+      // Durable before anything it preserves is changed (the torn-tail repair).
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+    fsyncDir(dir);
     return `Forensic record: ${file}.`;
   } catch (err) {
     return `The forensic record could not be written (${(err as Error).message}).`;
@@ -865,8 +873,12 @@ export function recoveryProblems(records: readonly JournalRecord[], tasks: reado
       if (exp.prev) problems.push(`${id} is missing from the store, but the journal has transitions for it (last at seq ${exp.counters.journalSeq})`);
       continue;
     }
-    if (typeof t.journalSeq !== 'number') {
+    if (t.journalSeq === undefined) {
       problems.push(`${id} has no journal position: it was written by an older eo, and state roots from before journal positions are not supported`);
+      continue;
+    }
+    if (!Number.isSafeInteger(t.journalSeq) || t.journalSeq < 0) {
+      problems.push(`${id} has an invalid journal position (${JSON.stringify(t.journalSeq)})`);
       continue;
     }
     const drift = storeDrift(t, exp);

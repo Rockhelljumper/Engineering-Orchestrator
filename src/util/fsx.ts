@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { randomBytes } from 'node:crypto';
 
-function writeAll(fd: number, data: string | Buffer): void {
+export function writeAll(fd: number, data: string | Buffer): void {
   const buf = typeof data === 'string' ? Buffer.from(data) : data;
   let off = 0;
   while (off < buf.length) off += fs.writeSync(fd, buf, off, buf.length - off);
