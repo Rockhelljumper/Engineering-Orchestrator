@@ -141,6 +141,12 @@ test('eo init refuses a root left over from an earlier state root, even without 
   assert.equal(again.status, 1);
   assert.match(again.stderr, /holds an earlier state root/);
   assert.equal(fs.readFileSync(path.join(root, 'journal.key'), 'utf8'), key, 'the journal key was kept');
+  // A crash during init (a key, but no journal yet) has signed nothing, so init may start over.
+  const crashed = path.join(tmpDir(), 'state');
+  fs.mkdirSync(crashed, { mode: 0o700 });
+  fs.writeFileSync(path.join(crashed, 'journal.key'), 'f'.repeat(64));
+  assert.equal(runCli(['init', '--state-root', crashed]).status, 0);
+  assert.notEqual(fs.readFileSync(path.join(crashed, 'journal.key'), 'utf8'), 'f'.repeat(64));
 });
 
 test('a state root that others can write is refused', { skip: process.platform === 'win32' && 'POSIX permissions' }, () => {
@@ -153,12 +159,31 @@ test('a state root that others can write is refused', { skip: process.platform =
     fs.chmodSync(d, 0o700);
   }
   assert.equal(runCli(['status', '--state-root', sb.root]).status, 0);
+  // The controller refuses before writing anything, even with a store handed to it.
+  fs.chmodSync(sb.root, 0o777);
+  const journalBefore = fs.readFileSync(statePaths(sb.root).journal);
+  fs.rmSync(statePaths(sb.root).locks, { recursive: true, force: true });
+  assert.throws(() => Controller.open(sb.root, { store: openStoreUnchecked(sb.root) }), /unsafe state root: .* writable by group or others/);
+  assert.equal(fs.existsSync(statePaths(sb.root).locks), false, 'no lock directory was created');
+  assert.deepEqual(fs.readFileSync(statePaths(sb.root).journal), journalBefore);
+  fs.chmodSync(sb.root, 0o700);
   // eo init refuses to adopt one too.
   const open = path.join(tmpDir(), 'open');
   fs.mkdirSync(open, { mode: 0o700 });
   fs.chmodSync(open, 0o777);
   assert.equal(runCli(['init', '--state-root', open]).status, 1);
 });
+
+/** The store of a state root, opened while its directories are still private. */
+function openStoreUnchecked(root: string): ReturnType<typeof openStore> {
+  const mode = fs.statSync(root).mode & 0o777;
+  fs.chmodSync(root, 0o700);
+  try {
+    return openStore(statePaths(root), { create: false });
+  } finally {
+    fs.chmodSync(root, mode);
+  }
+}
 
 test('usage errors exit 2', () => {
   assert.equal(runCli([]).status, 2);

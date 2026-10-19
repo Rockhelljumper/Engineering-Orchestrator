@@ -58,14 +58,15 @@ export function isInitialised(root: string): boolean {
 
 /**
  * Create the layout, a fresh 256-bit journal key and the default policy. Refuses a root that
- * holds any part of an earlier state root (a key, a journal, a store or its config), even if
- * policy.json is gone: a new key would make the existing journal and evidence unverifiable.
+ * holds a journal or a non-empty store or evidence directory, even if policy.json is gone: a
+ * new key would make them unverifiable. A key or store.json alone (a crash during init) has
+ * signed nothing and is replaced.
  */
 export function initStateRoot(root: string, store: StoreConfig = { kind: 'fake' }): StateRootPaths {
   const p = statePaths(root);
   if (isInitialised(root)) throw new Error(`state root already initialised: ${p.root}`);
-  const leftovers = [p.journalKey, p.journal, p.storeConfig].filter((f) => fs.existsSync(f));
-  if (fs.existsSync(p.store) && fs.readdirSync(p.store).length > 0) leftovers.push(p.store);
+  const leftovers = [p.journal].filter((f) => fs.existsSync(f));
+  for (const d of [p.store, p.evidence]) if (fs.existsSync(d) && fs.readdirSync(d).length > 0) leftovers.push(d);
   if (leftovers.length > 0) throw new Error(`state root ${p.root} holds an earlier state root (${leftovers.join(', ')}); refusing to initialise over it`);
   for (const dir of [p.root, p.store, p.evidence, p.escalations, p.locks]) fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   assertPrivateDir(p.root);

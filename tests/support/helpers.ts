@@ -20,11 +20,14 @@ export const BD_BIN: string | undefined = process.env['EO_BD_BIN'] || undefined;
 if (!BD_BIN && process.env['EO_REQUIRE_BD'] === '1') throw new Error('EO_REQUIRE_BD=1 but EO_BD_BIN is not set');
 
 /**
- * EO_REQUIRE_TRACE=1 makes the strace-based network checks (M1-6) fail instead of skipping
- * when strace or `unshare -n` is unavailable, so an evidence run cannot pass without them.
+ * The strace-based network checks (M1-6) fail instead of skipping when strace or `unshare -n`
+ * is unavailable if EO_REQUIRE_TRACE=1, or on Linux if EO_REQUIRE_BD=1, so a Linux evidence
+ * run cannot pass without them.
  */
 export function requireTrace(available: boolean): void {
-  if (!available && process.env['EO_REQUIRE_TRACE'] === '1') throw new Error('EO_REQUIRE_TRACE=1 but strace or unshare -n is not available');
+  if (available) return;
+  if (process.env['EO_REQUIRE_TRACE'] === '1') throw new Error('EO_REQUIRE_TRACE=1 but strace or unshare -n is not available');
+  if (process.platform === 'linux' && process.env['EO_REQUIRE_BD'] === '1') throw new Error('EO_REQUIRE_BD=1 on Linux needs strace and unshare -n for the M1-6 checks');
 }
 
 const made: string[] = [];

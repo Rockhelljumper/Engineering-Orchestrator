@@ -314,6 +314,7 @@ test('a store entry that is a symlink or a hard link is replaced by a private co
   // Both point at a file with the pinned bytes, so only the link check can catch them.
   const outside = path.join(tmpDir(), 'bd');
   fs.copyFileSync(bin, outside);
+  fs.chmodSync(outside, 0o755);
   for (const link of ['symlink', 'hardlink'] as const) {
     fs.chmodSync(entry, 0o700);
     fs.rmSync(entry);
@@ -324,6 +325,7 @@ test('a store entry that is a symlink or a hard link is replaced by a private co
     assert.ok(st.isFile(), `${link}: entry is a regular file again`);
     assert.equal(st.nlink, 1, `${link}: entry has no other links`);
     assert.notEqual(st.ino, fs.statSync(outside).ino, `${link}: entry no longer shares the outside file`);
+    assert.equal(fs.statSync(outside).mode & 0o777, 0o755, `${link}: the outside file was not touched`);
     assert.equal(s.get('A')?.state, 'planned');
   }
 });

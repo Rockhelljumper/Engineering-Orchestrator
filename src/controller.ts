@@ -6,7 +6,7 @@ import { Journal, verifyJournalFile, type JournalRecord } from './journal.ts';
 import { EvidenceLedger } from './evidence.ts';
 import { BudgetGovernor, type Amount } from './budget.ts';
 import { assertRepositoryApproved, canonicalRepoPath, loadPolicy, policyHash, savePolicy, withApprovedRepository, type Policy } from './policy.ts';
-import { readJournalKey, statePaths, type StateRootPaths } from './stateRoot.ts';
+import { assertPrivateStateRoot, readJournalKey, statePaths, type StateRootPaths } from './stateRoot.ts';
 import { assertTransition, type TaskState } from './states.ts';
 import { openStore } from './store/open.ts';
 import type { TaskCounters, TaskRecord, TaskStore } from './store/types.ts';
@@ -119,6 +119,14 @@ export class Controller {
   /** Acquire the controller lock and open state. Throws if another controller is running. */
   static open(root: string, opts: { store?: TaskStore; allowPolicyDrift?: boolean } = {}): Controller {
     const paths = statePaths(root);
+    // Before anything is written: a root others can change is never used.
+    if (fs.existsSync(paths.root)) {
+      try {
+        assertPrivateStateRoot(paths);
+      } catch (err) {
+        throw new ControllerError(`unsafe state root: ${(err as Error).message}`);
+      }
+    }
     fs.mkdirSync(paths.locks, { recursive: true });
     const lock = new FileLock(paths.controllerLock, `controller:${process.pid}`);
     if (!lock.tryAcquire()) throw new ControllerError(`another controller holds ${paths.controllerLock}`);

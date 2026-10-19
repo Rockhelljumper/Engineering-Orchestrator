@@ -182,8 +182,10 @@ export class BeadsStore implements TaskStore {
         fs.chmodSync(tmp, 0o500);
         const got = sha256(fs.readFileSync(tmp));
         if (got !== want) throw new StoreError(`bd binary ${src} has SHA-256 ${got}, expected the pinned ${want}`);
-        // On Windows a read-only file cannot be replaced by rename. lstat: never chmod a symlink's target.
-        if (fs.lstatSync(this.bin, { throwIfNoEntry: false })?.isFile()) fs.chmodSync(this.bin, 0o700);
+        // On Windows a read-only file cannot be replaced by rename (POSIX renames over it). Only
+        // there, and only a private file: chmod of a symlink or hard link would change the file
+        // it shares, such as the user's own bd.
+        if (process.platform === 'win32' && fileId(this.bin) !== undefined) fs.chmodSync(this.bin, 0o700);
         fs.renameSync(tmp, this.bin);
       } catch (err) {
         if (err instanceof StoreError) throw err;
