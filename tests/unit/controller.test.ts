@@ -8,6 +8,9 @@ import { PolicyError, canonicalRepoPath, loadPolicy, policyHash } from '../../sr
 import { doctor } from '../../src/doctor.ts';
 import { readExecLog, samplePlan, sandbox, TEST_STORE, tmpDir, type Sandbox } from '../support/helpers.ts';
 import { planHash, type Plan } from '../../src/plan.ts';
+import { statePaths } from '../../src/stateRoot.ts';
+import { openStore } from '../../src/store/open.ts';
+import { StoreError, type TaskStore } from '../../src/store/types.ts';
 
 interface Run {
   sb: Sandbox;
@@ -215,6 +218,45 @@ test('a hanging worker is aborted at the timeout and retried as an infra failure
     // A hang reports no cost, so the full reservation is charged.
     const settle = c.journal.ofType<{ id: string; basis: string }>('budget.settle').find((r) => r.data.id.startsWith('A#1@'));
     assert.equal(settle?.data.basis, 'unknown');
+  } finally {
+    c.close();
+  }
+});
+
+test('a lease that cannot be renewed ends the attempt as an infra failure instead of crashing the controller', async () => {
+  const sb = sandbox((p) => ({ ...p, leaseMs: 300, limits: { ...p.limits, maxInfraRetries: 5 } }));
+  const inner = openStore(statePaths(sb.root), { create: false });
+  // The first renewal throws (bd failing), the second reports the lease lost; then normal.
+  let calls = 0;
+  const store = new Proxy(inner, {
+    get(target, key, receiver) {
+      if (key === 'heartbeat') {
+        return (...args: Parameters<TaskStore['heartbeat']>): boolean => {
+          calls++;
+          if (calls === 1) throw new StoreError('bd update failed (exit 1): simulated');
+          if (calls === 2) return false;
+          return target.heartbeat(...args);
+        };
+      }
+      const v = Reflect.get(target, key, receiver) as unknown;
+      return typeof v === 'function' ? (v as (...a: unknown[]) => unknown).bind(target) : v;
+    },
+  });
+  const log = path.join(sb.dir, 'exec.log');
+  const c = Controller.open(sb.root, { store });
+  try {
+    c.importPlan(twoIndependent, sb.repo, 'h');
+    const summary = await c.run(new FakeRunner({ default: { behaviour: 'pass' }, tasks: { A: [{ behaviour: 'hang' }, { behaviour: 'hang' }] }, execLog: log }), { repoPath: sb.repo });
+    // Both hung attempts report no cost, so each is charged the full $5 reservation and the
+    // $10 task cap then stops a third attempt: the budget, not the lease, decides the end state.
+    assert.equal(summary.states['A'], 'blocked');
+    const reasons = c.journal
+      .ofType<{ taskId: string; attempt: number; result: { kind: string; reason?: string } }>('attempt.end')
+      .filter((r) => r.data.taskId === 'A')
+      .map((r) => `${r.data.attempt}:${r.data.result.kind}:${r.data.result.reason ?? ''}`);
+    assert.deepEqual(reasons, ['1:infra:lease renewal failed: bd update failed (exit 1): simulated', '2:infra:lease lost']);
+    assert.equal(summary.states['B'], 'done');
+    assert.equal(c.store.get('A')?.infraFailures, 2);
   } finally {
     c.close();
   }
