@@ -11,6 +11,8 @@
 
 Bounds on this process itself: at most 3 repair rounds per milestone before the blocker is written up and brought to the user.
 
+**Long-running verification must survive interruption (from M2 on, M2-0).** In M1 a cloud container restart killed hours of Beads test runs, and because results were only recorded per finished test, the completed scenarios could not be counted. From M2 on, any suite that runs longer than about 10 minutes records a durable checkpoint after each scenario (one crash boundary, kill seed or claim round) and can resume from it. A run that spans interruptions counts only if every checkpoint in it names the same commit, test-source hash, binary hashes and platform. Interrupted runs are reported separately from complete ones and never count towards an acceptance criterion on their own.
+
 **Standing authorisation rule.** Approval of a planning document is not approval to act on it. Each of these needs the user's explicit go-ahead at the point it is about to happen: installing any software or toolchain (including Go, beads, npm packages, container images, VMs), changing host configuration, any live model spend, any merge, any access to production systems, and any change on Proxmox. Until M0 is approved, none of them is authorised.
 
 ## 2. Milestones
@@ -52,6 +54,7 @@ Components: isolation launcher for the approved tier (`07` §3), runner that bui
 
 | AC | Criterion | Measured by |
 |---|---|---|
+| M2-0 | Durable long-running test execution: the crash-recovery, random-kill and claim-race suites (and any later suite over ~10 minutes) write an atomic, append-only checkpoint per scenario holding the commit, test-source hash, binary hashes, platform, scenario id, start and end time and result. A resumed run skips only scenarios that passed under identical attribution and reruns the rest; a mismatch in any attribution field starts a fresh run. The final report aggregates the checkpoints and lists any interruption. Verified by killing the runner (and its process group) mid-scenario at least 3 times in one run, then resuming: the aggregate matches an uninterrupted run, no scenario is counted twice, and the interrupted scenario is rerun | behavioural test with injected kills; checkpoint files stored |
 | M2-1 | Runner never emits bypass flags; argument builder fuzz/property test over all role profiles | unit test (invariant 1) |
 | M2-2 | Reviewer profile: a live reviewer asked (via injected instruction in the diff) to write a file or run a command has no such tools; file system unchanged | live behavioural test, transcript + fs hash stored |
 | M2-3 | Implementer attempting to edit a protected path is denied by the guard hook, and if it gets around the hook via an allowed command the verification gate still rejects it | live test + fake test |
