@@ -78,8 +78,9 @@ function writeForensic(root: string, kind: string, body: unknown): string {
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     // Never through a link out of the state root, or into a directory others can change.
     assertPrivateDir(dir);
-    const file = path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}-${kind}.json`);
-    writeFileAtomic(file, JSON.stringify(body, null, 2));
+    // Random suffix and exclusive create: a record never replaces an earlier one.
+    const file = path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}-${randomUUID().slice(0, 8)}-${kind}.json`);
+    fs.writeFileSync(file, JSON.stringify(body, null, 2), { flag: 'wx', mode: 0o600 });
     return `Forensic record: ${file}.`;
   } catch (err) {
     return `The forensic record could not be written (${(err as Error).message}).`;
@@ -152,10 +153,6 @@ export class Controller {
     }
     this.journal = Journal.open(paths.journal, key, { repairTornTail: true });
     this.tornTailRepaired = before.tornTail;
-    // A crash can leave the journal's last transition unapplied. Finish it now, so a command
-    // run before resume (eo unblock) cannot journal a transition after it and make it look
-    // like an older one that was never applied.
-    this.finishedOnOpen = this.finishLastTransition();
     this.budget = new BudgetGovernor(this.journal, this.policy.budget);
     const now = policyHash(this.policy);
     const { committed, pending } = policyRecords(this.journal.records());
@@ -174,6 +171,10 @@ export class Controller {
     const bound = this.journal.ofType<{ kind: string }>('store.bound')[0];
     if (!bound) this.journal.append('store.bound', { kind: this.store.kind });
     else if (bound.data.kind !== this.store.kind) throw new ControllerError(`this state root uses the ${bound.data.kind} store, not ${this.store.kind}`);
+    // A crash can leave the journal's last transition unapplied. Finish it now (after the checks above, so an open that fails writes no task), so a command
+    // run before resume (eo unblock) cannot journal a transition after it and make it look
+    // like an older one that was never applied.
+    this.finishedOnOpen = this.finishLastTransition();
     this.planIndex = journaledTasks(this.journal.records());
   }
 

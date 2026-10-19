@@ -179,6 +179,17 @@ test('changes made with bd directly, behind the controller, are refused', { skip
       /does not match the journaled plans/,
       /T1 epic is OTHER, plan says E1/,
     ],
+    [
+      'written before journal positions',
+      (d) => {
+        const cur = (JSON.parse(bdRaw(d, ['show', '--id=eo-T1', '--json'])) as Array<{ metadata: { eo: Record<string, unknown> } }>)[0];
+        const eo = { ...cur?.metadata.eo };
+        delete eo['journalSeq'];
+        bdRaw(d, ['update', 'eo-T1', '--metadata', JSON.stringify({ eo })]);
+      },
+      /T1 has no journal position: it was written by an older eo/,
+      /T1 has no journal position: it was written by an older eo/,
+    ],
   ];
   for (const [name, tamper, re, doctorRe] of cases) {
     const sb = beadsSandbox();
@@ -347,6 +358,24 @@ test('a beads store that lost its initialisation marker after plans were importe
   // Re-initialising would have deleted .beads and its tasks.
   assert.deepEqual(fs.readdirSync(path.join(storeDir, '.beads')).sort(), beadsBefore);
   assert.equal(bdRaw(storeDir, ['list', '--json', '--all']).includes('eo-T5'), true, 'the tasks are still there');
+});
+
+test('a beads store that lost its marker is refused once evidence exists, even with an empty journal', { skip }, () => {
+  // A journal that was emptied as well must not let a re-initialisation erase the tasks
+  // while evidence shows the root was in use.
+  const sb = beadsSandbox();
+  const c = Controller.open(sb.root, { store: sb.store });
+  c.importPlan(samplePlan(), sb.repo, 'h');
+  c.close();
+  const p = statePaths(sb.root);
+  fs.mkdirSync(path.join(p.evidence, 'T1', 'a1'), { recursive: true });
+  fs.writeFileSync(path.join(p.evidence, 'T1', 'a1', 'manifest.json'), '{}');
+  fs.rmSync(path.join(p.store, '.eo-initialised'));
+  fs.writeFileSync(p.journal, '');
+  const beadsBefore = fs.readdirSync(path.join(p.store, '.beads')).sort();
+  assert.throws(() => Controller.open(sb.root), /not initialised, but this state root is already in use .*; refusing to re-initialise it/);
+  assert.deepEqual(fs.readdirSync(path.join(p.store, '.beads')).sort(), beadsBefore);
+  assert.equal(bdRaw(p.store, ['list', '--json', '--all']).includes('eo-T5'), true, 'the tasks are still there');
 });
 
 test('a state root bound to the fake store is refused before any beads files are written', { skip }, () => {

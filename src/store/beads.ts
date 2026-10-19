@@ -202,15 +202,16 @@ export class BeadsStore implements TaskStore {
     this.env = bdEnv(home, dir);
   }
 
+  /** Whether `dir` holds a beads store whose initialisation completed. */
+  static isInitialised(dir: string): boolean {
+    return fs.existsSync(path.join(dir, INIT_MARKER));
+  }
+
   /**
    * Open the beads workspace in `dir`. With `create`, initialise it on first use, and
    * re-initialise one whose init never completed (a crash during `bd init`); without it,
    * refuse a workspace that is not fully initialised.
    */
-  /** Whether `dir` holds a beads store whose initialisation completed. */
-  static isInitialised(dir: string): boolean {
-    return fs.existsSync(path.join(dir, INIT_MARKER));
-  }
 
   static atDir(dir: string, opts: BeadsStoreOptions): BeadsStore {
     const create = opts.create ?? false;
@@ -450,8 +451,8 @@ function toRecord(issue: BdIssue): TaskRecord {
     infraFailures: m.infraFailures,
     lastFailureSignature: m.lastFailureSignature ?? null,
     repeatCount: m.repeatCount,
-    // Absent only on beads written by an older eo; 0 never matches a journaled transition.
-    journalSeq: m.journalSeq ?? 0,
+    // Absent only on beads written by an older eo; left absent so recovery names the cause.
+    journalSeq: m.journalSeq as number,
   };
 }
 

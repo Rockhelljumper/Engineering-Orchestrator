@@ -434,6 +434,24 @@ function storeSnapshot(root: string): TaskRecord[] {
   return openStore(statePaths(root), { create: false }).list();
 }
 
+/** Every file under `dir` with its bytes (base64), for "left exactly as found" checks. */
+function filesUnder(dir: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!fs.existsSync(dir)) return out;
+  for (const e of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
+    if (!e.isFile()) continue;
+    const f = path.join(e.parentPath, e.name);
+    out[path.relative(dir, f)] = fs.readFileSync(f).toString('base64');
+  }
+  return out;
+}
+
+/** Evidence and escalations as found. */
+function evidenceAndEscalations(root: string): { evidence: Record<string, string>; escalations: Record<string, string> } {
+  const p = statePaths(root);
+  return { evidence: filesUnder(p.evidence), escalations: filesUnder(p.escalations) };
+}
+
 test('restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record', async (t) => {
   // A run with a verification failure, so tasks pass through several transitions and attempts.
   const { sb, c, log } = await runPlan(samplePlan(), { default: { behaviour: 'pass' }, tasks: { T2: [{ behaviour: 'verify-fail', signature: 's' }] } });
@@ -442,6 +460,7 @@ test('restoring any older valid journal never rewinds finished tasks, attempts o
   const full = fs.readFileSync(jf);
   const lines = full.toString('utf8').split('\n').filter(Boolean);
   const before = storeSnapshot(sb.root);
+  const filesBefore = evidenceAndEscalations(sb.root);
   const executions = readExecLog(log).length;
   const spent = BudgetLedger.fromRecords(c.journal.records()).spent('epic', 'E1');
   assert.ok(before.every((t) => t.state === 'done'));
@@ -478,6 +497,7 @@ test('restoring any older valid journal never rewinds finished tasks, attempts o
       assert.match(error.message, /task store is ahead of or diverged from the journal \(.*journal says .* at seq \d+|task store does not match the journaled plans \(.* is not in any journaled plan/, at);
       assert.match(error.message, /nothing was changed/, at);
       assert.deepEqual(fs.readFileSync(jf), prefix, `${at}: the journal is unchanged`);
+      assert.deepEqual(evidenceAndEscalations(sb.root), filesBefore, `${at}: evidence and escalations are unchanged`);
       // The forensic record names the inconsistency and keeps the store as found.
       const files = fs.readdirSync(forensics).sort();
       assert.equal(files.length, reports + 1, `${at}: one forensic record`);
@@ -632,8 +652,12 @@ test('a refused state root with a torn journal tail is left exactly as found', (
   const jf = path.join(sb.root, 'journal.jsonl');
   fs.appendFileSync(jf, '{"seq":9');
   const found = fs.readFileSync(jf);
+  const tasksFound = storeSnapshot(sb.root);
+  const filesFound = evidenceAndEscalations(sb.root);
   assert.throws(() => Controller.open(sb.root), RecoveryRefusedError);
   assert.deepEqual(fs.readFileSync(jf), found, 'the torn tail was not repaired before the refusal');
+  assert.deepEqual(storeSnapshot(sb.root), tasksFound, 'the store is unchanged');
+  assert.deepEqual(evidenceAndEscalations(sb.root), filesFound, 'evidence and escalations are unchanged');
 });
 
 test('forensic records are never written through a link out of the state root', { skip: process.platform === 'win32' && 'symlinks need privileges on Windows' }, () => {
@@ -657,7 +681,7 @@ test('a legitimate crash followed by eo unblock of another task still recovers',
   const { c } = await runPlan(plan, { default: { behaviour: 'pass' }, tasks: { A: [{ behaviour: 'verify-fail', signature: 's' }, { behaviour: 'verify-fail', signature: 's' }] } }, sb);
   c.close();
   assert.equal(storeSnapshot(sb.root).find((t) => t.id === 'A')?.state, 'blocked');
-  // Crash: B's next transition is journaled, the store never applies it.
+  // Crash: a new task C's first transition is journaled, the store never applies it.
   const c1 = Controller.open(sb.root);
   c1.importPlan({ epicId: 'E2', title: 'more', tasks: [{ id: 'C', title: 'c', deps: [] }] }, sb.repo, 'h');
   c1.journal.append('task.transition', { taskId: 'C', from: 'planned', to: 'ready', reason: 'dependencies done' });
