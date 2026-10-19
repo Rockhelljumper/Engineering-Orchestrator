@@ -8,6 +8,7 @@ import { doctor } from './doctor.ts';
 import { defaultStateRoot, initStateRoot, statePaths } from './stateRoot.ts';
 import { FakeRunner } from './runner/fake.ts';
 import { openStore } from './store/open.ts';
+import { verifyBdBinary } from './store/beads.ts';
 import { BudgetLedger, reservationAmount } from './budget.ts';
 import { verifyJournalFile } from './journal.ts';
 import { readJournalKey } from './stateRoot.ts';
@@ -64,6 +65,7 @@ async function main(argv: string[]): Promise<number> {
       if (kind !== 'fake' && kind !== 'beads') throw new UsageError('--store must be fake or beads');
       const bin = values['bd-bin'] ?? process.env['EO_BD_BIN'];
       if (kind === 'beads' && !bin) throw new UsageError('--store beads needs --bd-bin <path> (or EO_BD_BIN)');
+      if (kind === 'beads') verifyBdBinary(bin as string); // before anything is written
       const p = initStateRoot(root, kind === 'beads' ? { kind, bin: bin as string } : { kind });
       const c = Controller.open(p.root);
       c.close();
@@ -149,7 +151,7 @@ async function main(argv: string[]): Promise<number> {
     case 'evidence': {
       if (!sub) throw new UsageError('usage: eo evidence <task> [--attempt n]');
       const p = statePaths(root);
-      const store = openStore(p);
+      const store = openStore(p, { create: false, records: verifyJournalFile(p.journal, readJournalKey(p)).records });
       const t = store.get(sub);
       if (!t) throw new UsageError(`unknown task ${sub}`);
       const attempt = values.attempt ? Number(values.attempt) : t.attempt;
@@ -173,9 +175,9 @@ function withController(root: string, fn: (c: Controller) => number): number {
 
 function status(root: string, json: boolean): number {
   const p = statePaths(root);
-  const store = openStore(p);
   const key = readJournalKey(p);
   const v = verifyJournalFile(p.journal, key);
+  const store = openStore(p, { create: false, records: v.records });
   const policy = loadPolicy(p.policy);
   const ledger = BudgetLedger.fromRecords(v.records);
   const tasks = store.list();

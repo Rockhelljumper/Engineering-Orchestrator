@@ -51,8 +51,11 @@ for (const f of factories) {
       const { store } = f.make();
       store.createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
       store.createTask({ id: 'B', epicId: 'E', title: 'b', deps: ['A'] });
+      store.createTask({ id: 'C', epicId: 'E', title: 'c', deps: ['B', 'A'] });
       assert.deepEqual(store.get('B')?.deps, ['A']);
-      assert.deepEqual(store.list().map((t) => t.id), ['A', 'B']);
+      assert.deepEqual(store.list().map((t) => t.id), ['A', 'B', 'C']);
+      assert.deepEqual(store.list().map((t) => [...t.deps].sort()), [[], ['A'], ['A', 'B']], 'list() returns the same dependencies as get()');
+      assert.deepEqual([...(store.get('C')?.deps ?? [])].sort(), ['A', 'B']);
     });
 
     test('compare-and-set changes state only from the expected state', () => {
@@ -82,7 +85,11 @@ for (const f of factories) {
       const { store } = f.make();
       for (const id of ['C', 'A', 'B', 'D']) store.createTask({ id, epicId: 'E', title: id, deps: [] });
       for (const id of ['C', 'B', 'D']) store.compareAndSetState(id, 'planned', 'ready');
-      assert.equal(store.claimReady('w1', LEASE, T0)?.id, 'B');
+      const won = store.claimReady('w1', LEASE, T0);
+      assert.equal(won?.id, 'B');
+      assert.deepEqual(won?.claim, { owner: 'w1', leaseExpiresAt: T0 + LEASE }, 'the returned record carries the claim it made');
+      assert.equal(won?.state, 'ready');
+      assert.deepEqual(store.get('B')?.claim, won?.claim);
       assert.equal(store.claimReady('w2', LEASE, T0, new Set(['C']))?.id, 'D');
       assert.equal(store.claimReady('w3', LEASE, T0, new Set(['C'])), null);
       assert.equal(store.claimReady('w3', LEASE, T0)?.id, 'C');
@@ -172,6 +179,19 @@ for (const f of factories) {
       }
       assert.equal(store.get('A')?.state, 'planned');
       assert.deepEqual(store.get('A')?.deps, []);
+    });
+
+    test('titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused', () => {
+      const { store } = f.make();
+      const long = 'é'.repeat(250); // 500 UTF-8 bytes
+      assert.equal(store.createTask({ id: 'A', epicId: 'E', title: long, deps: [] }).title, long);
+      assert.equal(store.get('A')?.title, long);
+      const odd = '-x --json "quoted" $(not run)';
+      assert.equal(store.createTask({ id: 'B', epicId: 'E', title: odd, deps: [] }).title, odd);
+      for (const [title, re] of [['   ', /empty/], ['a\u0000b', /control character/], ['a\nb', /control character/], ['x'.repeat(501), /longer than 500 bytes/]] as const) {
+        assert.throws(() => store.createTask({ id: 'Z', epicId: 'E', title, deps: [] }), re);
+      }
+      assert.equal(store.get('Z'), undefined);
     });
 
     test('notes keep their boundaries, including multi-line text', () => {

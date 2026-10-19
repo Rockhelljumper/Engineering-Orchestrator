@@ -118,7 +118,7 @@ test('M1-5: eo doctor detects an edited journal record and an altered evidence f
 test('eo doctor reports a store that drifted from the journal, and resume repairs it', () => {
   const sb = imported();
   // Someone marks work done behind the controller, directly in the store.
-  assert.equal(openStore(statePaths(sb.root)).compareAndSetState('T5', 'planned', 'done'), true);
+  assert.equal(openStore(statePaths(sb.root), { create: false }).compareAndSetState('T5', 'planned', 'done'), true);
   const d = runCli(['doctor', '--state-root', sb.root]);
   assert.equal(d.status, 1);
   assert.match(d.stdout, /T5 is done, journal says planned/);

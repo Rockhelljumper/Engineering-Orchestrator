@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import type { TaskState } from '../states.ts';
-import { StoreError, type Claim, type NewTask, type TaskCounters, type TaskNote, type TaskRecord, type TaskStore } from './types.ts';
+import { StoreError, titleProblem, type Claim, type NewTask, type TaskCounters, type TaskNote, type TaskRecord, type TaskStore } from './types.ts';
 
 const ID = /^[A-Za-z0-9._-]{1,100}$/;
 const PREFIX = 'eo';
@@ -18,8 +18,13 @@ const LOCK_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 
  * never sees API keys or tokens (bd links an Anthropic client for optional AI features), and
  * its usage metrics are off whatever the user's own bd configuration says (M1-7).
  */
-export function bdEnv(home: string): Record<string, string> {
+export function bdEnv(home: string, workspace = home): Record<string, string> {
   const env: Record<string, string> = {
+    // bd runs git; it must never find (and commit to, or configure) a repository that
+    // happens to enclose the state root. bd clears this for some commands, so the store also
+    // gets a repository of its own (BeadsStore.atDir).
+    GIT_CEILING_DIRECTORIES: path.dirname(path.resolve(workspace)),
+    GIT_CONFIG_NOSYSTEM: '1',
     BD_DISABLE_METRICS: '1',
     DO_NOT_TRACK: '1',
     BD_DISABLE_EVENT_FLUSH: '1',
@@ -50,10 +55,22 @@ export function pinnedBdSha256(): string | undefined {
   return lock.beads?.binaries?.[platformKey()]?.sha256;
 }
 
-const verifiedBins = new Map<string, string>();
+function sha256(buf: Buffer): string {
+  return createHash('sha256').update(buf).digest('hex');
+}
 
-function sha256File(file: string): string {
-  return createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+/** Check a candidate bd binary against the pin before anything is created with it. */
+export function verifyBdBinary(bin: string, want = pinnedBdSha256()): void {
+  if (!want) throw new StoreError(`no pinned bd build for ${platformKey()} in deps.lock.json`);
+  if (!fs.existsSync(bin)) throw new StoreError(`bd binary not found: ${bin}`);
+  const got = sha256(fs.readFileSync(bin));
+  if (got !== want) throw new StoreError(`bd binary ${bin} has SHA-256 ${got}, expected the pinned ${want}`);
+}
+
+/** Identity of a file for detecting replacement between spawns. */
+function fileId(file: string): string {
+  const st = fs.statSync(file, { bigint: true });
+  return `${st.dev}:${st.ino}:${st.size}:${st.mtimeNs}:${st.ctimeNs}`;
 }
 
 /** Eo's fields, kept in the bead's metadata under "eo". */
@@ -81,7 +98,11 @@ export interface BeadsStoreOptions {
   sha256?: string;
   /** Observer for every spawn (tests use it to check the environment, M1-7). */
   onSpawn?: (args: readonly string[], env: Readonly<Record<string, string>>) => void;
+  /** Create (or repair a half-created) workspace. Only the controller, under its lock, passes true. */
+  create?: boolean;
 }
+
+const INIT_MARKER = '.eo-initialised';
 
 /**
  * TaskStore on beads (`bd`, embedded Dolt), passing the same contract as FakeStore.
@@ -99,39 +120,71 @@ export interface BeadsStoreOptions {
 export class BeadsStore implements TaskStore {
   readonly kind = 'beads';
   readonly dir: string;
+  /** The verified copy that is actually executed, inside the store directory. */
   private readonly bin: string;
+  private readonly want: string;
+  private binId: string;
   private readonly env: Record<string, string>;
   private readonly onSpawn: BeadsStoreOptions['onSpawn'];
 
   private constructor(dir: string, opts: BeadsStoreOptions) {
     this.dir = dir;
-    this.bin = path.resolve(opts.bin);
     this.onSpawn = opts.onSpawn;
     const want = opts.sha256 ?? pinnedBdSha256();
     if (!want) throw new StoreError(`no pinned bd build for ${platformKey()} in deps.lock.json`);
-    const cached = verifiedBins.get(this.bin);
-    if (cached !== want) {
-      if (!fs.existsSync(this.bin)) throw new StoreError(`bd binary not found: ${this.bin}`);
-      const got = sha256File(this.bin);
-      if (got !== want) throw new StoreError(`bd binary ${this.bin} has SHA-256 ${got}, expected the pinned ${want}`);
-      verifiedBins.set(this.bin, want);
+    this.want = want;
+    // Execute only a private copy whose bytes were hashed, so replacing the source path
+    // later cannot swap the binary under a running controller.
+    const binDir = path.join(dir, 'bin');
+    fs.mkdirSync(binDir, { recursive: true, mode: 0o700 });
+    this.bin = path.join(binDir, process.platform === 'win32' ? 'bd.exe' : 'bd');
+    const copyOk = fs.existsSync(this.bin) && sha256(fs.readFileSync(this.bin)) === want;
+    if (!copyOk) {
+      const src = path.resolve(opts.bin);
+      if (!fs.existsSync(src)) throw new StoreError(`bd binary not found: ${src}`);
+      const bytes = fs.readFileSync(src);
+      const got = sha256(bytes);
+      if (got !== want) throw new StoreError(`bd binary ${src} has SHA-256 ${got}, expected the pinned ${want}`);
+      const tmp = `${this.bin}.${process.pid}.tmp`;
+      fs.writeFileSync(tmp, bytes, { mode: 0o500 });
+      fs.renameSync(tmp, this.bin);
     }
+    this.binId = fileId(this.bin);
     const home = path.join(dir, 'bd-home');
     fs.mkdirSync(home, { recursive: true, mode: 0o700 });
-    this.env = bdEnv(home);
+    this.env = bdEnv(home, dir);
   }
 
-  /** Open the beads workspace in `dir`, creating it on first use. */
+  /**
+   * Open the beads workspace in `dir`. With `create`, initialise it on first use, and
+   * re-initialise one whose init never completed (a crash during `bd init`); without it,
+   * refuse a workspace that is not fully initialised.
+   */
   static atDir(dir: string, opts: BeadsStoreOptions): BeadsStore {
+    const create = opts.create ?? true;
+    if (!create && !fs.existsSync(path.join(dir, INIT_MARKER))) throw new StoreError(`beads store at ${dir} is not initialised`);
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     const s = new BeadsStore(path.resolve(dir), opts);
-    if (!fs.existsSync(path.join(s.dir, '.beads'))) s.bd(['init', '--prefix', PREFIX, '--skip-agents', '--skip-hooks', '--non-interactive', '--quiet']);
+    if (!fs.existsSync(path.join(s.dir, INIT_MARKER))) {
+      for (const f of ['.beads', '.git', '.gitignore', '.beads.gate.lock']) fs.rmSync(path.join(s.dir, f), { recursive: true, force: true });
+      // bd init stages and commits into the nearest enclosing git repository and clears
+      // GIT_CEILING_DIRECTORIES itself, so give it a repository of its own, inside the store.
+      const g = spawnSync('git', ['init', '-q', s.dir], { env: s.env, encoding: 'utf8', windowsHide: true });
+      if (g.error || g.status !== 0) throw new StoreError(`git init of the beads store failed: ${g.error?.message ?? g.stderr.trim()}`);
+      s.bd(['init', '--prefix', PREFIX, '--skip-agents', '--skip-hooks', '--non-interactive', '--quiet']);
+      fs.writeFileSync(path.join(s.dir, INIT_MARKER), `bd ${s.want}\n`, { mode: 0o600 });
+    }
     return s;
   }
 
   // ---------------------------------------------------------------- bd plumbing
 
   private run(args: string[], input?: string): { status: number; stdout: string; stderr: string } {
+    const id = fileId(this.bin);
+    if (id !== this.binId) {
+      if (sha256(fs.readFileSync(this.bin)) !== this.want) throw new StoreError(`bd binary ${this.bin} was replaced; refusing to run it`);
+      this.binId = id;
+    }
     this.onSpawn?.(args, this.env);
     const r = spawnSync(this.bin, args, {
       cwd: this.dir,
@@ -164,7 +217,10 @@ export class BeadsStore implements TaskStore {
   }
 
   private all(): BdIssue[] {
-    return (JSON.parse(this.bd(['list', '--json', '--all', '--flat', '--limit', '0'])) as BdIssue[]).filter((i) => i.id.startsWith(`${PREFIX}-`) && i.metadata?.eo);
+    const issues = JSON.parse(this.bd(['list', '--json', '--all', '--flat', '--limit', '0'])) as BdIssue[];
+    const foreign = issues.filter((i) => !i.metadata?.eo).map((i) => i.id);
+    if (foreign.length) throw new StoreError(`beads ${foreign.join(', ')} have no eo metadata (created or edited outside the controller)`);
+    return issues;
   }
 
   /**
@@ -198,6 +254,8 @@ export class BeadsStore implements TaskStore {
 
   createTask(t: NewTask): TaskRecord {
     if (!ID.test(t.id)) throw new StoreError(`invalid task id: ${t.id}`);
+    const bad = titleProblem(t.title);
+    if (bad) throw new StoreError(`invalid task ${t.id}: ${bad}`);
     if (this.show(t.id)) throw new StoreError(`task exists: ${t.id}`);
     for (const d of t.deps) if (!this.show(d)) throw new StoreError(`unknown dependency ${d} for ${t.id}`);
     const meta: EoMeta = { v: 1, epicId: t.epicId, state: 'planned', claim: null, attempt: 0, correctionFailures: 0, infraFailures: 0, lastFailureSignature: null, repeatCount: 0 };
@@ -215,7 +273,9 @@ export class BeadsStore implements TaskStore {
 
   get(id: string): TaskRecord | undefined {
     const issue = this.show(id);
-    return issue?.metadata?.eo ? toRecord(issue) : undefined;
+    if (!issue) return undefined;
+    if (!issue.metadata?.eo) throw new StoreError(`bead ${issue.id} has no eo metadata (created or edited outside the controller)`);
+    return toRecord(issue);
   }
 
   list(): TaskRecord[] {
@@ -241,10 +301,13 @@ export class BeadsStore implements TaskStore {
       const pick = candidates[0];
       if (!pick) return null;
       // Re-checked against the guarded read: someone may have taken it since the list.
-      const won = this.cas(pick.id, (m) =>
-        m.state === 'ready' && !isLive(m.claim, now) ? { next: { ...m, claim: { owner, leaseExpiresAt: now + leaseMs } }, result: true } : { next: null, result: false },
-      );
-      if (won) return this.get(pick.id) ?? null;
+      const won = this.cas<TaskRecord | null>(pick.id, (m, issue) => {
+        if (m.state !== 'ready' || isLive(m.claim, now)) return { next: null, result: null };
+        const next: EoMeta = { ...m, claim: { owner, leaseExpiresAt: now + leaseMs } };
+        // The record as written, not a later re-read.
+        return { next, result: toRecord({ ...issue, metadata: { eo: next } }) };
+      });
+      if (won) return won;
     }
     throw new StoreError(`claimReady gave up after ${MAX_CAS_TRIES} lost races`);
   }

@@ -65,3 +65,14 @@ export interface TaskStore {
 }
 
 export class StoreError extends Error {}
+
+/** Longest task title in UTF-8 bytes; beads' own limit, applied to every store alike. */
+export const MAX_TITLE_BYTES = 500;
+
+/** Why a task title is unusable, or null. Shared by plan validation and every store. */
+export function titleProblem(title: string): string | null {
+  if (title.trim() === '') return 'title is empty or whitespace only';
+  if (/[\u0000-\u001f\u007f]/.test(title)) return 'title contains a control character';
+  if (Buffer.byteLength(title, 'utf8') > MAX_TITLE_BYTES) return `title is longer than ${MAX_TITLE_BYTES} bytes`;
+  return null;
+}

@@ -1,5 +1,6 @@
 import { canonicalJson, sha256Hex } from './util/canonical.ts';
 import { assertValid, type Schema } from './schema.ts';
+import { titleProblem } from './store/types.ts';
 
 /**
  * Plan file accepted by `eo plan import`. M4 replaces the hand-written plan with the planner's
@@ -48,6 +49,8 @@ export function validatePlan(value: unknown): Plan {
   const plan = value as Plan;
   const ids = new Set<string>();
   for (const t of plan.tasks) {
+    const bad = titleProblem(t.title);
+    if (bad) throw new Error(`plan is invalid: task ${t.id}: ${bad}`);
     if (ids.has(t.id)) throw new Error(`plan is invalid: duplicate task id ${t.id}`);
     ids.add(t.id);
   }

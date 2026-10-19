@@ -26,14 +26,24 @@ want_go=$(lock go.version)
 
 rev=$(git -C "$src" rev-parse HEAD)
 [ "$rev" = "$pin" ] || { echo "build-bd: checkout is at $rev, pinned revision is $pin" >&2; exit 1; }
-[ -z "$(git -C "$src" status --porcelain)" ] || { echo "build-bd: checkout has local changes" >&2; exit 1; }
+[ -z "$(git -C "$src" status --porcelain --ignored)" ] || { echo "build-bd: checkout has local changes or untracked files" >&2; exit 1; }
 
 export GOTOOLCHAIN=local GOPROXY=off GOFLAGS=-mod=readonly GOSUMDB=sum.golang.org GOWORK=off
-export CGO_ENABLED=1 BD_DISABLE_METRICS=1 DO_NOT_TRACK=1
+export CGO_ENABLED=1 CC=gcc GOENV=off BD_DISABLE_METRICS=1 DO_NOT_TRACK=1
+# CGO links against the host C library and compiles go-sqlite3 with the host gcc, so the
+# hash reproduces only with the same C toolchain; no ambient C flags may leak in.
+unset CGO_CFLAGS CGO_CPPFLAGS CGO_CXXFLAGS CGO_LDFLAGS CGO_FFLAGS
 have_go=$("$GO" env GOVERSION)
 [ "$have_go" = "$want_go" ] || { echo "build-bd: $GO is $have_go, need $want_go" >&2; exit 1; }
 
-echo "build-bd: revision $rev, $have_go, GOTOOLCHAIN=$GOTOOLCHAIN GOPROXY=$GOPROXY" >&2
+want_cc=$(lock beads.toolchain.gcc)
+want_libc=$(lock beads.toolchain.glibc)
+have_cc=$(gcc -dumpfullversion)
+have_libc=$(getconf GNU_LIBC_VERSION | cut -d' ' -f2)
+echo "build-bd: revision $rev, $have_go, gcc $have_cc, glibc $have_libc, GOTOOLCHAIN=$GOTOOLCHAIN GOPROXY=$GOPROXY" >&2
+if [ "$have_cc" != "$want_cc" ] || [ "$have_libc" != "$want_libc" ]; then
+  echo "build-bd: warning: the pinned hash was produced with gcc $want_cc and glibc $want_libc; expect a different SHA-256" >&2
+fi
 (cd "$src" && "$GO" mod verify) >&2
 
 # Flags follow beads' own Makefile `build` target (tags gms_pure_go, main.Build), plus

@@ -146,6 +146,9 @@ test('invalid plans are refused', () => {
     [{ ...base, tasks: [] }, /must have >= 1 items/],
     [{ ...base, epicId: '../x' }, /must match/],
     [{ ...base, tasks: [{ id: 'A', title: 'a', deps: [], run: 'rm -rf /' }] }, /unexpected property "run"/],
+    [{ ...base, tasks: [{ id: 'A', title: '  ', deps: [] }] }, /task A: title is empty/],
+    [{ ...base, tasks: [{ id: 'A', title: 'x'.repeat(501), deps: [] }] }, /task A: title is longer than 500 bytes/],
+    [{ ...base, tasks: [{ id: 'A', title: 'a\u0000', deps: [] }] }, /task A: title contains a control character/],
   ];
   for (const [plan, re] of cases) assert.throws(() => validatePlan(plan), re);
 });

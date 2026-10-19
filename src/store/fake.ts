@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import { writeFileAtomic } from '../util/fsx.ts';
 import { FileLock } from '../util/lock.ts';
 import type { TaskState } from '../states.ts';
-import { StoreError, type NewTask, type TaskCounters, type TaskRecord, type TaskStore } from './types.ts';
+import { StoreError, titleProblem, type NewTask, type TaskCounters, type TaskRecord, type TaskStore } from './types.ts';
 
 interface StoreFile {
   version: 1;
@@ -80,6 +80,8 @@ export class FakeStore implements TaskStore {
 
   createTask(t: NewTask): TaskRecord {
     if (!ID.test(t.id)) throw new StoreError(`invalid task id: ${t.id}`);
+    const bad = titleProblem(t.title);
+    if (bad) throw new StoreError(`invalid task ${t.id}: ${bad}`);
     return this.mutate((s, dirty) => {
       if (s.tasks[t.id]) throw new StoreError(`task exists: ${t.id}`);
       for (const d of t.deps) if (!s.tasks[d]) throw new StoreError(`unknown dependency ${d} for ${t.id}`);

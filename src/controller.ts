@@ -88,7 +88,7 @@ export class Controller {
     this.journal = Journal.open(paths.journal, key, { repairTornTail: true });
     this.tornTailRepaired = before.tornTail;
     this.policy = loadPolicy(paths.policy);
-    this.store = opts.store ?? openStore(paths);
+    this.store = opts.store ?? openStore(paths, { create: true });
     this.evidence = new EvidenceLedger(paths.evidence, key);
     this.budget = new BudgetGovernor(this.journal, this.policy.budget);
     const now = policyHash(this.policy);

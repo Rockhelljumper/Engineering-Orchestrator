@@ -6,7 +6,7 @@ import { BudgetLedger } from './budget.ts';
 import { loadPolicy, policyHash } from './policy.ts';
 import { readJournalKey, statePaths } from './stateRoot.ts';
 import { openStore } from './store/open.ts';
-import type { TaskStore } from './store/types.ts';
+import type { TaskRecord, TaskStore } from './store/types.ts';
 import { expectedStates, journaledTasks, planMismatches, type EscalationRecord } from './controller.ts';
 
 export interface DoctorReport {
@@ -36,14 +36,22 @@ export function doctor(root: string, store?: TaskStore): DoctorReport {
     problems.push(`policy: ${(err as Error).message}`);
   }
 
-  const s = store ?? openStore(p);
-  const expected = expectedStates(v.records);
-  for (const [id, exp] of expected) {
-    const t = s.get(id);
-    if (!t) problems.push(`store: task ${id} missing (journal has it)`);
-    else if (t.state !== exp.state) problems.push(`store: ${id} is ${t.state}, journal says ${exp.state} (resume will repair)`);
+  // The store is checked through one listing; an unreadable or tampered store is a problem
+  // to report, not a crash.
+  let tasks: TaskRecord[] = [];
+  try {
+    const s = store ?? openStore(p, { create: false, records: v.records });
+    tasks = s.list();
+    const byId = new Map(tasks.map((t) => [t.id, t]));
+    for (const [id, exp] of expectedStates(v.records)) {
+      const t = byId.get(id);
+      if (!t) problems.push(`store: task ${id} missing (journal has it)`);
+      else if (t.state !== exp.state) problems.push(`store: ${id} is ${t.state}, journal says ${exp.state} (resume will repair)`);
+    }
+    for (const m of planMismatches(tasks, journaledTasks(v.records))) problems.push(`store: ${m}`);
+  } catch (err) {
+    problems.push(`store: ${(err as Error).message}`);
   }
-  for (const m of planMismatches(s.list(), journaledTasks(v.records))) problems.push(`store: ${m}`);
 
   try {
     const ledger = BudgetLedger.fromRecords(v.records);
@@ -53,7 +61,7 @@ export function doctor(root: string, store?: TaskStore): DoctorReport {
   }
 
   const ev = new EvidenceLedger(p.evidence, key);
-  for (const t of s.list()) {
+  for (const t of tasks) {
     if (t.state === 'done') {
       if (t.attempt < 1) {
         problems.push(`evidence ${t.id}: done without any attempt`);

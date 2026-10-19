@@ -37,7 +37,7 @@ function beadsSandbox(onSpawn?: (args: readonly string[], env: Readonly<Record<s
 
 /** Run bd by hand in a store, the way someone bypassing the controller would. */
 function bdRaw(storeDir: string, args: string[]): string {
-  const r = spawnSync(bin, args, { cwd: storeDir, env: bdEnv(path.join(storeDir, 'bd-home')), encoding: 'utf8' });
+  const r = spawnSync(path.join(storeDir, 'bin', 'bd'), args, { cwd: storeDir, env: bdEnv(path.join(storeDir, 'bd-home'), storeDir), encoding: 'utf8' });
   assert.equal(r.status, 0, `bd ${args.join(' ')}: ${r.stderr}`);
   return r.stdout;
 }
@@ -115,12 +115,13 @@ test('M1-7: the environment the bd process actually receives (wrapper records it
 test('M1-6: bd with metrics left on tries to reach the network (positive control for the detector)', { skip: skip || (!LINUX_TRACE && 'needs Linux with strace and unshare -n') }, () => {
   const dir = tmpDir();
   const out = path.join(dir, 'strace.log');
-  const env = { PATH: process.env['PATH'] ?? '', HOME: dir, BD_NON_INTERACTIVE: '1' }; // no opt-out
+  const env = { PATH: process.env['PATH'] ?? '', HOME: dir, BD_NON_INTERACTIVE: '1', GIT_CEILING_DIRECTORIES: path.dirname(dir) }; // no opt-out
   spawnSync('unshare', ['-n', 'strace', '-f', '-qq', '-e', 'trace=connect,sendto,sendmsg', '-o', out, bin, 'init', '--prefix', 'eo', '--skip-agents', '--skip-hooks', '--non-interactive', '--quiet'], { cwd: dir, env, encoding: 'utf8', timeout: 60_000 });
-  // The detached metrics flusher may still be running; give it a moment.
-  spawnSync('sleep', ['3']);
-  const inet = fs.readFileSync(out, 'utf8').split('\n').filter((l) => /sa_family=AF_INET6?\b/.test(l));
-  assert.ok(inet.length > 0 || fs.existsSync(path.join(dir, '.beads', 'eventsData')), 'with metrics on, bd queues events and tries to send them');
+  // The metrics flusher is a detached child that strace -f still follows; wait for its attempt.
+  const inet = (): string[] => fs.readFileSync(out, 'utf8').split('\n').filter((l) => /sa_family=AF_INET6?\b/.test(l));
+  const deadline = Date.now() + 20_000;
+  while (inet().length === 0 && Date.now() < deadline) spawnSync('sleep', ['0.5']);
+  assert.ok(inet().length > 0, 'with metrics on, the traced bd process tree attempts an IPv4/IPv6 connection');
 });
 
 test('M1-6: no outbound connection from bd or the controller during crash, resume and run on beads', { skip: skip || (!LINUX_TRACE && 'needs Linux with strace and unshare -n'), timeout: 1_800_000 }, () => {
@@ -139,7 +140,7 @@ test('M1-6: no outbound connection from bd or the controller during crash, resum
     const r = spawnSync('unshare', ['-n', 'strace', '-f', '-qq', '-e', 'trace=connect,sendto,sendmsg,execve', '-o', out, process.execPath, CLI, ...a], { encoding: 'utf8', env, timeout: 900_000 });
     assert.equal(r.status, i === 0 ? 137 : 0, `${a[0]}: ${r.stderr}`);
     const t = fs.readFileSync(out, 'utf8');
-    bdSpawns += t.split('\n').filter((l) => l.includes(`execve("${bin}"`)).length;
+    bdSpawns += t.split('\n').filter((l) => l.includes(`execve("${path.join(statePaths(sb.root).store, 'bin', 'bd')}"`)).length;
     text += t
       .split('\n')
       .filter((l) => !l.includes('execve('))
@@ -166,6 +167,7 @@ test('changes made with bd directly, behind the controller, are refused', { skip
       /X is not in any journaled plan/,
       /X is not in any journaled plan/,
     ],
+    ['bead without eo metadata', (d) => bdRaw(d, ['create', '--id', 'eo-Y', '--title', 'y', '--json']), /eo-Y ha(s|ve) no eo metadata/, /eo-Y ha(s|ve) no eo metadata/],
     ['dependency removed', (d) => bdRaw(d, ['dep', 'remove', 'eo-T5', 'eo-T4']), /does not match the journaled plans/, /T5 dependencies differ from the plan/],
     [
       'epic changed',
@@ -195,8 +197,80 @@ test('changes made with bd directly, behind the controller, are refused', { skip
   }
 });
 
-test('a state root cannot be switched to a different store kind', { skip }, () => {
+test('a state root cannot be switched to a different store kind, and read-only commands notice too', { skip }, () => {
   const sb = beadsSandbox();
-  fs.writeFileSync(statePaths(sb.root).storeConfig, JSON.stringify({ kind: 'fake' }));
+  const cfg = statePaths(sb.root).storeConfig;
+  fs.writeFileSync(cfg, JSON.stringify({ kind: 'fake' }));
   assert.throws(() => Controller.open(sb.root), /uses the beads store, not fake/);
+  assert.match(doctor(sb.root).problems.join(';'), /bound to the beads store/);
+  const st = spawnSync(process.execPath, [CLI, 'status', '--state-root', sb.root], { encoding: 'utf8' });
+  assert.equal(st.status, 1);
+  assert.match(st.stderr, /bound to the beads store/);
+  fs.rmSync(cfg);
+  assert.match(doctor(sb.root).problems.join(';'), /store\.json says fake, but this state root is bound to the beads store/);
+});
+
+test('bd never touches a git repository that encloses the state root', { skip, timeout: 300_000 }, () => {
+  const outer = tmpDir();
+  const git = (...a: string[]): string => spawnSync('git', ['-C', outer, ...a], { encoding: 'utf8' }).stdout;
+  spawnSync('git', ['init', '-q', outer]);
+  git('config', 'user.name', 'outer');
+  git('config', 'user.email', 'outer@example.invalid');
+  fs.writeFileSync(path.join(outer, 'README'), 'x');
+  git('add', 'README');
+  git('commit', '-q', '-m', 'outer');
+  const before = { log: git('log', '--format=%H %s'), config: fs.readFileSync(path.join(outer, '.git', 'config'), 'utf8'), status: git('status', '--porcelain', '--ignored') };
+  const store = BeadsStore.atDir(path.join(outer, 'state', 'store'), { bin });
+  store.createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
+  assert.equal(git('log', '--format=%H %s'), before.log, 'no commit in the enclosing repository');
+  assert.equal(fs.readFileSync(path.join(outer, '.git', 'config'), 'utf8'), before.config, 'its config is unchanged');
+  assert.equal(git('diff', '--cached', '--name-only'), '', 'nothing staged in it');
+});
+
+test('a bd init killed part-way is redone on the next open, and read-only opens refuse it', { skip: skip || (process.platform === 'win32' && 'POSIX signals'), timeout: 300_000 }, async () => {
+  const sb = beadsSandbox();
+  const dir = path.join(sb.dir, 'store2');
+  fs.mkdirSync(dir);
+  fs.mkdirSync(path.join(dir, 'bin'));
+  fs.copyFileSync(bin, path.join(dir, 'bin', 'bd'));
+  fs.chmodSync(path.join(dir, 'bin', 'bd'), 0o500);
+  const { spawn } = await import('node:child_process');
+  const child = spawn(path.join(dir, 'bin', 'bd'), ['init', '--prefix', 'eo', '--skip-agents', '--skip-hooks', '--non-interactive', '--quiet'], { cwd: dir, env: bdEnv(path.join(dir, 'bd-home'), dir) });
+  // Kill once init has started writing its database.
+  const deadline = Date.now() + 30_000;
+  while (!fs.existsSync(path.join(dir, '.beads')) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 20));
+  child.kill('SIGKILL');
+  await new Promise((r) => child.on('exit', r));
+  assert.ok(fs.existsSync(path.join(dir, '.beads')), 'init was interrupted after it began writing');
+  assert.throws(() => BeadsStore.atDir(dir, { bin, create: false }), /not initialised/);
+  const s = BeadsStore.atDir(dir, { bin });
+  s.createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
+  assert.equal(BeadsStore.atDir(dir, { bin, create: false }).get('A')?.state, 'planned');
+});
+
+test('the executed bd is a verified private copy: replacing it, or the source path, cannot swap the binary', { skip: skip || (process.platform === 'win32' && 'POSIX permissions') }, () => {
+  const dir = tmpDir();
+  const src = path.join(dir, 'bd-src');
+  fs.copyFileSync(bin, src);
+  const s = BeadsStore.atDir(path.join(dir, 'store'), { bin: src });
+  s.createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
+  // Replacing the source after open has no effect: the copy is what runs.
+  fs.writeFileSync(src, '#!/bin/sh\necho pwned > ' + path.join(dir, 'pwned') + '\n');
+  assert.equal(s.get('A')?.state, 'planned');
+  assert.equal(fs.existsSync(path.join(dir, 'pwned')), false);
+  // Replacing the private copy is detected before the next spawn.
+  const copy = path.join(dir, 'store', 'bin', 'bd');
+  fs.chmodSync(copy, 0o700);
+  fs.appendFileSync(copy, Buffer.from([0]));
+  assert.throws(() => s.get('A'), /was replaced; refusing to run it/);
+});
+
+test('eo init --store beads refuses an unpinned binary before writing anything', { skip }, () => {
+  const root = path.join(tmpDir(), 'state');
+  const fake = path.join(tmpDir(), 'bd');
+  fs.writeFileSync(fake, '#!/bin/sh\n', { mode: 0o755 });
+  const r = spawnSync(process.execPath, [CLI, 'init', '--store', 'beads', '--bd-bin', fake, '--state-root', root], { encoding: 'utf8' });
+  assert.equal(r.status, 1, r.stderr);
+  assert.match(r.stderr, /expected the pinned/);
+  assert.equal(fs.existsSync(root), false, 'no state root was created');
 });
