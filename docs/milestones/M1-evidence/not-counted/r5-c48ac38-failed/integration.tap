@@ -1,0 +1,659 @@
+TAP version 13
+# Subtest: M1-7: the bd binary is the pinned build, and any other binary is refused
+ok 1 - M1-7: the bd binary is the pinned build, and any other binary is refused
+  ---
+  duration_ms: 846.306812
+  type: 'test'
+  ...
+# Subtest: M1-7: every bd spawn of a full controller run gets the metrics opt-out and a scrubbed environment
+not ok 2 - M1-7: every bd spawn of a full controller run gets the metrics opt-out and a scrubbed environment
+  ---
+  duration_ms: 74903.757082
+  type: 'test'
+  location: '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/beads.test.ts:60:1'
+  failureType: 'testCodeFailure'
+  error: 'bd binary /tmp/eo-test-omykE6/state/store/bin/bd was replaced; refusing to run it'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    BeadsStore.run (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:216:35)
+    BeadsStore.show (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:242:20)
+    BeadsStore.cas (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:265:26)
+    BeadsStore.compareAndSetState (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:321:17)
+    Controller.transition (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/controller.ts:197:21)
+    Controller.advance (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/controller.ts:457:16)
+    Controller.runAttempt (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/controller.ts:422:10)
+    async Controller.run (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/controller.ts:364:7)
+    async TestContext.<anonymous> (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/beads.test.ts:69:17)
+    async Test.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: M1-7: the environment the bd process actually receives (wrapper records it, then runs the pinned bd)
+ok 3 - M1-7: the environment the bd process actually receives (wrapper records it, then runs the pinned bd)
+  ---
+  duration_ms: 7908.293473
+  type: 'test'
+  ...
+# Subtest: M1-6: bd with metrics left on tries to reach the network (positive control for the detector)
+ok 4 - M1-6: bd with metrics left on tries to reach the network (positive control for the detector)
+  ---
+  duration_ms: 6310.894308
+  type: 'test'
+  ...
+# Subtest: M1-6: no outbound connection from bd or the controller during crash, resume and run on beads
+not ok 5 - M1-6: no outbound connection from bd or the controller during crash, resume and run on beads
+  ---
+  duration_ms: 172005.616152
+  type: 'test'
+  location: '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/beads.test.ts:127:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    run: eo: bd binary /tmp/eo-test-53iCBN/state/store/bin/bd was replaced; refusing to run it
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/beads.test.ts:141:12
+    Array.forEach (<anonymous>)
+    TestContext.<anonymous> (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/beads.test.ts:137:9)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: changes made with bd directly, behind the controller, are refused
+ok 6 - changes made with bd directly, behind the controller, are refused
+  ---
+  duration_ms: 68331.220384
+  type: 'test'
+  ...
+# Subtest: a state root cannot be switched to a different store kind, and read-only commands notice too
+ok 7 - a state root cannot be switched to a different store kind, and read-only commands notice too
+  ---
+  duration_ms: 5047.355755
+  type: 'test'
+  ...
+# Subtest: bd never touches a git repository that encloses the state root
+ok 8 - bd never touches a git repository that encloses the state root
+  ---
+  duration_ms: 6135.5063
+  type: 'test'
+  ...
+# Subtest: a bd init killed part-way is redone on the next open, and read-only opens refuse it
+ok 9 - a bd init killed part-way is redone on the next open, and read-only opens refuse it
+  ---
+  duration_ms: 11332.105575
+  type: 'test'
+  ...
+# Subtest: the executed bd is a verified private entry: swapping the source path or modifying the binary cannot run other code
+ok 10 - the executed bd is a verified private entry: swapping the source path or modifying the binary cannot run other code
+  ---
+  duration_ms: 7033.077952
+  type: 'test'
+  ...
+# Subtest: a store entry that is stale or tampered with is replaced on the next open, even when read-only
+not ok 11 - a store entry that is stale or tampered with is replaced on the next open, even when read-only
+  ---
+  duration_ms: 646.361157
+  type: 'test'
+  location: '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/beads.test.ts:274:1'
+  failureType: 'testCodeFailure'
+  error: 'bd binary /tmp/eo-test-TVrUIr/store/bin/bd changed while it was being verified; refusing to run it'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    new BeadsStore (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:181:35)
+    BeadsStore.atDir (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:198:15)
+    TestContext.<anonymous> (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/beads.test.ts:276:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a state root bound to the fake store is refused before any beads files are written
+ok 12 - a state root bound to the fake store is refused before any beads files are written
+  ---
+  duration_ms: 7.002718
+  type: 'test'
+  ...
+# Subtest: eo init --store beads refuses an unpinned binary before writing anything
+ok 13 - eo init --store beads refuses an unpinned binary before writing anything
+  ---
+  duration_ms: 192.090907
+  type: 'test'
+  ...
+# Subtest: eo init creates a state root and refuses to overwrite it
+ok 14 - eo init creates a state root and refuses to overwrite it
+  ---
+  duration_ms: 381.39796
+  type: 'test'
+  ...
+# Subtest: human gates refuse to run without an interactive terminal
+ok 15 - human gates refuse to run without an interactive terminal
+  ---
+  duration_ms: 15320.936216
+  type: 'test'
+  ...
+# Subtest: M1-10: eo run refuses an unapproved repository and launches nothing
+ok 16 - M1-10: eo run refuses an unapproved repository and launches nothing
+  ---
+  duration_ms: 14131.037536
+  type: 'test'
+  ...
+# Subtest: eo run with the fake runner completes the sample epic; status and doctor agree
+not ok 17 - eo run with the fake runner completes the sample epic; status and doctor agree
+  ---
+  duration_ms: 60283.653117
+  type: 'test'
+  location: '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/cli.test.ts:63:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    eo: bd binary /tmp/eo-test-ldZoOD/state/store/bin/bd was replaced; refusing to run it
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/cli.test.ts:68:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: M1-5: eo doctor detects an edited journal record and an altered evidence file
+ok 18 - M1-5: eo doctor detects an edited journal record and an altered evidence file
+  ---
+  duration_ms: 71184.300893
+  type: 'test'
+  ...
+# Subtest: eo doctor reports a store that drifted from the journal, and resume repairs it
+not ok 19 - eo doctor reports a store that drifted from the journal, and resume repairs it
+  ---
+  duration_ms: 20149.445324
+  type: 'test'
+  location: '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/cli.test.ts:118:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/cli.test.ts:126:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: usage errors exit 2
+ok 20 - usage errors exit 2
+  ---
+  duration_ms: 15407.246864
+  type: 'test'
+  ...
+# Subtest: sealed evidence tampered with after a crash is escalated, not silently rewritten
+not ok 21 - sealed evidence tampered with after a crash is escalated, not silently rewritten
+  ---
+  duration_ms: 81685.383009
+  type: 'test'
+  location: '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/cli.test.ts:137:1'
+  failureType: 'testCodeFailure'
+  error: 'bd binary /tmp/eo-test-vnHKGV/state/store/bin/bd was replaced; refusing to run it'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    BeadsStore.run (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:216:35)
+    BeadsStore.show (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:242:20)
+    BeadsStore.createTask (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:292:14)
+    Controller.materialisePlan (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/controller.ts:180:20)
+    Controller.importPlan (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/controller.ts:172:10)
+    imported (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/cli.test.ts:13:5)
+    TestContext.<anonymous> (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/cli.test.ts:147:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+  ...
+# Subtest: eo policy accept refuses without an interactive terminal
+ok 22 - eo policy accept refuses without an interactive terminal
+  ---
+  duration_ms: 15119.986842
+  type: 'test'
+  ...
+# Subtest: M1-6: the preload detector catches a connection attempt (positive control)
+ok 23 - M1-6: the preload detector catches a connection attempt (positive control)
+  ---
+  duration_ms: 4811.100455
+  type: 'test'
+  ...
+# Subtest: M1-6: no network API is used during crash, resume and run
+not ok 24 - M1-6: no network API is used during crash, resume and run
+  ---
+  duration_ms: 72652.089898
+  type: 'test'
+  location: '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/no-network.test.ts:61:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    run: eo: bd binary /tmp/eo-test-gkPkBW/state/store/bin/bd was replaced; refusing to run it
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/no-network.test.ts:69:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: M1-6: strace detector sees a connect() inside the namespace (positive control)
+ok 25 - M1-6: strace detector sees a connect() inside the namespace (positive control)
+  ---
+  duration_ms: 4951.997325
+  type: 'test'
+  ...
+# Subtest: M1-6: no connect() syscall to an IP address during crash, resume and run, in an isolated network namespace
+not ok 26 - M1-6: no connect() syscall to an IP address during crash, resume and run, in an isolated network namespace
+  ---
+  duration_ms: 178055.808126
+  type: 'test'
+  location: '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/no-network.test.ts:80:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    run: eo: bd binary /tmp/eo-test-vN3fCL/state/store/bin/bd was replaced; refusing to run it
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/no-network.test.ts:88:12
+    Array.forEach (<anonymous>)
+    TestContext.<anonymous> (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/no-network.test.ts:84:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: TaskStore contract: FakeStore (memory)
+    # Subtest: create: new tasks are planned with zeroed counters; ids and deps are validated
+    ok 1 - create: new tasks are planned with zeroed counters; ids and deps are validated
+      ---
+      duration_ms: 3.682605
+      type: 'test'
+      ...
+    # Subtest: deps: dependencies are stored and returned
+    ok 2 - deps: dependencies are stored and returned
+      ---
+      duration_ms: 0.771066
+      type: 'test'
+      ...
+    # Subtest: compare-and-set changes state only from the expected state
+    ok 3 - compare-and-set changes state only from the expected state
+      ---
+      duration_ms: 0.451915
+      type: 'test'
+      ...
+    # Subtest: counters can be updated without a state change, and unknown fields are ignored
+    ok 4 - counters can be updated without a state change, and unknown fields are ignored
+      ---
+      duration_ms: 0.395526
+      type: 'test'
+      ...
+    # Subtest: ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+    ok 5 - ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+      ---
+      duration_ms: 0.764369
+      type: 'test'
+      ...
+    # Subtest: claim: exclusive while the lease is live; re-claim by the holder renews
+    ok 6 - claim: exclusive while the lease is live; re-claim by the holder renews
+      ---
+      duration_ms: 0.195119
+      type: 'test'
+      ...
+    # Subtest: heartbeat: extends only the live holder's lease
+    ok 7 - heartbeat: extends only the live holder's lease
+      ---
+      duration_ms: 0.209541
+      type: 'test'
+      ...
+    # Subtest: reclaim: expired claims are cleared and the task can be claimed again
+    ok 8 - reclaim: expired claims are cleared and the task can be claimed again
+      ---
+      duration_ms: 0.390222
+      type: 'test'
+      ...
+    # Subtest: release: only the holder can release
+    ok 9 - release: only the holder can release
+      ---
+      duration_ms: 0.349026
+      type: 'test'
+      ...
+    # Subtest: notes: appended in order
+    ok 10 - notes: appended in order
+      ---
+      duration_ms: 0.874177
+      type: 'test'
+      ...
+    # Subtest: close: a done task is never offered as ready
+    ok 11 - close: a done task is never offered as ready
+      ---
+      duration_ms: 0.259249
+      type: 'test'
+      ...
+    # Subtest: state changes do not depend on dependency states: ordering is the controller's job
+    ok 12 - state changes do not depend on dependency states: ordering is the controller's job
+      ---
+      duration_ms: 0.244601
+      type: 'test'
+      ...
+    # Subtest: returned records are copies: mutating them does not change the store
+    ok 13 - returned records are copies: mutating them does not change the store
+      ---
+      duration_ms: 0.129248
+      type: 'test'
+      ...
+    # Subtest: titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+    ok 14 - titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+      ---
+      duration_ms: 0.315271
+      type: 'test'
+      ...
+    # Subtest: notes keep their boundaries, including multi-line text
+    ok 15 - notes keep their boundaries, including multi-line text
+      ---
+      duration_ms: 0.465627
+      type: 'test'
+      ...
+    # Subtest: unknown tasks: reads return nothing, ownership operations return false, writes throw
+    ok 16 - unknown tasks: reads return nothing, ownership operations return false, writes throw
+      ---
+      duration_ms: 0.423954
+      type: 'test'
+      ...
+    1..16
+ok 27 - TaskStore contract: FakeStore (memory)
+  ---
+  duration_ms: 11.883093
+  type: 'suite'
+  ...
+# Subtest: TaskStore contract: FakeStore (file)
+    # Subtest: create: new tasks are planned with zeroed counters; ids and deps are validated
+    ok 1 - create: new tasks are planned with zeroed counters; ids and deps are validated
+      ---
+      duration_ms: 3.40567
+      type: 'test'
+      ...
+    # Subtest: deps: dependencies are stored and returned
+    ok 2 - deps: dependencies are stored and returned
+      ---
+      duration_ms: 8.797589
+      type: 'test'
+      ...
+    # Subtest: compare-and-set changes state only from the expected state
+    ok 3 - compare-and-set changes state only from the expected state
+      ---
+      duration_ms: 9.410112
+      type: 'test'
+      ...
+    # Subtest: counters can be updated without a state change, and unknown fields are ignored
+    ok 4 - counters can be updated without a state change, and unknown fields are ignored
+      ---
+      duration_ms: 7.651936
+      type: 'test'
+      ...
+    # Subtest: ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+    ok 5 - ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+      ---
+      duration_ms: 29.427497
+      type: 'test'
+      ...
+    # Subtest: claim: exclusive while the lease is live; re-claim by the holder renews
+    ok 6 - claim: exclusive while the lease is live; re-claim by the holder renews
+      ---
+      duration_ms: 7.346389
+      type: 'test'
+      ...
+    # Subtest: heartbeat: extends only the live holder's lease
+    ok 7 - heartbeat: extends only the live holder's lease
+      ---
+      duration_ms: 5.259074
+      type: 'test'
+      ...
+    # Subtest: reclaim: expired claims are cleared and the task can be claimed again
+    ok 8 - reclaim: expired claims are cleared and the task can be claimed again
+      ---
+      duration_ms: 17.58626
+      type: 'test'
+      ...
+    # Subtest: release: only the holder can release
+    ok 9 - release: only the holder can release
+      ---
+      duration_ms: 6.435254
+      type: 'test'
+      ...
+    # Subtest: notes: appended in order
+    ok 10 - notes: appended in order
+      ---
+      duration_ms: 5.97023
+      type: 'test'
+      ...
+    # Subtest: close: a done task is never offered as ready
+    ok 11 - close: a done task is never offered as ready
+      ---
+      duration_ms: 6.444866
+      type: 'test'
+      ...
+    # Subtest: state changes do not depend on dependency states: ordering is the controller's job
+    ok 12 - state changes do not depend on dependency states: ordering is the controller's job
+      ---
+      duration_ms: 5.217359
+      type: 'test'
+      ...
+    # Subtest: returned records are copies: mutating them does not change the store
+    ok 13 - returned records are copies: mutating them does not change the store
+      ---
+      duration_ms: 2.911513
+      type: 'test'
+      ...
+    # Subtest: titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+    ok 14 - titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+      ---
+      duration_ms: 3.981522
+      type: 'test'
+      ...
+    # Subtest: notes keep their boundaries, including multi-line text
+    ok 15 - notes keep their boundaries, including multi-line text
+      ---
+      duration_ms: 4.687818
+      type: 'test'
+      ...
+    # Subtest: unknown tasks: reads return nothing, ownership operations return false, writes throw
+    ok 16 - unknown tasks: reads return nothing, ownership operations return false, writes throw
+      ---
+      duration_ms: 2.115719
+      type: 'test'
+      ...
+    # Subtest: durability: a new instance on the same directory sees every change
+    ok 17 - durability: a new instance on the same directory sees every change
+      ---
+      duration_ms: 7.63748
+      type: 'test'
+      ...
+    1..17
+ok 28 - TaskStore contract: FakeStore (file)
+  ---
+  duration_ms: 141.328396
+  type: 'suite'
+  ...
+# Subtest: TaskStore contract: BeadsStore (file)
+    # Subtest: create: new tasks are planned with zeroed counters; ids and deps are validated
+    ok 1 - create: new tasks are planned with zeroed counters; ids and deps are validated
+      ---
+      duration_ms: 6744.105373
+      type: 'test'
+      ...
+    # Subtest: deps: dependencies are stored and returned
+    ok 2 - deps: dependencies are stored and returned
+      ---
+      duration_ms: 9950.697813
+      type: 'test'
+      ...
+    # Subtest: compare-and-set changes state only from the expected state
+    ok 3 - compare-and-set changes state only from the expected state
+      ---
+      duration_ms: 7148.216912
+      type: 'test'
+      ...
+    # Subtest: counters can be updated without a state change, and unknown fields are ignored
+    ok 4 - counters can be updated without a state change, and unknown fields are ignored
+      ---
+      duration_ms: 6758.404804
+      type: 'test'
+      ...
+    # Subtest: ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+    ok 5 - ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+      ---
+      duration_ms: 14215.719443
+      type: 'test'
+      ...
+    # Subtest: claim: exclusive while the lease is live; re-claim by the holder renews
+    ok 6 - claim: exclusive while the lease is live; re-claim by the holder renews
+      ---
+      duration_ms: 7381.93583
+      type: 'test'
+      ...
+    # Subtest: heartbeat: extends only the live holder's lease
+    ok 7 - heartbeat: extends only the live holder's lease
+      ---
+      duration_ms: 7410.142451
+      type: 'test'
+      ...
+    # Subtest: reclaim: expired claims are cleared and the task can be claimed again
+    ok 8 - reclaim: expired claims are cleared and the task can be claimed again
+      ---
+      duration_ms: 13166.004244
+      type: 'test'
+      ...
+    # Subtest: release: only the holder can release
+    ok 9 - release: only the holder can release
+      ---
+      duration_ms: 8512.704724
+      type: 'test'
+      ...
+    # Subtest: notes: appended in order
+    ok 10 - notes: appended in order
+      ---
+      duration_ms: 7866.409765
+      type: 'test'
+      ...
+    # Subtest: close: a done task is never offered as ready
+    not ok 11 - close: a done task is never offered as ready
+      ---
+      duration_ms: 7418.948695
+      type: 'test'
+      location: '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/store-contract.test.ts:155:5'
+      failureType: 'testCodeFailure'
+      error: 'bd binary /tmp/eo-test-uWK0oF/store/bin/bd was replaced; refusing to run it'
+      code: 'ERR_TEST_FAILURE'
+      stack: |-
+        BeadsStore.run (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:216:35)
+        BeadsStore.bd (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:236:20)
+        BeadsStore.all (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:253:36)
+        BeadsStore.list (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:315:17)
+        BeadsStore.claimReady (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/src/store/beads.ts:333:31)
+        TestContext.<anonymous> (file:///tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/store-contract.test.ts:160:26)
+        Test.runInAsyncScope (node:async_hooks:214:14)
+        Test.run (node:internal/test_runner/test:1047:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:744:18)
+        Test.postRun (node:internal/test_runner/test:1173:19)
+      ...
+    # Subtest: state changes do not depend on dependency states: ordering is the controller's job
+    ok 12 - state changes do not depend on dependency states: ordering is the controller's job
+      ---
+      duration_ms: 7850.720591
+      type: 'test'
+      ...
+    # Subtest: returned records are copies: mutating them does not change the store
+    ok 13 - returned records are copies: mutating them does not change the store
+      ---
+      duration_ms: 6842.542611
+      type: 'test'
+      ...
+    # Subtest: titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+    ok 14 - titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+      ---
+      duration_ms: 6627.466334
+      type: 'test'
+      ...
+    # Subtest: notes keep their boundaries, including multi-line text
+    ok 15 - notes keep their boundaries, including multi-line text
+      ---
+      duration_ms: 7549.6522
+      type: 'test'
+      ...
+    # Subtest: unknown tasks: reads return nothing, ownership operations return false, writes throw
+    ok 16 - unknown tasks: reads return nothing, ownership operations return false, writes throw
+      ---
+      duration_ms: 7112.173093
+      type: 'test'
+      ...
+    # Subtest: durability: a new instance on the same directory sees every change
+    ok 17 - durability: a new instance on the same directory sees every change
+      ---
+      duration_ms: 7842.445815
+      type: 'test'
+      ...
+    1..17
+not ok 29 - TaskStore contract: BeadsStore (file)
+  ---
+  duration_ms: 140400.055476
+  type: 'suite'
+  location: '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/r5-tree/tests/integration/store-contract.test.ts:39:3'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..29
+# tests 76
+# suites 3
+# pass 67
+# fail 9
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1057700.105401

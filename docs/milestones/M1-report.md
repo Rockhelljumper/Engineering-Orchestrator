@@ -1,127 +1,217 @@
 # M1 report — controller core and durable task store
 
-Scope: the controller core with `FakeStore` and `FakeRunner` and deterministic tests, as approved on 2026-10-18. Nothing was installed, no model was invoked, no host configuration changed, nothing was merged, and no production resource or Proxmox host was touched.
+Scope: the controller core, the `FakeStore` and `BeadsStore` task stores, the fake runner, and deterministic tests. It covers the work approved on 2026-10-18, plus the M1 amendments approved later that day:
+- the `ready → blocked` transition;
+- default task limits of $10 / 4M tokens and epic limits of $25 / 20M tokens;
+- installing Go 1.26.7 and building beads from its pinned revision;
+- using that Go on disposable GitHub-hosted Windows runners to build and test beads.
 
-Evidence is stored in [`M1-evidence/`](M1-evidence/). It was produced on Linux x86_64 with Node v22.22.0 at the commit named in the PR, and the TAP files are the raw test output.
+No model was invoked, no API credit was spent, and nothing was merged or deployed. No VM was created, and no production system or Proxmox host was touched.
 
-Reproduce:
+## How results are counted
 
-```sh
-node --test "tests/unit/**/*.test.ts"                               # 77 tests
-node --test --test-concurrency=1 "tests/integration/**/*.test.ts"   # 41 tests
-node --test --test-concurrency=1 "tests/behavioral/**/*.test.ts"    # 3 tests, about 3 minutes
-tsc -p tsconfig.json                                                # needs typescript + @types/node (see "Tooling")
-```
+An acceptance criterion counts only if it passed in a **complete, attributable run**: every suite finished, and the run records:
+- the commit, with a clean tree;
+- the `bd` binary hash;
+- the platform;
+- the command;
+- start and end times.
+
+Runs that were interrupted, that failed, or that tested an earlier commit are kept as evidence under [`M1-evidence/not-counted/`](M1-evidence/not-counted/) and are listed in [Runs that do not count](#runs-that-do-not-count). They never count towards a criterion.
+
+**Final source commit: `72fe3f3`.** Every counted run below tested this commit. Later commits on the PR change only `docs/` (this report and the evidence); `git diff 72fe3f3 HEAD -- src tests scripts deps.lock.json .github package.json tsconfig.json` is empty.
+
+| Item | Value |
+|---|---|
+| Platform (Linux runs) | Linux 6.18.44 x86_64, Node v22.22.0, Go go1.26.7 linux/amd64, gcc 13.3.0, glibc 2.39 |
+| beads source | `gastownhall/beads` @ `9c6f6e15cdfdc4478e634520e8320795914e68e5` (module `github.com/steveyegge/beads`, v1.3.0) |
+| `bd` linux-amd64 SHA-256 | `2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef` |
+| `bd` windows-amd64 SHA-256 | `0b4d916b7076bb8ef7ab45882f6b7183399a90395ffbd867fb0b704ff12664f1` (gcc 14.2.0, x86_64-w64-mingw32, GitHub windows-2022 image) |
 
 ## Acceptance criteria
 
-| AC | Result | Evidence |
+| AC | Result | Evidence (all at `72fe3f3` unless stated) |
 |---|---|---|
-| M1-1 State machine rejects every illegal transition | **PASS** | All 100 ordered state pairs are checked against an independent table, and that table is checked edge for edge against the diagram in `02-architecture.md` §5 (22 legal edges) ([unit.tap](M1-evidence/unit.tap), `tests/unit/states.test.ts`). The cross-check found `ready → blocked` missing from the diagram (a budget rejection before launch); the edge was added to §5, which is **an amendment for you to approve** |
-| M1-2 `BeadsStore` passes the `FakeStore` contract suite | **BLOCKED** | The contract suite exists and passes on FakeStore in memory and on disk: 25 cases covering create, deps, ready, claim, heartbeat, reclaim, notes and close (`tests/integration/store-contract.test.ts`). Testing it against beads needs `bd`, and building `bd` needs Go 1.26.7; only Go 1.24.7 is present. Installing it is not authorised. The adapter will be written together with the approved build, so it is only ever tested against the real binary, never shipped untested |
-| M1-3 20 concurrent claims on one ready task, exactly one winner, 100 runs | **PASS** | 20 separate OS processes race for the ready task in each of 100 rounds against one file-backed store. Every round had exactly one winner, and the store's recorded owner matched it ([integration.tap](M1-evidence/integration.tap) test 8). The test fails when the store lock is removed (mutation check) |
-| M1-4 Killed at each of N ≥ 12 journal step boundaries; after `eo resume`, same final states; no task executed twice past its intent | **PASS** | The scripted 5-task run has 70 boundaries and includes one verification failure and one worker crash. For each boundary k, `eo run` is killed right after its k-th journal append, then `eo resume` and `eo run` finish the work. For 23 of the boundaries, recovery is itself crashed at a second point. Every run ended in the baseline's final states. No (task, attempt) appears twice in the execution log, and every execution has a journaled attempt start. `eo doctor` is clean and no reservations are left open. A second test delivered 32 random SIGKILLs during attempts across 8 runs, with the same checks. A third sweeps all 37 boundaries of a run that ends in an escalation (attempts exhausted, a dependent stalled), and also requires identical escalation records and exactly one escalation file ([behavioral.tap](M1-evidence/behavioral.tap)) |
-| M1-5 Journal tamper detected by `eo doctor` | **PASS** | `eo doctor` exits 1 on an edited journal record and on an altered evidence file, and the controller refuses to resume ([integration.tap](M1-evidence/integration.tap) test 5). Unit tests also cover deleted, reordered, wrongly keyed and spliced records, evidence artefact and manifest changes, and a manifest copied from another attempt. One limit is documented and tested: truncating the journal's final records leaves a valid shorter chain. `eo doctor` reports the resulting store/journal disagreement, but the file alone cannot show it |
-| M1-6 No outbound network during the M1-4 scenario | **PASS (controller only)** | Two independent detectors ran during crash, resume, run, doctor and status, each with a positive control proving it catches a connection. The first is a preload that records and refuses every Node network API. The second traces every `connect`/`sendto`/`sendmsg` syscall with `strace -f` inside an empty network namespace (`unshare -n`). Neither recorded anything ([strace log](M1-evidence/m1-6-strace.log)). The `bd` half is blocked with M1-2 |
-| M1-7 `bd` built from pinned commit; SHA-256 in `deps.lock.json`; metrics env set on every spawn | **BLOCKED** | Needs the Go 1.26.7 toolchain (not authorised) |
-| M1-9 Reproducible offline `bd` build | **BLOCKED** | Same |
-| M1-10 Refuse `eo init`/`eo run` on an unapproved repository | **PASS** | `eo run` and `eo plan import` refuse an unapproved repository. The check compares canonical paths, so symlinks and `..` resolve, and subdirectories are not implicitly approved. Nothing is journaled or launched ([unit.tap](M1-evidence/unit.tap), [integration.tap](M1-evidence/integration.tap) test 3). After review, tasks also run only against the repository their plan was approved for, and swapping an approved directory for a symlink does not move the approval. `eo init` takes no repository (it creates only the state root), so there is nothing for it to refuse. Approving a repository, importing a plan and unblocking require a typed confirmation at an interactive terminal; piped input is refused (integration test 2) |
-| M1-8 Test suite passes on Windows; `bd` Windows build recorded | **PASS (suite) / BLOCKED (`bd`)** | `.github/workflows/ci.yml` runs all three suites on `ubuntu-24.04` and `windows-2022`. Both passed on commit `b872421` ([Linux job](https://github.com/Rockhelljumper/Engineering-Orchestrator/actions/runs/39171481540/job/117805277748), [Windows job](https://github.com/Rockhelljumper/Engineering-Orchestrator/actions/runs/39171481540/job/117805277472)). On Windows the strace check is skipped, because it is Linux-only; the preload network check runs there. The first Windows run found a real lock bug, now fixed (see below). The `bd` Windows build is blocked with M1-2 |
+| M1-1 State machine rejects every illegal transition | **PASS** | All 100 ordered state pairs are checked against an independent table. That table is checked edge for edge against the diagram in `02-architecture.md` §5 (22 legal edges, including the approved `ready → blocked`) ([final/fake/unit.tap](M1-evidence/final/fake/unit.tap), `tests/unit/states.test.ts`) |
+| M1-2 `BeadsStore` passes the `FakeStore` contract suite | **PASS** | The same 17-case contract suite (create, deps, ready, claim, heartbeat, reclaim, notes, close, title and note boundaries, unknown tasks, durability) runs on FakeStore in memory, FakeStore on disk and BeadsStore against the real pinned `bd`. Results: Linux [final/beads-linux/integration.tap](M1-evidence/final/beads-linux/integration.tap) (77/77); Windows [final/windows](M1-evidence/final/windows/) |
+| M1-3 20 concurrent claims on one ready task, exactly one winner, 100 runs | **PASS** | 20 separate OS processes race for the ready task in each of 100 rounds. In every round there was exactly one winner, and the store's recorded owner was that winner. Results: FakeStore [final/fake/integration.tap](M1-evidence/final/fake/integration.tap); BeadsStore on Linux [final/beads-linux/m1-3-claims-race.tap](M1-evidence/final/beads-linux/m1-3-claims-race.tap) (33 min); BeadsStore on Windows [final/windows](M1-evidence/final/windows/). Mutation: dropping the revision guard from BeadsStore updates, or the lock from FakeStore, fails it |
+| M1-4 Killed at each of N ≥ 12 journal step boundaries; after `eo resume`, same final states; no task executed twice past its intent | **R7_M14_RESULT** | FakeStore: passed ([final/fake/behavioral.tap](M1-evidence/final/fake/behavioral.tap)). BeadsStore: R7_M14_BEADS. It consists of three tests:<br>1. All 70 boundaries of a 5-task run with a verification failure and a worker crash. For 23 of them, recovery is crashed again at a second point.<br>2. 32 random SIGKILLs of the controller and its whole process group, `bd` included, across 8 runs.<br>3. All 37 boundaries of a run that ends in an escalation.<br>Every run ended in the uninterrupted run's final states, and no (task, attempt) appears twice in the execution log. Every execution has a journaled attempt start. `eo doctor` is clean and no reservation is left open. In test 3 the escalation records are also identical, with exactly one escalation file |
+| M1-5 Journal tamper detected by `eo doctor` | **PASS** | `eo doctor` exits 1 on an edited journal record and on an altered evidence file, and the controller refuses to resume ([final/fake/integration.tap](M1-evidence/final/fake/integration.tap), [final/beads-linux/integration.tap](M1-evidence/final/beads-linux/integration.tap)). Unit tests cover deleted, reordered, wrongly keyed and spliced records. On beads, tasks injected or edited with `bd` behind the controller (an injected task, a bead without eo metadata, a removed dependency, a changed epic) are refused by `run` and reported by `doctor`. One limit is documented and tested: truncating the journal's final records leaves a valid shorter chain. `doctor` reports the resulting store/journal disagreement, but the file alone cannot show it |
+| M1-6 No outbound network from controller or `bd` during the M1-4 scenario | **PASS** | There are two detectors, each with a positive control:<br>1. A Node preload that records and refuses every network API (controller).<br>2. `strace -f` of every `connect`/`sendto`/`sendmsg` and `execve`, inside an empty network namespace, across crash, resume, run, doctor and status.<br>On beads, the trace covered 243 `bd` processes and recorded no IPv4 or IPv6 network syscall ([final/beads-linux/m1-6-strace-beads.log](M1-evidence/final/beads-linux/m1-6-strace-beads.log)); the controller-only trace is [m1-6-strace.log](M1-evidence/final/beads-linux/m1-6-strace.log). The positive control shows `bd` init with metrics left on does attempt an IPv4 connection, and that the detector sees it. No metrics queue (`bd-home/.beads/eventsData`) is ever created. The strace detector is Linux-only; on Windows the preload detector runs |
+| M1-7 `bd` built from pinned commit; SHA-256 in `deps.lock.json`; metrics env set on every spawn | **PASS** | `deps.lock.json` records the revision and a SHA-256 per platform. `eo init --store beads` refuses any other binary before writing anything. Each store runs only its own read-only copy, hashed against the pin. An observer on every `bd` spawn of a full run checks:<br>- `BD_DISABLE_METRICS=1` and `DO_NOT_TRACK=1` are set;<br>- no API key or other secret-named variable is present;<br>- the environment is the fixed allowlist.<br>A wrapper confirms the environment the process actually receives ([final/beads-linux/integration.tap](M1-evidence/final/beads-linux/integration.tap), tests 1–3) |
+| M1-8 Test suite passes on Windows; `bd` Windows build recorded | **PASS** | Windows CI (`windows-2022`) runs the FakeStore unit, integration and behavioural suites. The `beads-windows` job:<br>- fetches the official Go 1.26.7 toolchain module and checks its SHA-256 against `deps.lock.json` (verified against sum.golang.org);<br>- builds `bd` twice with separate caches;<br>- requires both hashes to equal the pin;<br>- runs the beads integration tests, including the 100-round claim race.<br>The pin was set from the first build on one runner; every later run must reproduce it on a fresh runner. Results are in [final/windows](M1-evidence/final/windows/). Skipped on Windows, with the reason shown: the strace tests (Linux-only), the environment-recording wrapper (a POSIX shell script), the killed-init and private-entry permission tests (POSIX signals and permissions) |
+| M1-9 Reproducible offline `bd` build | **PASS** | `scripts/build-bd.sh`:<br>- refuses a checkout at another revision or with any untracked or ignored file;<br>- forces `GOTOOLCHAIN=local`, `GOPROXY=off` and `-mod=readonly`;<br>- runs `go mod verify`;<br>- compiles inside an empty network namespace;<br>- prints the SHA-256.<br>Linux: builds 1 and 2 (separate checkouts, fresh caches), build 3 (hardened script) and the final-script builds all produced the pinned hash ([bd-build/](M1-evidence/bd-build/)). Windows: two builds per run, equal to each other and to the pin. No build log shows a toolchain download. The hash depends on the C toolchain (CGO); see [Limits](#limits-and-open-items) |
+| M1-10 Refuse `eo init`/`eo run` on an unapproved repository | **PASS** | `eo run` and `eo plan import` refuse an unapproved repository. They compare canonical paths, and nothing is journaled or launched. Tasks run only against the repository their plan was approved for. `eo init` takes no repository, so it has nothing to refuse ([final/fake/unit.tap](M1-evidence/final/fake/unit.tap), [final/fake/integration.tap](M1-evidence/final/fake/integration.tap)) |
 
-## Budget governor: reservation semantics
+## Counted runs
 
-Kyle asked for this to be pinned down. It is now specified in `07-isolation-and-credentials.md` §5.1 and implemented in `src/budget.ts`. Each launch reserves R, which is the invocation cap plus the largest measured turn, or `max(10 × cap, cap + $1)` until M2-6b measures it; tokens follow the same rule. For each task and epic scope there are three outcomes:
-- **reject** when `spent + R > cap`. It can never fit, so the task is blocked with an escalation and nothing launches.
-- **defer** when `spent + reserved + R > cap`. It may fit after running work settles.
-- **admit** otherwise. The reservation is journaled before the attempt starts.
+Each run's start and end times and the commit it read are written by the runner into `DONE` before and after each suite. Long suites also write a [progress history](#progress-reporting).
 
-Settlement charges one of three amounts:
-- the reported cost, with any overshoot journaled;
-- the full R, when the cost is unknown;
-- zero, only when the journal proves the attempt never started.
+| Run | Commit | Started → finished (UTC, 2026-10-19) | Command | Result |
+|---|---|---|---|---|
+| FakeStore unit | `72fe3f3` | see `started.txt` / `finished.txt` | `node --test "tests/unit/**/*.test.ts"` | 77/77 |
+| FakeStore integration | `72fe3f3` | 〃 | `node --test --test-concurrency=1 "tests/integration/**/*.test.ts"` | 49 pass, 14 skipped (the beads tests, which need `EO_BD_BIN`) |
+| FakeStore behavioural | `72fe3f3` | 〃 | `node --test --test-concurrency=1 "tests/behavioral/**/*.test.ts"` | 3/3 |
+| Typecheck | `72fe3f3` | 〃 | `tsc -p tsconfig.json` | exit 0 |
+| Beads integration (Linux) | `72fe3f3` | 03:55:59 → 04:16:24 | `EO_TEST_STORE=beads EO_REQUIRE_BD=1 EO_BD_BIN=… node --test --test-concurrency=1 tests/integration/{store-contract,beads,cli,no-network}.test.ts` | 77/77 |
+| Beads controller suite (Linux) | `72fe3f3` | 04:16:24 → 04:30:34 | same env, `tests/unit/controller.test.ts` | 23 pass, 2 skipped (they edit the FakeStore file; beads equivalents are in `beads.test.ts`) |
+| Beads claim race (Linux) | `72fe3f3` | 04:30:34 → 05:07:45 | same env, `--test-name-pattern 'M1-3 \(beads\)' tests/integration/concurrent-claims.test.ts` | 1/1 (100 rounds) |
+| Beads crash recovery (Linux), r7 | `72fe3f3` | 15:05:49 → R7_END | same env, `tests/behavioral/crash-recovery.test.ts`, run alone | R7_RESULT |
+| Mutation checks | `72fe3f3` | 05:12:14 → 05:20:34 | one mutant at a time in a separate worktree, then its target tests (listed per line in the files) | 8/8 controller and 10/10 BeadsStore mutants caught; 9/9 control runs pass |
+| CI, Linux and Windows | `72fe3f3` | 03:55:30 → 05:24:17 | `.github/workflows/ci.yml`, [run 39196962656](https://github.com/Rockhelljumper/Engineering-Orchestrator/actions/runs/39196962656) | `test (ubuntu-24.04)` and `test (windows-2022)`: unit 77/77, integration 47 pass + 16 skipped (beads tests without `bd`, Linux tracing), behavioural 3/3. `beads-windows`: Go zip SHA-256 OK, two builds both `0b4d916b…64f1` equal to the pin, beads tests 74 pass, 7 platform skips, 0 fail (claim race 100 rounds, contract suite on BeadsStore) |
 
-Tests confirming that affordable work starts while unaffordable work is rejected:
-- `tests/unit/budget.test.ts` has 18 tests:
-  - admit and reject, with no reservation journaled on reject;
-  - the exact-cap boundary;
-  - defer, then admit after settlement;
-  - an epic cap rejecting a task whose own cap would allow it;
-  - the token dimension alone;
-  - the three settlement bases;
-  - an overshoot counting against the next admission;
-  - a rebuild from the journal;
-  - a property test over 200 random policies × 40 steps against an independent model.
-- `tests/unit/controller.test.ts`, end to end through the scheduler:
-  - an affordable task launches while an unaffordable retry of another is rejected before launch, as the execution log shows;
-  - unknown costs stop retries before the infra limit;
-  - an epic cap stops the third task.
+Evidence: [`final/fake/`](M1-evidence/final/fake/), [`final/beads-linux/`](M1-evidence/final/beads-linux/) (TAP, `DONE`, `environment.txt`, `progress.jsonl`, strace logs), [`final/mutation/`](M1-evidence/final/mutation/), [`final/windows/`](M1-evidence/final/windows/), [`bd-build/`](M1-evidence/bd-build/).
 
-Two consequences you should know about:
-1. **Default caps changed.** With the old default task cap ($5 and 1M tokens) a single unmeasured reservation ($5 and 2M tokens) could never fit, so every task would have been rejected. The defaults are now $10 / 4M tokens per task and $25 / 20M per epic, and a policy whose single reservation exceeds the task cap is refused at load.
-2. Until M2-6b measures the overshoot, the reservation is deliberately pessimistic. A $10 task gets one $5 reservation at a time, and attempts with unknown cost (crash, timeout) are charged the full $5.
+Reproduce on Linux, with Go 1.26.7 and a beads checkout at the pinned revision:
 
-## Defects found by the tests and fixed
+```sh
+GO=/opt/go1.26.7/bin/go scripts/build-bd.sh ../beads-src /opt/beads-9c6f6e1/bd   # last line: the SHA-256
+node src/cli.ts init --store beads --bd-bin /opt/beads-9c6f6e1/bd                # refuses an unpinned binary
+export EO_TEST_STORE=beads EO_REQUIRE_BD=1 EO_BD_BIN=/opt/beads-9c6f6e1/bd EO_PROGRESS_FILE=/tmp/progress.jsonl
+node --test --test-concurrency=1 tests/integration/store-contract.test.ts tests/integration/beads.test.ts tests/integration/cli.test.ts tests/integration/no-network.test.ts
+node --test --test-concurrency=1 tests/unit/controller.test.ts
+node --test --test-name-pattern 'M1-3 \(beads\)' tests/integration/concurrent-claims.test.ts      # ~35 min
+node --test --test-concurrency=1 tests/behavioral/crash-recovery.test.ts                        # ~3 h on beads
+node scripts/test-progress.ts /tmp/progress.jsonl                                               # live progress
+```
 
-| Found by | Defect | Fix |
+## Runs that do not count
+
+| Run | Commit | What happened | Evidence |
+|---|---|---|---|
+| r3 beads | `c892111` | Integration (74/74) and controller suites (23 pass, 2 skipped) finished. The claim race (58 of 100 rounds finished) and crash recovery (around boundary 35 of 70) were **killed by a cloud container restart** at about 01:50 UTC. The suites were active until then, with sandbox writes at 01:49:21, so they had not stalled | [not-counted/r3-interrupted/](M1-evidence/not-counted/r3-interrupted/) (including `INTERRUPTED.md` and the boundary sampler log) |
+| r6 beads crash recovery | `72fe3f3` | **Interrupted** by a second cloud container restart after boundary 34 of 70 of the first test (last progress 05:34:55 UTC; started 04:34:59). No exit status was written, and the TAP file holds only its header. The other r6 suites (integration, controller, claim race) had finished and are counted above. Replaced by r7 | [not-counted/r6-behavioral-72fe3f3-interrupted/](M1-evidence/not-counted/r6-behavioral-72fe3f3-interrupted/) |
+| r4 beads | `81e51d2` | **Complete and passing:** integration 74/74, controller 23 + 2 skipped, claim race 1/1, crash recovery 3/3 (70 + 32 kills + 37). Superseded because the second review's fixes changed `BeadsStore` afterwards | [not-counted/r4-81e51d2/](M1-evidence/not-counted/r4-81e51d2/) |
+| r5 beads | `c48ac38` | **Failed:** integration 9 failures, controller 6, claim race timed out. The fix for review finding 1 introduced the cause (see [Second independent review](#second-independent-review)). Crash recovery was not started | [not-counted/r5-c48ac38-failed/](M1-evidence/not-counted/r5-c48ac38-failed/) |
+| Windows CI | `615d17b` | The first `beads-windows` run built `bd` twice with identical hashes and failed by design, because no Windows pin existed yet. Its hash became the pin | job [117846194463](https://github.com/Rockhelljumper/Engineering-Orchestrator/actions/runs/39185244973/job/117846194463) |
+| Windows CI | `81e51d2` | A fresh runner reproduced the pin; 71 pass, 7 platform skips | [not-counted/windows-81e51d2/](M1-evidence/not-counted/windows-81e51d2/) |
+| FakeStore suites | `b872421` | The pre-beads M1 evidence of the first review round | [not-counted/fake-b872421/](M1-evidence/not-counted/fake-b872421/) |
+| Beads mutation check | `d87fe63` | 8/8 mutants caught, before the second review's changes | [not-counted/mutation-d87fe63/](M1-evidence/not-counted/mutation-d87fe63/) |
+
+## Progress reporting
+
+The crash-recovery and claim-race tests append one JSON line per step to `EO_PROGRESS_FILE`. Each line records the test, the current scenario (boundary, seed or round), the completed and total scenarios, the last meaningful activity, its time and the elapsed time. `node scripts/test-progress.ts <file>` summarises the file and marks a test whose last activity is more than 10 minutes old as possibly stalled. Reporting never affects a result.
+
+This is not checkpointing: a restart still loses the scenarios of an unfinished test. Durable, resumable per-scenario checkpoints are now a requirement for future work (plan §1 and **M2-0**).
+
+## BeadsStore design
+
+- **Tasks and state.** Each task is the bead `eo-<id>`. Eo's state, counters and claim live in the bead's metadata (`eo`). The bead's own status mirrors them: done → closed, blocked → blocked, claimed → in_progress, anything else → open.
+- **Writes.** Every read-modify-write is `bd update --if-revision <token>`, a compare-and-swap on a random per-write row token; a loser gets exit 13 and retries. Closing passes `--force`, because the journal decides dependency order and resume may repair tasks in any order. The independent review confirmed `--force` does not bypass the revision guard.
+- **Leases.** Leases use the controller's clock, as in FakeStore, so both stores pass the same contract suite unchanged.
+- **Running `bd`.** `bd` runs with a fixed environment allowlist:
+  - `BD_DISABLE_METRICS=1`, `DO_NOT_TRACK=1` and `BD_DISABLE_EVENT_FLUSH=1`;
+  - a private `HOME` inside the store;
+  - nothing else inherited, so no API keys.
+- **Telemetry finding.** beads 1.3.0 sends usage metrics by default, to `gastownhall-eventsapi.com`. The positive control shows this.
+- **Git.** bd strips `GIT_CEILING_DIRECTORIES` and would commit into any enclosing git repository, so each store gets its own repository first.
+- **Initialisation.** It is marked complete only after `bd init` succeeds. A half-initialised store is redone by the controller and refused by read-only commands.
+- **Binary pinning.** Each store executes only its own read-only copy of `bd`, hashed against the pin when the store is opened. Its file identity (device, inode, size, mtime, ctime) is taken before hashing and confirmed after. Before every spawn the store re-hashes the copy if its identity has changed, and refuses to run it if the hash is wrong.
+- **Store binding.** The store kind is journaled (`store.bound`), and every command refuses a `store.json` that disagrees with it, before anything is created in the store.
+
+## Second independent review
+
+A fresh reviewer read the `81e51d2` diff adversarially and ran targeted experiments against the real `bd`. It found nothing critical or major. It found 5 minor findings, plus a documentation status gap, all verified, and all fixed with tests in `c48ac38`:
+
+| Severity | Finding | Resolution |
 |---|---|---|
-| Crash test, boundary 4 | When the controller died between journaling a reservation and journaling the attempt start, the retry reused the reservation id, so `eo run` failed with "duplicate reservation" | Reservation ids are unique per reservation, and settlement finds the id from the attempt-start record |
-| Journal unit test | A crash after writing a record but before its newline would make the next append join that line, corrupting the journal | Open terminates such a line first |
-| CLI test | `eo doctor` crashed on a task marked `done` that never had an attempt, which is exactly the forgery it should report | Reported as a problem |
-| Code reading before the lock tests | A second lock instance in the same process treated its own pid's lock as stale and stole it. Two processes clearing the same stale lock could delete the fresh lock one of them had just taken | Process-wide registry of held locks; stale removal happens under a short breaker lock with a re-check. Covered by the 20-process race and the killed-holder test |
-| State machine cross-check | The diagram lacked `ready → blocked` | Diagram amended (see M1-1) |
-| Windows CI | Creating a lock file that another process had just deleted but still held open failed with `EPERM` instead of `EEXIST`, crashing claim workers | Treated as busy; transient Windows rename errors are retried |
+| Minor | The store hashed its `bd` entry before recording its identity, so a write landing during the hash could be recorded as verified | Identity is taken before hashing and confirmed after, both in the constructor and before each spawn |
+| Minor | On Windows, re-installing the entry could not rename over the read-only copy, so the store would not open, and a 200 MB temp file was left behind | The old entry is made writable first; the temp file is always removed; failures are `StoreError`s. A new all-platform test replaces a stale, read-only entry |
+| Minor | The controller created or repaired the store before checking the journaled store binding. On a fake-bound root with `store.json` switched to beads, `bd init` ran in the FakeStore directory before the refusal | The controller passes the journal to `openStore`, so the binding is checked first. The new test fails on the old code (it lists the beads files created) |
+| Minor | `BeadsStore.atDir` created stores by default | The default is now no; callers that create say so (tests updated to state it explicitly) |
+| Minor | Windows pin mismatches would not say whether the runner's MinGW changed; `build-bd.sh` named arm64 differently from `platformKey()` | A mismatch names the pinned and the runner's C toolchain; both use `arm64` |
+| Minor | `doctor`'s comment said it never modifies anything | Comment corrected: it never changes the journal, policy, evidence or tasks |
+| Docs | Report and evidence predated beads | This report |
+
+**A defect introduced by the first fix, caught by the suites.** At the time, each store's `bd` entry was a hard link to the shared pinned binary. Any other store linking or unlinking that file changes its ctime. The stricter before-and-after check therefore failed whenever another store was created or removed during a hash, which happens constantly in the parallel test runs. Run r5 failed 16 tests with "bd binary was replaced".
+
+`72fe3f3` makes each store keep its own read-only copy (a reflink where the file system supports it). That was the reviewer's other suggested remedy, and it also means a writer of the source file can no longer change what a store runs. A new test churns links on the source while a store runs. It fails on `c48ac38` and passes on `72fe3f3`. Copies cost about 200 MB of disk per store; test sandboxes are deleted after each scenario.
+
+FINAL_REVIEW_SECTION
+
+### First independent review of the beads integration (for the record)
+
+It found 3 major and 6 minor findings, all fixed in `69af29a`:
+- **Major:** `bd init` committed into an enclosing git repository.
+- **Major:** a killed `bd init` left a store that was never repaired.
+- **Major:** titles the plan accepted were refused by `bd`, which wedged the state root.
+- **Minor:**
+  - a binary-pin TOCTOU;
+  - host-dependent build reproducibility;
+  - `claimReady` re-reading after winning;
+  - `store.bound` enforced only in the controller;
+  - a positive control that could not fail;
+  - contract-suite gaps.
 
 ## Test integrity
 
-The tests' sensitivity was checked by mutation: 8 deliberate bugs, each applied alone ([mutation-check.txt](M1-evidence/mutation-check.txt)):
+Mutation checks at `72fe3f3` ([final/mutation/](M1-evidence/final/mutation/)) apply one deliberate bug at a time.
+
+**Controller and FakeStore mutants:**
 - an illegal transition allowed;
 - the USD cap ignored;
 - open reservations ignored;
 - the store lock removed;
-- never-launched reservations left open on resume;
+- never-launched reservations left open;
 - the chain link dropped from the journal MAC;
 - one extra correction attempt;
 - evidence hashes not checked.
 
-All 8 were caught. The chain-link mutant first survived, and a test splicing a record in from a diverged copy of the journal was added to catch it. No test was weakened or skipped. Two expectations were corrected where the test, not the code, was wrong:
-- the validator's message format;
-- the legal-edge count, which is now derived from the architecture diagram instead of a hard-coded number.
+**BeadsStore mutants:**
+- the revision guard dropped;
+- the metrics opt-out removed;
+- the binary hash not checked;
+- the per-spawn identity check removed;
+- no store-own git repository;
+- half-initialised stores not repaired;
+- foreign beads accepted;
+- the binding checked only after creating the store;
+- a hard link instead of a private copy;
+- closing not forced.
 
-## Tooling and deviations
+Every targeted test selection also passes on the unmutated tree (control runs).
 
-- **No npm dependencies.** `ajv` was planned (`03-dependency-map.md`), but installing it was not authorised, so a 100-line schema validator covering the needed subset is used (`src/schema.ts`, with tests). Whether to switch to `ajv` later can be decided when installs are approved.
-- **Typecheck** used the TypeScript 6.0.2 and `@types/node` already present in this environment (`/opt/node-tools`). Nothing was installed. CI does not typecheck, because that would need an npm install.
-- **CI** uses `actions/checkout` and `actions/setup-node`, pinned by full commit SHA, on GitHub's ephemeral runners. It has read-only permissions and no secrets. If you consider the runner's Node download an installation, delete `.github/workflows/ci.yml`, and M1-8 becomes BLOCKED.
-- Execution is sequential in M1 (one worker at a time). The `defer` path is exercised in unit tests; through the scheduler it matters only once M5 adds concurrency.
-- Human gates are a typed word at a TTY. That is a speed bump, not a security boundary: a pseudo-terminal can satisfy it. The boundary is that agents never get access to the state root (architecture §3, T18).
+No test was skipped, disabled or weakened to obtain a pass. These expectations changed:
+- the hang test now bounds each attempt by its journal timestamps instead of the whole run (store latency is not the property under test);
+- one expected error message changed, because the store binding is now checked earlier (the refusal itself is still asserted);
+- test calls that create a beads store now pass `create: true` explicitly.
 
-## Independent review
+## Budget governor: reservation semantics
 
-A separate reviewer read the code adversarially and ran the suites plus its own crash sweep. It found no blockers, 3 major and 8 minor findings, all verified. Each repair below has a new test; the suites and the mutation check were rerun afterwards.
+Specified in `07-isolation-and-credentials.md` §5.1 and implemented in `src/budget.ts`. Each launch reserves R, the invocation cap plus the largest measured turn, or `max(10 × cap, cap + $1)` until M2-6b measures it; tokens follow the same rule. There are three outcomes for each task and epic scope:
+- **reject** when `spent + R > cap`: the task is blocked with an escalation and nothing launches;
+- **defer** when `spent + reserved + R > cap`;
+- **admit** otherwise, with the reservation journaled before the attempt starts.
 
-| Severity | Finding | Resolution |
+Settlement charges one of three amounts:
+- the reported cost, with any overshoot journaled;
+- the full R when the cost is unknown;
+- zero, only when the journal proves the attempt never started.
+
+The approved defaults are $10 / 4M tokens per task and $25 / 20M tokens per epic. They are accounting limits, not permission to spend. `tests/unit/budget.test.ts` has 18 tests, including a property test over 200 random policies against an independent model, and `tests/unit/controller.test.ts` exercises the same rules end to end.
+
+## Defects found by the tests and fixed (first M1 round)
+
+| Found by | Defect | Fix |
 |---|---|---|
-| Major | Forged store records were trusted. A task injected into `tasks.json` ran to `done`; editing a task's epic moved its spend to another epic's budget; clearing deps allowed early promotion | `resume` (and so every `run`) refuses a store whose tasks, epics or dependencies differ from the journaled plans, and `doctor` reports them. Budget and promotion take epic and deps from the journal, not the store |
-| Major | `eo policy accept` was named in an error but did not exist. Approving a repository wrote the policy file before journaling, so a crash between the two wedged the state root | `eo policy accept` added (interactive). Policy changes are now intent, file, commit; a crash at either point is ignored or completed on the next open (tested both ways) |
-| Major | `run --repo B` executed tasks imported for repository A | Tasks run only under the repository journaled with their plan; others are skipped and recorded |
-| Minor | A corrupt evidence manifest crashed `doctor` and the controller | Reported as "manifest unreadable" / "malformed" |
-| Minor | Tampered evidence was re-sealed during verification, and the journaled seal was never checked | Evidence that was sealed and no longer verifies is escalated. At integration the manifest must match the journaled MAC. A crash between seal and journal is recovered |
-| Minor | A malformed reported cost became durable and then made every resume throw | Validated before journaling; an invalid cost is charged as unknown (full reservation) and recorded |
-| Minor | Lock edge cases: `release` could delete a replacement lock; the breaker lacked the Windows EPERM handling | Release removes only its own lock (per-acquisition nonce); breaker handles EPERM. Not fixed: a contender paused for more than 10 s inside the stale-lock takeover could still remove a fresh lock. This needs a long process stall at a narrow point and is accepted for M1 (single controller); recorded for M5 |
-| Minor | Crash tests never exercised escalation paths; `EO_CRASH_AT` lands only after journal appends | Escalation-scenario sweep added (37 boundaries). Points between non-journal writes are reached only by the random-SIGKILL test; this remains a stated limit |
-| Minor | Torn-tail repair messages said `eo resume` but every controller open repairs | Messages corrected (the repair is reported in the resume record) |
-| Minor | Approval followed a later symlink swap | Approval compares against the path canonicalised at approval time |
-| Nit | Evidence MAC compared with `!==`; journal and evidence share a key without domain separation | Timing-safe compare. The shared key is not exploitable today (the MACed structures differ) and is left for M3, which reworks evidence |
+| Crash test, boundary 4 | A retry after a crash between reservation and attempt start reused the reservation id ("duplicate reservation") | Unique ids; settlement finds the id from the attempt-start record |
+| Journal unit test | A crash before a record's newline would make the next append join that line | Open terminates such a line first |
+| CLI test | `eo doctor` crashed on a forged `done` task | Reported as a problem |
+| Code reading | Same-process lock reuse and concurrent stale-lock clearing | Process-wide registry; breaker lock with re-check |
+| State machine cross-check | The diagram lacked `ready → blocked` | Diagram amended (approved) |
+| Windows CI | Lock creation over a delete-pending file failed with `EPERM` | Treated as busy; transient rename errors retried |
 
-The review confirmed as sound:
-- the state machine against §5;
-- the budget rules in §5.1 (order of checks, cap boundary, both dimensions, settlement bases, no leaked or unjournaled reservation);
-- that nothing executes twice;
-- escalation reuse after a crash;
-- the counters;
-- journal tamper detection;
-- the M1-3 race test.
+The first independent review of the controller core (3 major, 8 minor) and its resolutions are in the git history of this file (commit `6b7936a`).
+
+## Limits and open items
+
+- **Stale-lock race.** This is a blocker for production concurrent execution. A contender paused for more than 10 s inside the stale-lock takeover (`src/util/lock.ts`) can remove a fresh lock, so two holders could briefly coexist. M1 runs a single controller. This must be fixed and verified as **M5-0** before any concurrent execution. Recorded in `05` §M5 and threat model T11.
+- **Windows `bd` hash depends on the runner's MinGW**, which nothing pins. An image update fails the job closed, and the error names the toolchain. Linux has the same dependency on gcc and glibc, and the build script warns when they differ.
+- **`bd` crash recovery was not run on Windows.** Windows CI runs the beads contract, integration and claim-race tests, and the FakeStore crash suite. The 3-hour beads crash sweep ran on Linux only.
+- **The check-then-exec gap.** Between the store's identity check and the spawn, a write to its private copy cannot be detected. The copy lives in the state root, which agents never reach (threat model T10).
+- **Typecheck** uses the TypeScript and `@types/node` already in this environment. CI does not typecheck, because that would need an npm install.
+- **Human gates** (typed word at a TTY) are a speed bump, not a security boundary (architecture §3, T18).
 
 ## Next approval gate
 
-M2 (Claude Code worker runner) needs your choice of local isolation tier and a go-ahead for live spend (proposed ≤ $2), per `05` §M2. Unblocking M1-2, M1-7 and M1-9 needs approval to install Go 1.26.7 and build `bd` from the pinned commit.
+M1 needs the owner's review of this report and PR #2. M2 needs the owner's choice of local isolation tier and a go-ahead for live spend (proposed ≤ $2), per `05` §M2.

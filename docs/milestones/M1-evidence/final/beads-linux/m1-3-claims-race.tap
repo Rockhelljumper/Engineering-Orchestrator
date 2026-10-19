@@ -1,0 +1,16 @@
+TAP version 13
+# Subtest: M1-3 (beads): 20 processes race for one ready task, exactly one winner, 100 rounds in a row
+ok 1 - M1-3 (beads): 20 processes race for one ready task, exactly one winner, 100 rounds in a row
+  ---
+  duration_ms: 2231094.792765
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2231509.503161
