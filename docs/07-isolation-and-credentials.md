@@ -50,7 +50,7 @@ Conclusions:
 - **Containers on Docker Desktop** are acceptable for local runs only with the hardening in §3, and with no Windows paths bind-mounted. Their weak point is the shared Docker Desktop VM, which has the host drives mounted.
 - **A local VM** is the preferred local option. The whole eo runtime (controller + hardened containers for workers and verification) runs inside the guest, which has no shared folders. VS Code connects to it with Remote-SSH, so the chat workflow still works from the Windows desktop. This is the same layout as the Proxmox worker (M8), so the local VM is a development-scale copy of PX.
 
-## 3. Execution tiers (replaces the earlier T0 definition)
+## 3. Execution tiers
 
 | Tier | Layout | Required controls | Allowed use |
 |---|---|---|---|

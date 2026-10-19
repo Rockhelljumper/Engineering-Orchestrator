@@ -87,7 +87,7 @@ Claude Code 2.1.302 already provides the primitives the worker runner needs, so 
 - `--permission-mode dontAsk` + `--permission-prompts none` lets unattended workers fail closed instead of prompting or bypassing.
 - `--setting-sources`, `--restricted` and `--strict-mcp-config` stop a target repository's own `.claude/` settings, hooks and MCP servers from loading into a worker. None of these stops the repository's `CLAUDE.md` being read; only `--bare` skips CLAUDE.md discovery, at the cost of also skipping settings hooks and requiring API-key auth. M2 measures each option and records the choice.
 - `--restricted` also refuses code-running tools unless named, which suits the read-only reviewer roles.
-- `--max-budget-usd` caps spend per invocation.
+- `--max-budget-usd` stops an invocation once its estimated cost passes the cap (it can overshoot; `07` §5).
 - `--session-id` / `--resume` allow an interrupted attempt to be continued or audited.
 
 These are confirmed present in `--help`; exact behaviour is verified by tests in M2 rather than assumed.

@@ -49,7 +49,7 @@ Only folder names were visible (home folder, `Program Files`, `Program Files (x8
 Consequences for the design:
 
 1. The orchestrator must run on **Windows natively** for the interactive VS Code workflow. That rules out designs that need tmux (Oh My ClaudeCode team mode) on the host.
-2. The unattended tier runs on **Linux** (container or Proxmox VM), so the controller must be cross-platform: Node/TypeScript with no shell-specific glue.
+2. The unattended tier runs on **Linux** (L2 local VM or PX Proxmox VM, with workers in containers inside the guest), so the controller must be cross-platform: Node/TypeScript with no shell-specific glue.
 3. Paths, process control (no POSIX signals on Windows) and file locking must be handled portably.
 
 ## 4. Proxmox

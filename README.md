@@ -2,7 +2,7 @@
 
 A secure, multi-agent software-development orchestrator for Claude Code: it takes an engineering epic through architecture, planning, implementation, independent testing, security review, correction and final verification, with durable state and evidence-based quality gates.
 
-**Status: M1 — controller core and durable task store, in review.** M0 is approved. M1 uses only the fake runner (no model spend) and installs nothing; see the [M1 report](docs/milestones/M1-report.md). Each later milestone keeps its own approval gate.
+**Status: M1 — controller core and durable task store, in review.** M0 (revision 2) was architecturally approved by the owner on 2026-10-18. M1 uses only the fake runner (no model spend). Its one approved install is Go 1.26.7, used to build beads (`bd`) offline from the pinned revision for the beads task store; see the [M1 report](docs/milestones/M1-report.md). Each later milestone keeps its own approval gate.
 
 ## Try it (M1, fake runner only)
 
@@ -35,7 +35,7 @@ Tests: `npm test` (unit), `npm run test:integration`, `npm run test:behavioral` 
 | [M0 report](docs/milestones/M0-report.md) | M0 acceptance results and review findings |
 | [M1 report](docs/milestones/M1-report.md) | M1 acceptance results, evidence and review findings |
 
-## Decisions approved in M0
+## Decisions approved with M0 revision 2
 
 1. **ADR-001:** don't install Oh My ClaudeCode; adapt its agent prompts and guardrail ideas into our own plugin.
 2. **ADR-002:** use beads (built from a pinned, reviewed commit, metrics disabled, controller-only writer) as the task store, with Backlog.md as fallback.

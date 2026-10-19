@@ -39,9 +39,9 @@ Components: project scaffold (TypeScript, `node:test`, CI workflow running tests
 | M1-5 | Journal tamper (edit one record) is detected by `eo doctor` | unit test |
 | M1-6 | No outbound network connection from controller or `bd` during the M1-4 scenario (sandboxed run with network namespace / egress logging) | integration test log |
 | M1-7 | `bd` binary built from pinned commit; SHA-256 recorded in `deps.lock.json`; metrics env vars set by controller for every invocation | test asserts env on every spawn |
+| M1-8 | Windows check: test suite (FakeStore) passes on Windows; `bd` Windows build result recorded. If `bd` cannot be built on Windows, ADR-002 fallback decision is made with the user | CI matrix (ubuntu + windows) |
 | M1-9 | `bd` build is reproducible offline after module download: built with Go 1.26.7, `GOTOOLCHAIN=local`; build log shows no toolchain download; two builds produce the same SHA-256 (or the difference is explained) | build script output stored |
 | M1-10 | Controller refuses `eo init`/`eo run` on a repository not in `approvedRepositories` | unit + integration test |
-| M1-8 | Windows check: test suite (FakeStore) passes on Windows; `bd` Windows build result recorded. If `bd` cannot be built on Windows, ADR-002 fallback decision is made with the user | CI matrix (ubuntu + windows) |
 
 ### M2 — Claude Code worker runner and role profiles
 **Prerequisite:** the user runs the read-only checks in `07-isolation-and-credentials.md` §1 and approves one local tier (P pilot, L1 container or L2 VM, L2 preferred). Building that tier (image or VM) is an installation step with its own approval.
@@ -58,7 +58,7 @@ Components: isolation launcher for the approved tier (`07` §3), runner that bui
 | M2-4 | Worker env contains only allowlisted variables | live probe printing env names to evidence |
 | M2-5 | Target-repo `.claude/settings.json` hooks and `.mcp.json` servers are not loaded in workers (sample repo contains a canary hook that would write a file). For `CLAUDE.md`, each of `--setting-sources`, `--restricted` and `--bare` is tested with a canary instruction in `CLAUDE.md`; the result and the chosen configuration per role are recorded | live test: canary file absent; CLAUDE.md canary table in the report |
 | M2-6 | Budget governor: with a fake runner reporting costs, no invocation is launched once `spent + reserved` exceeds the cap, at every cap value in a property test; a hanging fake worker is killed within timeout + 5 s with its whole process tree gone | unit/behavioural test, process table snapshot |
-| M2-6b | Overshoot measurement (informational, not pass/fail on the dollar amount): 5 live runs with `--max-budget-usd 0.10` on a task larger than the cap; record each run's reported cost, result subtype and duration; the worst observed ratio sets the reservation factor in policy. Pass criterion: every run terminated (by budget error or timeout), and the factor was written to policy | live test, table stored |
+| M2-6b | Overshoot measurement (informational, not pass/fail on the dollar amount): 5 live runs with `--max-budget-usd 0.10` on a task larger than the cap; record each run's reported cost, result subtype and duration; the largest single-turn cost observed sets `maxTurnCost` in policy. Pass criterion: every run terminated (by budget error or timeout), and `maxTurnCost` was written to policy | live test, table stored |
 | M2-7 | Each attempt runs in its own clone; in L1/L2 a worker cannot read a sibling clone; a hook planted in a clone's `.git/hooks` never runs during controller fetch/merge | live test + scenario S9 |
 | M2-8 | Hook canary: with a deliberately invalid settings file the attempt aborts before any agent work; with a valid one the canary action is denied | fake + live test |
 | M2-9 | Code inside the isolation boundary cannot write the state root or the mirror (write attempts from a worker and from a test run both fail) | integration test |
@@ -81,12 +81,14 @@ Components: verifier, gate engine (protected hashes, test inventory, skip detect
 | M3-10 | Forgery canaries: in S10, a fake implementation that forges reporter output, prints fake result frames, or exits 0 early is detected in every sub-case (failing canary reported as pass, nonce missing, or count mismatch) and the task is blocked with a security finding | behavioural test, 3 sub-cases |
 | M3-11 | Holdout tests: never present in any worker clone (file-system scan of every clone after each attempt); a fake implementation that passes the visible tests but not the holdout tests is rejected; leakage test: the failure evidence handed to attempt n+1 contains no holdout source text, expected values or assertion messages (string search for every literal in the holdout files) | behavioural test |
 | M3-12 | Mutation check: on the sample project, a deliberately weak visible test suite (S10d) fails the kill-rate threshold; a good suite passes it; the sentinel mutant is killed in every accepted verification; every excluded "equivalent" mutant is listed with a reason in the stored report | behavioural test, mutation report stored |
-| M3-15 | The tamper scan flags each tampering pattern planted in S10a–c and routes it to the security reviewer | behavioural test |
 | M3-13 | Test support tampering: editing a test helper, fixture or a module imported by tests (S10e) is rejected by the protected-path check | behavioural test |
 | M3-14 | Base cross-run: new tests that pass on base code (test nothing) are rejected | behavioural test |
+| M3-15 | The tamper scan flags each tampering pattern planted in S10a–c and routes it to the security reviewer | behavioural test |
 
 ### M4 — Planning pipeline
 Components: architect and planner roles with schemas, plan validator (schema, DAG acyclicity, checkable criteria), open-question handling, human plan approval with plan hash, paired test-author tasks.
+
+**Approval gate:** first live Claude invocation (proposed cap $5 for the M4 live tests) needs the user's go-ahead.
 
 | AC | Criterion | Measured by |
 |---|---|---|
@@ -113,6 +115,8 @@ Components: scheduler concurrency, file-set aware scheduling, integration queue,
 ### M6 — Chat workflow plugin
 Components: `plugin/` with commands from architecture §10, role agent files, read-only `SessionStart` status hook. Installed locally with `--plugin-dir` (no remote marketplace).
 
+**Approval gate:** first live Claude invocation (proposed cap $2 for the M6 live tests) needs the user's go-ahead.
+
 | AC | Criterion | Measured by |
 |---|---|---|
 | M6-1 | Each command runs from Claude Code chat and prints controller output | scripted headless run (`claude -p` invoking each slash command against the fake runner) whose transcript is stored and compared with `eo` terminal output; re-runnable by anyone |
@@ -135,8 +139,8 @@ Components: `plugin/` with commands from architecture §10, role agent files, re
 | M7-8 | No invocation was launched after `spent + reserved` exceeded the cap; no task exceeded its attempt limit; ledger estimate, per-invocation overshoot and the user's Console usage figure are all reported (the Console comparison is informational) | budget ledger + journal |
 | M7-9 | A final evidence bundle (`docs/milestones/M7-evidence/`) lets a third party re-run every check | `scripts/replay-evidence` re-runs every check from a clean checkout and diffs against stored results; its output is stored and the user re-runs it themselves |
 
-### M8 — Isolated unattended worker (container, then Proxmox)
-**Approval gate:** design review of `infra/` before anything is created on Proxmox; user supplies the host details.
+### M8 — Isolated unattended worker (containers in a VM, then Proxmox)
+**Approval gate:** design review of `infra/` before any VM, container image or Proxmox resource is created (the user supplies the host details), and separate approval of the live budget (proposed cap $25).
 
 | AC | Criterion | Measured by |
 |---|---|---|
@@ -172,4 +176,4 @@ These caps are enforced by eo's budget governor on Claude Code's estimated costs
 | beads API churn | Adapter breakage | Pinned commit + contract suite gate on upgrade |
 | Live agent nondeterminism makes M7 flaky | Demo reliability | Behavioural correctness proven with fake runner first; M7 records actual live runs, including failed ones |
 | Docker Desktop or Hyper-V present but unusable (folder names seen, state unverified) | Local tier choice | Fall back to a VirtualBox L2 VM; pilot tier only for the sample project meanwhile |
-| Client-side budget overshoot larger than expected | Spend | Reservation factor from M2-6b, low concurrency, Console spend limit on the worker key |
+| Client-side budget overshoot larger than expected | Spend | `maxTurnCost` from M2-6b, low concurrency, Console spend limit on the worker key |
