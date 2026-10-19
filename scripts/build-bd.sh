@@ -73,4 +73,5 @@ else
   echo "build-bd: unshare -n unavailable; relying on GOPROXY=off" >&2
   "${build[@]}" >&2
 fi
-sha256sum "$out" | cut -d' ' -f1
+# Hash from stdin: given a Windows path, sha256sum escapes the name and prefixes the hash with \.
+sha256sum < "$out" | cut -d' ' -f1

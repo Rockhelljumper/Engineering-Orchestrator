@@ -28,6 +28,12 @@
         "cc": "gcc 13.3.0",
         "libc": "glibc 2.39",
         "note": "CGO build: the hash reproduces only with this C toolchain and C library"
+      },
+      "windows-amd64": {
+        "sha256": "0b4d916b7076bb8ef7ab45882f6b7183399a90395ffbd867fb0b704ff12664f1",
+        "cc": "gcc 14.2.0",
+        "libc": "x86_64-w64-mingw32",
+        "note": "Built by the beads-windows CI job on a GitHub-hosted windows-2022 runner (run 39185244973, two builds with separate caches, identical); each later run must reproduce it on a fresh runner"
       }
     }
   }
