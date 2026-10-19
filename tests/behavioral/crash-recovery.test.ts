@@ -7,6 +7,7 @@ import { Controller } from '../../src/controller.ts';
 import { verifyJournalFile } from '../../src/journal.ts';
 import { readJournalKey, statePaths } from '../../src/stateRoot.ts';
 import { CLI, disposeSandbox, readExecLog, runCli, samplePlan, sandbox, TIMEOUT_SCALE, writeJson, type Sandbox } from '../support/helpers.ts';
+import { Progress } from '../support/progress.ts';
 import type { Policy } from '../../src/policy.ts';
 import type { Plan } from '../../src/plan.ts';
 
@@ -111,16 +112,19 @@ function checkRecovered(s: Scenario, baseline: Record<string, string>, label: st
   assert.deepEqual(rep.warnings.filter((w) => w.includes('reservation')), [], `${label}: open reservations`);
 }
 
-function recover(s: Scenario, label: string, crashAt?: number): void {
+function recover(s: Scenario, label: string, crashAt?: number, progress?: Progress): void {
   if (crashAt !== undefined) {
     // A second crash, this time during recovery.
     const r = runCli(runArgs(s), { EO_CRASH_AT: String(crashAt) });
     assert.ok(r.status === 137 || r.status === 0, `${label}: second run exit ${r.status}: ${r.stderr}`);
+    progress?.step(`second crash during recovery at append ${crashAt} (exit ${r.status})`);
   }
   const res = runCli(['resume', '--state-root', s.sb.root]);
   assert.equal(res.status, 0, `${label}: resume: ${res.stderr}`);
+  progress?.step('resume finished');
   const run = runCli(runArgs(s));
   assert.equal(run.status, 0, `${label}: run: ${run.stderr}`);
+  progress?.step('run after resume finished');
 }
 
 test('M1-4: crash after every journal step boundary of a 5-task run, then resume', { timeout: 900_000 * TIMEOUT_SCALE }, (t) => {
@@ -135,17 +139,21 @@ test('M1-4: crash after every journal step boundary of a 5-task run, then resume
   checkRecovered(base, baseline, 'baseline');
 
   const results: string[] = [];
+  const progress = new Progress('M1-4 every boundary', N);
   for (let k = 1; k <= N; k++) {
+    progress.begin(`boundary ${k}`);
     const s = setup();
     const crashed = runCli(runArgs(s), { EO_CRASH_AT: String(k) });
     assert.equal(crashed.status, 137, `boundary ${k}: expected the injected crash, got ${crashed.status}: ${crashed.stderr}`);
     assert.match(crashed.stderr, new RegExp(`injected crash after journal append #${k}`));
+    progress.step(`crashed after journal append ${k}`);
     // Every third boundary also crashes during recovery, at a varying point.
     const second = k % 3 === 0 ? 1 + ((k * 7) % 15) : undefined;
-    recover(s, `boundary ${k}`, second);
+    recover(s, `boundary ${k}`, second, progress);
     checkRecovered(s, baseline, `boundary ${k}`);
     disposeSandbox(s.sb);
     results.push(`${k}${second ? `+${second}` : ''}`);
+    progress.done();
   }
   // Recorded for the evidence report.
   t.diagnostic(`boundaries tested: ${N} (${results.join(', ')}); +j = second crash during recovery at append j`);
@@ -182,16 +190,20 @@ test('M1-4: random SIGKILLs during attempts, then resume', { timeout: 600_000 * 
     return rnd / 2 ** 31;
   };
   let killed = 0;
+  const progress = new Progress('M1-4 random SIGKILLs', 8);
   for (let seed = 1; seed <= 8; seed++) {
+    progress.begin(`seed ${seed}`);
     const s = setup(150);
     for (let i = 0; i < 4; i++) {
       const code = await runAndKill(s, 150 + Math.floor(next() * Math.max(100, duration / (i + 2))));
+      progress.step(code === null ? `SIGKILL ${i + 1} delivered` : `run finished before kill ${i + 1}`);
       if (code === null) killed++;
       else break; // finished before the kill
     }
-    recover(s, `kill seed ${seed}`);
+    recover(s, `kill seed ${seed}`, undefined, progress);
     checkRecovered(s, baseline, `kill seed ${seed}`);
     disposeSandbox(s.sb);
+    progress.done();
   }
   t.diagnostic(`SIGKILLs delivered: ${killed} across 8 runs`);
   assert.ok(killed >= 8, `only ${killed} kills landed; the test is not exercising recovery`);
@@ -206,15 +218,19 @@ test('M1-4: crash at every boundary of a run that ends in an escalation, then re
   assert.deepEqual(baseline, { A: 'blocked', B: 'planned', C: 'done' });
   const baseEsc = escalationsOf(base);
   assert.deepEqual(baseEsc, ['A:attempts']);
+  const progress = new Progress('M1-4 escalation boundaries', N);
   for (let k = 1; k <= N; k++) {
+    progress.begin(`escalation boundary ${k}`);
     const s = setup(0, 'escalation');
     assert.equal(runCli(runArgs(s), { EO_CRASH_AT: String(k) }).status, 137, `boundary ${k}`);
-    recover(s, `escalation boundary ${k}`);
+    progress.step(`crashed after journal append ${k}`);
+    recover(s, `escalation boundary ${k}`, undefined, progress);
     checkRecovered(s, baseline, `escalation boundary ${k}`);
     assert.deepEqual(escalationsOf(s), baseEsc, `escalation boundary ${k}: escalations`);
     const esc = fs.readdirSync(path.join(s.sb.root, 'escalations'));
     assert.equal(esc.length, 1, `escalation boundary ${k}: one escalation file`);
     disposeSandbox(s.sb);
+    progress.done();
   }
   t.diagnostic(`escalation scenario boundaries tested: ${N}`);
 });

@@ -9,6 +9,7 @@ import { BeadsStore } from '../../src/store/beads.ts';
 import type { TaskStore } from '../../src/store/types.ts';
 import { FileLock, sleepSync } from '../../src/util/lock.ts';
 import { BD_BIN, REPO_ROOT, tmpDir } from '../support/helpers.ts';
+import { Progress } from '../support/progress.ts';
 
 const WORKERS = 20;
 const ROUNDS = 100;
@@ -46,12 +47,15 @@ for (const st of stores) {
     }
     try {
       waitFor(() => fs.readdirSync(barrier).filter((f) => f.startsWith('up-')).length === WORKERS, 'workers to start');
+      const progress = new Progress(`M1-3 ${st.kind} claim race`, ROUNDS);
       const tally: number[] = [];
       for (let r = 1; r <= ROUNDS; r++) {
         const id = `R${String(r).padStart(3, '0')}`;
+        progress.begin(`round ${r}`);
         store.createTask({ id, epicId: 'E', title: id, deps: [] });
         store.compareAndSetState(id, 'planned', 'ready');
         fs.writeFileSync(path.join(barrier, `go-${r}`), '');
+        progress.step(`round ${r} released to ${WORKERS} workers`);
         waitFor(() => fs.readdirSync(barrier).filter((f) => f.startsWith(`res-${r}-`)).length === WORKERS, `round ${r} results`, st.roundMs);
         const results = Array.from({ length: WORKERS }, (_, w) => fs.readFileSync(path.join(barrier, `res-${r}-${w}`), 'utf8'));
         const winners = results.filter((x) => x !== '');
@@ -62,6 +66,7 @@ for (const st of stores) {
         // Retire the task so the next round has exactly one ready task.
         store.compareAndSetState(id, 'ready', 'done');
         tally.push(winners.length);
+        progress.done();
       }
       assert.equal(tally.length, ROUNDS);
       const codes = await Promise.all(exits);
