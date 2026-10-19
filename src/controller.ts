@@ -12,7 +12,7 @@ import { openStore } from './store/open.ts';
 import type { TaskCounters, TaskRecord, TaskStore } from './store/types.ts';
 import { planHash, topoOrder, validatePlan, type Plan } from './plan.ts';
 import { FileLock } from './util/lock.ts';
-import { writeFileAtomic } from './util/fsx.ts';
+import { assertPrivateDir, writeFileAtomic } from './util/fsx.ts';
 import type { RunResult, Runner } from './runner/types.ts';
 
 export interface TransitionRecord {
@@ -76,11 +76,22 @@ function writeForensic(root: string, kind: string, body: unknown): string {
   try {
     const dir = path.join(root, 'forensics');
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    // Never through a link out of the state root, or into a directory others can change.
+    assertPrivateDir(dir);
     const file = path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}-${kind}.json`);
     writeFileAtomic(file, JSON.stringify(body, null, 2));
     return `Forensic record: ${file}.`;
   } catch (err) {
     return `The forensic record could not be written (${(err as Error).message}).`;
+  }
+}
+
+/** The journal file as found, for forensic records. */
+function journalContent(file: string): string | null {
+  try {
+    return fs.readFileSync(file).toString('base64');
+  } catch {
+    return null;
   }
 }
 
@@ -107,6 +118,8 @@ export class Controller {
   readonly budget: BudgetGovernor;
   readonly owner: string;
   readonly tornTailRepaired: boolean;
+  /** The interrupted transition this open finished, if any ("task:from->to"). */
+  private readonly finishedOnOpen: string | undefined;
   private readonly lock: FileLock;
 
   private constructor(paths: StateRootPaths, lock: FileLock, opts: { store?: TaskStore; allowPolicyDrift?: boolean }) {
@@ -115,23 +128,34 @@ export class Controller {
     this.owner = `ctl:${os.hostname()}:${process.pid}:${randomUUID().slice(0, 8)}`;
     const key = readJournalKey(paths);
     const before = verifyJournalFile(paths.journal, key);
-    if (before.ok && before.tornTail) {
-      // A crash during an append: the repair below drops the partial line. Keep the file as
-      // found first; if that is impossible, do not repair.
-      const note = writeForensic(paths.root, 'torn-journal', { journal: fs.readFileSync(paths.journal, 'utf8'), records: before.records.length });
+    // A tampered journal is refused here, before anything else.
+    if (!before.ok) Journal.open(paths.journal, key);
+    this.policy = loadPolicy(paths.policy);
+    // With the journal's records, openStore checks the store binding before it creates or
+    // repairs anything.
+    this.store = opts.store ?? openStore(paths, { create: true, records: before.records, evidenceOrEscalations: this.evidenceAttempts().length + this.escalationFiles().length > 0 });
+    this.evidence = new EvidenceLedger(paths.evidence, key);
+    this.planIndex = journaledTasks(before.records);
+    // Before this controller writes anything (a torn-tail repair, policy records, the store
+    // binding, or any command run on it), the state root must be one a crash can explain.
+    this.assertRecoverable('open', before.records);
+    if (before.tornTail) {
+      // A crash during an append: the repair below drops the partial line. Keep the file's
+      // bytes as found first; if that is impossible, do not repair.
+      const raw = fs.readFileSync(paths.journal);
+      const note = writeForensic(paths.root, 'torn-journal', {
+        records: before.records.length,
+        file: { bytes: raw.length, sha256: createHash('sha256').update(raw).digest('hex') },
+        journalBase64: raw.toString('base64'),
+      });
       if (!note.startsWith('Forensic record:')) throw new ControllerError(`the journal has a torn final line, and it could not be preserved before repair. ${note}`);
     }
     this.journal = Journal.open(paths.journal, key, { repairTornTail: true });
     this.tornTailRepaired = before.tornTail;
-    this.policy = loadPolicy(paths.policy);
-    // With the journal's records, openStore checks the store binding before it creates or
-    // repairs anything.
-    this.store = opts.store ?? openStore(paths, { create: true, records: this.journal.records() });
-    this.evidence = new EvidenceLedger(paths.evidence, key);
-    this.planIndex = journaledTasks(this.journal.records());
-    // Before this controller writes anything (policy records, the store binding, or any
-    // command run on it), the state root must be one a crash can explain.
-    this.assertRecoverable('open');
+    // A crash can leave the journal's last transition unapplied. Finish it now, so a command
+    // run before resume (eo unblock) cannot journal a transition after it and make it look
+    // like an older one that was never applied.
+    this.finishedOnOpen = this.finishLastTransition();
     this.budget = new BudgetGovernor(this.journal, this.policy.budget);
     const now = policyHash(this.policy);
     const { committed, pending } = policyRecords(this.journal.records());
@@ -302,13 +326,26 @@ export class Controller {
     return listEscalationFiles(this.paths.escalations);
   }
 
+  /** Apply the one transition a crash can leave unapplied (checked by assertRecoverable). */
+  private finishLastTransition(): string | undefined {
+    for (const [taskId, exp] of expectedStates(this.journal.records())) {
+      const t = this.store.get(taskId);
+      if (t && storeDrift(t, exp) === 'behind') {
+        if (!this.store.compareAndSetState(taskId, t.state, exp.state, exp.counters)) {
+          throw new ControllerError(`store changed under the controller for ${taskId} while finishing an interrupted transition`);
+        }
+        return `${taskId}:${t.state}->${exp.state}`;
+      }
+    }
+    return undefined;
+  }
+
   /**
    * Refuse a state root whose store, evidence or escalation files no crash can explain from
    * this journal (see recoveryProblems), before anything is written. The refusal keeps what a
    * human needs to investigate: the problems, the journal's head, and the store as found.
    */
-  private assertRecoverable(kind: string): void {
-    const records = this.journal.records();
+  private assertRecoverable(kind: string, records: readonly JournalRecord[] = this.journal.records()): void {
     const tasks = this.store.list();
     const mismatches = planMismatches(tasks, this.planIndex);
     const problems = mismatches.length > 0 ? mismatches : recoveryProblems(records, tasks, this.evidenceAttempts(), this.escalationFiles());
@@ -318,7 +355,7 @@ export class Controller {
       kind,
       at: new Date().toISOString(),
       problems,
-      journal: { records: records.length, lastSeq: last?.seq ?? 0, lastMac: last?.mac ?? null, file: journalFileFacts(this.paths.journal) },
+      journal: { records: records.length, lastSeq: last?.seq ?? 0, lastMac: last?.mac ?? null, file: journalFileFacts(this.paths.journal), content: journalContent(this.paths.journal) },
       policyHash: policyHash(this.policy),
       store: tasks,
       evidenceAttempts: this.evidenceAttempts(),
@@ -340,7 +377,7 @@ export class Controller {
     const report: ResumeReport = {
       tornTailRepaired: this.tornTailRepaired,
       tasksCreated: [],
-      transitionsReplayed: [],
+      transitionsReplayed: this.finishedOnOpen ? [this.finishedOnOpen] : [],
       interrupted: [],
       reservationsNotStarted: [],
       claimsReleased: [],
@@ -825,6 +862,10 @@ export function recoveryProblems(records: readonly JournalRecord[], tasks: reado
     const t = byId.get(id);
     if (!t) {
       if (exp.prev) problems.push(`${id} is missing from the store, but the journal has transitions for it (last at seq ${exp.counters.journalSeq})`);
+      continue;
+    }
+    if (typeof t.journalSeq !== 'number') {
+      problems.push(`${id} has no journal position: it was written by an older eo, and state roots from before journal positions are not supported`);
       continue;
     }
     const drift = storeDrift(t, exp);

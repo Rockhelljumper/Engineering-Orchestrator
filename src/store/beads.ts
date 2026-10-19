@@ -448,7 +448,7 @@ function toRecord(issue: BdIssue): TaskRecord {
     attempt: m.attempt,
     correctionFailures: m.correctionFailures,
     infraFailures: m.infraFailures,
-    lastFailureSignature: m.lastFailureSignature,
+    lastFailureSignature: m.lastFailureSignature ?? null,
     repeatCount: m.repeatCount,
     // Absent only on beads written by an older eo; 0 never matches a journaled transition.
     journalSeq: m.journalSeq ?? 0,

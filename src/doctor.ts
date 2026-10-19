@@ -47,10 +47,13 @@ export function doctor(root: string, store?: TaskStore): DoctorReport {
     const s = store ?? openStore(p, { create: false, records: v.records });
     tasks = s.list();
     const byId = new Map(tasks.map((t) => [t.id, t]));
+    const lastTransition = v.records.filter((r) => r.type === 'task.transition').at(-1)?.seq;
     for (const [id, exp] of expectedStates(v.records)) {
       const t = byId.get(id);
       if (!t && !exp.prev) problems.push(`store: task ${id} missing (journal has it; resume will create it)`);
-      else if (t && storeDrift(t, exp) === 'behind') problems.push(`store: ${id} is ${t.state}, journal says ${exp.state} (one step behind after a crash; resume will finish it)`);
+      else if (t && storeDrift(t, exp) === 'behind' && exp.counters.journalSeq === lastTransition) {
+        problems.push(`store: ${id} is ${t.state}, journal says ${exp.state} (the journal's last transition, left unapplied by a crash; the next controller open finishes it)`);
+      }
     }
     // What resume refuses: states no crash can produce.
     for (const m of recoveryProblems(v.records, tasks, listEvidenceAttempts(p.evidence), listEscalationFiles(p.escalations))) {

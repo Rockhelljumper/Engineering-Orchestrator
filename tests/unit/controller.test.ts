@@ -618,9 +618,77 @@ test('a torn journal tail is preserved in a forensic record before the repair dr
   c.close();
   assert.equal(fs.readFileSync(jf, 'utf8').includes(torn), false, 'the repair dropped the partial line');
   const dir = path.join(sb.root, 'forensics');
-  const kept = fs.readdirSync(dir).filter((f) => f.includes('torn-journal')).map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as { journal: string });
+  const kept = fs.readdirSync(dir).filter((f) => f.includes('torn-journal')).map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as { journalBase64: string });
   assert.equal(kept.length, 1);
-  assert.ok(kept[0]?.journal.endsWith(torn), 'the torn bytes were kept');
+  assert.ok(Buffer.from(kept[0]?.journalBase64 ?? '', 'base64').toString('utf8').endsWith(torn), 'the torn bytes were kept');
+});
+
+test('a refused state root with a torn journal tail is left exactly as found', () => {
+  const sb = sandbox();
+  const c0 = Controller.open(sb.root);
+  c0.importPlan(twoIndependent, sb.repo, 'h');
+  c0.close();
+  openStore(statePaths(sb.root), { create: false }).compareAndSetState('A', 'planned', 'done');
+  const jf = path.join(sb.root, 'journal.jsonl');
+  fs.appendFileSync(jf, '{"seq":9');
+  const found = fs.readFileSync(jf);
+  assert.throws(() => Controller.open(sb.root), RecoveryRefusedError);
+  assert.deepEqual(fs.readFileSync(jf), found, 'the torn tail was not repaired before the refusal');
+});
+
+test('forensic records are never written through a link out of the state root', { skip: process.platform === 'win32' && 'symlinks need privileges on Windows' }, () => {
+  const sb = sandbox();
+  const c0 = Controller.open(sb.root);
+  c0.importPlan(twoIndependent, sb.repo, 'h');
+  c0.close();
+  openStore(statePaths(sb.root), { create: false }).compareAndSetState('A', 'planned', 'done');
+  const outside = tmpDir();
+  fs.symlinkSync(outside, path.join(sb.root, 'forensics'));
+  assert.throws(() => Controller.open(sb.root), /A is done .*The forensic record could not be written \(.*must be a directory, not a link/);
+  assert.deepEqual(fs.readdirSync(outside), []);
+});
+
+test('a legitimate crash followed by eo unblock of another task still recovers', async () => {
+  // The third review's case: the journal's last transition is unapplied when a human unblocks
+  // another task, which journals a transition after it. Opening finishes the interrupted
+  // transition first, so the state root never looks like it has an older unapplied one.
+  const sb = sandbox();
+  const plan: Plan = { epicId: 'E1', title: 'two', tasks: ['A', 'B'].map((id) => ({ id, title: id, deps: [] })) };
+  const { c } = await runPlan(plan, { default: { behaviour: 'pass' }, tasks: { A: [{ behaviour: 'verify-fail', signature: 's' }, { behaviour: 'verify-fail', signature: 's' }] } }, sb);
+  c.close();
+  assert.equal(storeSnapshot(sb.root).find((t) => t.id === 'A')?.state, 'blocked');
+  // Crash: B's next transition is journaled, the store never applies it.
+  const c1 = Controller.open(sb.root);
+  c1.importPlan({ epicId: 'E2', title: 'more', tasks: [{ id: 'C', title: 'c', deps: [] }] }, sb.repo, 'h');
+  c1.journal.append('task.transition', { taskId: 'C', from: 'planned', to: 'ready', reason: 'dependencies done' });
+  c1.close();
+  const c2 = Controller.open(sb.root);
+  try {
+    assert.equal(c2.store.get('C')?.state, 'ready', 'opening finished the interrupted transition');
+    c2.unblock('A', 'h', 'retry');
+  } finally {
+    c2.close();
+  }
+  const c3 = Controller.open(sb.root);
+  try {
+    c3.resume();
+    assert.equal(c3.store.get('A')?.state, 'ready');
+    assert.equal(c3.store.get('C')?.state, 'ready');
+  } finally {
+    c3.close();
+  }
+  assert.deepEqual(doctor(sb.root).problems, []);
+});
+
+test('a state root written before journal positions is refused with a clear message', { skip: TEST_STORE === 'beads' && 'edits the FakeStore file' }, () => {
+  const sb = sandbox();
+  const c0 = Controller.open(sb.root);
+  c0.importPlan(twoIndependent, sb.repo, 'h');
+  c0.close();
+  editStore(sb, (t) => {
+    delete (t['A'] as Record<string, unknown>)['journalSeq'];
+  });
+  assert.throws(() => Controller.open(sb.root), /A has no journal position: it was written by an older eo/);
 });
 
 test('other refusals to open also leave a forensic record', () => {
@@ -638,7 +706,7 @@ test('a legitimate crash between the journal append and the store update is reco
   const rec = c.journal.append('task.transition', { taskId: 'A', from: 'planned', to: 'ready', reason: 'dependencies done' });
   c.close();
   assert.equal(storeSnapshot(sb.root).find((t) => t.id === 'A')?.state, 'planned');
-  assert.ok(doctor(sb.root).problems.some((p) => /A is planned, journal says ready \(one step behind after a crash/.test(p)));
+  assert.ok(doctor(sb.root).problems.some((p) => /A is planned, journal says ready \(the journal's last transition, left unapplied by a crash/.test(p)));
   c = Controller.open(sb.root);
   try {
     const report = c.resume();

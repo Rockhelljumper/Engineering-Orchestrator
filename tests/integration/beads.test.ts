@@ -343,7 +343,7 @@ test('a beads store that lost its initialisation marker after plans were importe
   const storeDir = statePaths(sb.root).store;
   fs.rmSync(path.join(storeDir, '.eo-initialised'));
   const beadsBefore = fs.readdirSync(path.join(storeDir, '.beads')).sort();
-  assert.throws(() => Controller.open(sb.root), /not initialised, but the journal records it as set up; refusing to re-initialise it/);
+  assert.throws(() => Controller.open(sb.root), /not initialised, but this state root is already in use .*; refusing to re-initialise it/);
   // Re-initialising would have deleted .beads and its tasks.
   assert.deepEqual(fs.readdirSync(path.join(storeDir, '.beads')).sort(), beadsBefore);
   assert.equal(bdRaw(storeDir, ['list', '--json', '--all']).includes('eo-T5'), true, 'the tasks are still there');
