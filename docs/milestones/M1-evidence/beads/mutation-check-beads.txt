@@ -1,0 +1,16 @@
+KILLED  CAS guard dropped from updates  [src/store/beads.ts]  # fail 1  (tests/integration/concurrent-claims.test.ts, pattern 'M1-3 \\(beads\\)')
+KILLED  metrics opt-out removed from the bd environment  [src/store/beads.ts]  # fail 2  (tests/integration/beads.test.ts, pattern 'M1-7')
+KILLED  binary hash not checked  [src/store/beads.ts]  # fail 1  (tests/integration/beads.test.ts, pattern 'pinned build|unpinned')
+KILLED  per-spawn binary identity check removed  [src/store/beads.ts]  # fail 1  (tests/integration/beads.test.ts, pattern 'verified private entry')
+KILLED  store not given its own git repository  [src/store/beads.ts]  # fail 1  (tests/integration/beads.test.ts, pattern 'encloses')
+KILLED  half-initialised store not repaired  [src/store/beads.ts]  # fail 1  (tests/integration/beads.test.ts, pattern 'killed part-way')
+KILLED  beads without eo metadata accepted  [src/store/beads.ts]  # fail 1  (tests/integration/beads.test.ts, pattern 'behind the controller')
+KILLED  closing a task with open dependencies not forced  [src/store/beads.ts]  # fail 1  (tests/integration/store-contract.test.ts, pattern 'ordering is the controller')
+control PASS  pattern 'M1-7'
+control PASS  pattern 'pinned build|unpinned'
+control PASS  pattern 'verified private entry'
+control PASS  pattern 'encloses'
+control PASS  pattern 'killed part-way'
+control PASS  pattern 'behind the controller'
+control PASS  pattern 'ordering is the controller'
+ALL KILLED
