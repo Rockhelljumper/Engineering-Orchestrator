@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { Controller, ControllerError, type EscalationRecord } from '../../src/controller.ts';
+import { Controller, ControllerError, RecoveryRefusedError, type EscalationRecord } from '../../src/controller.ts';
 import { FakeRunner, type FakeScript } from '../../src/runner/fake.ts';
 import { PolicyError, canonicalRepoPath, loadPolicy, policyHash } from '../../src/policy.ts';
 import { doctor } from '../../src/doctor.ts';
@@ -446,9 +446,10 @@ test('restoring any older valid journal never rewinds finished tasks, attempts o
   const spent = BudgetLedger.fromRecords(c.journal.records()).spent('epic', 'E1');
   assert.ok(before.every((t) => t.state === 'done'));
   const forensics = path.join(sb.root, 'forensics');
-  // Every earlier point of the journal from the plan import on (a valid prefix: its HMAC chain
-  // verifies, so it is exactly what restoring an older copy gives). On beads every third point.
-  const start = lines.findIndex((l) => l.includes('"type":"plan.import"')) + 1;
+  // Every earlier point of the journal (a valid prefix: its HMAC chain verifies, so it is
+  // exactly what restoring an older copy gives), including the policy records written while
+  // the sandbox was set up. On beads every third point.
+  const start = 1;
   const stride = TEST_STORE === 'beads' ? 3 : 1;
   let refused = 0;
   let accepted = 0;
@@ -456,14 +457,16 @@ test('restoring any older valid journal never rewinds finished tasks, attempts o
     const prefix = Buffer.from(lines.slice(0, k).join('\n') + '\n');
     fs.writeFileSync(jf, prefix);
     const reports = fs.existsSync(forensics) ? fs.readdirSync(forensics).length : 0;
-    const ck = Controller.open(sb.root);
+    // Opening is where the controller refuses, before any command could write.
+    let ck: Controller | undefined;
     let error: unknown;
     try {
+      ck = Controller.open(sb.root);
       ck.resume();
     } catch (err) {
       error = err;
     } finally {
-      ck.close();
+      ck?.close();
     }
     const at = `journal cut to ${k} of ${lines.length} records`;
     // Nothing finished was undone and nothing ran again, whichever way recovery went.
@@ -471,8 +474,8 @@ test('restoring any older valid journal never rewinds finished tasks, attempts o
     assert.equal(readExecLog(log).length, executions, `${at}: nothing ran again`);
     if (error !== undefined) {
       refused++;
-      assert.ok(error instanceof ControllerError, `${at}: ${String(error)}`);
-      assert.match(error.message, /task store is ahead of or diverged from the journal \(.*journal says .* at seq \d+/, at);
+      assert.ok(error instanceof RecoveryRefusedError, `${at}: ${String(error)}`);
+      assert.match(error.message, /task store is ahead of or diverged from the journal \(.*journal says .* at seq \d+|task store does not match the journaled plans \(.* is not in any journaled plan/, at);
       assert.match(error.message, /nothing was changed/, at);
       assert.deepEqual(fs.readFileSync(jf), prefix, `${at}: the journal is unchanged`);
       // The forensic record names the inconsistency and keeps the store as found.
@@ -526,13 +529,8 @@ test('a journal cut back past a repeated block cannot undo the block by passing 
   const lines = fs.readFileSync(jf, 'utf8').split('\n').filter(Boolean);
   const unblocked = lines.findIndex((l) => l.includes('"type":"task.transition"') && l.includes('"from":"blocked"'));
   fs.writeFileSync(jf, lines.slice(0, unblocked + 1).join('\n') + '\n');
-  c = Controller.open(sb.root);
-  try {
-    assert.throws(() => c.resume(), /Z is blocked at journal seq \d+, journal says ready at seq \d+ \(or blocked at seq \d+ after a crash\)/);
-    assert.equal(c.store.get('Z')?.state, 'blocked', 'the block stands');
-  } finally {
-    c.close();
-  }
+  assert.throws(() => Controller.open(sb.root), /Z is blocked at journal seq \d+, journal says ready at seq \d+ \(or blocked at seq \d+ after a crash\)/);
+  assert.equal(storeSnapshot(sb.root).find((t) => t.id === 'Z')?.state, 'blocked', 'the block stands');
 });
 
 test('evidence or escalation files the journal never recorded make recovery refuse', async () => {
@@ -540,20 +538,96 @@ test('evidence or escalation files the journal never recorded make recovery refu
   c.close();
   const ev = path.join(sb.root, 'evidence');
   fs.cpSync(path.join(ev, 'A', 'a1'), path.join(ev, 'A', 'a2'), { recursive: true });
-  let ck = Controller.open(sb.root);
-  try {
-    assert.throws(() => ck.resume(), /evidence for attempt A#2 exists, but the journal has no end for that attempt/);
-  } finally {
-    ck.close();
-  }
+  assert.throws(() => Controller.open(sb.root), /evidence for attempt A#2 exists, but the journal has no end for that attempt/);
   fs.rmSync(path.join(ev, 'A', 'a2'), { recursive: true });
   fs.writeFileSync(path.join(sb.root, 'escalations', 'esc-A-99.json'), '{}');
-  ck = Controller.open(sb.root);
-  try {
-    assert.throws(() => ck.resume(), /escalation file esc-A-99 exists, but the journal has no such escalation/);
-  } finally {
-    ck.close();
+  assert.throws(() => Controller.open(sb.root), /escalation file esc-A-99 exists, but the journal has no such escalation/);
+});
+
+test('no command can act on a state root that recovery refuses: the controller refuses on open', async () => {
+  // The second rollback review's case: A blocked, B done; the journal is then restored to just
+  // after the plan import. unblock, plan import and policy commands all open the controller.
+  const sb = sandbox();
+  const plan: Plan = { epicId: 'E1', title: 'two', tasks: ['A', 'B'].map((id) => ({ id, title: id, deps: [] })) };
+  const { c } = await runPlan(plan, { default: { behaviour: 'pass' }, tasks: { A: [{ behaviour: 'verify-fail', signature: 's' }, { behaviour: 'verify-fail', signature: 's' }] } }, sb);
+  c.close();
+  const jf = path.join(sb.root, 'journal.jsonl');
+  const lines = fs.readFileSync(jf, 'utf8').split('\n').filter(Boolean);
+  const cut = Buffer.from(lines.slice(0, lines.findIndex((l) => l.includes('"type":"plan.import"')) + 1).join('\n') + '\n');
+  fs.writeFileSync(jf, cut);
+  const before = storeSnapshot(sb.root);
+  assert.equal(before.find((t) => t.id === 'A')?.state, 'blocked');
+  for (let i = 0; i < 3; i++) {
+    assert.throws(() => Controller.open(sb.root), RecoveryRefusedError);
+    assert.throws(() => Controller.open(sb.root, { allowPolicyDrift: true }), RecoveryRefusedError);
   }
+  assert.deepEqual(fs.readFileSync(jf), cut, 'the journal is unchanged');
+  assert.deepEqual(storeSnapshot(sb.root), before, 'the store is unchanged');
+});
+
+test('counters changed in the store behind the controller are refused, even ones the journal never set', () => {
+  const sb = sandbox();
+  const c0 = Controller.open(sb.root);
+  c0.importPlan(twoIndependent, sb.repo, 'h');
+  c0.close();
+  // A task no transition has touched: the journal has set none of its counters.
+  openStore(statePaths(sb.root), { create: false }).updateCounters('A', { correctionFailures: -100 });
+  assert.throws(() => Controller.open(sb.root), /A counters differ from the journal \(correctionFailures -100, journal says 0\)/);
+  assert.ok(doctor(sb.root).problems.some((p) => /A counters differ from the journal/.test(p)));
+});
+
+test('two tasks behind the journal at once are refused: a crash leaves at most the last transition unapplied', () => {
+  const sb = sandbox();
+  let c = Controller.open(sb.root);
+  c.importPlan(twoIndependent, sb.repo, 'h');
+  c.journal.append('task.transition', { taskId: 'A', from: 'planned', to: 'ready', reason: 'dependencies done' });
+  c.journal.append('task.transition', { taskId: 'B', from: 'planned', to: 'ready', reason: 'dependencies done' });
+  c.close();
+  assert.throws(() => Controller.open(sb.root), /A is one transition behind .* but only the journal's last transition \(seq \d+\) can be left unapplied by a crash/);
+  // With A applied, B alone is a legitimate crash state.
+  openStore(statePaths(sb.root), { create: false }).compareAndSetState('A', 'planned', 'ready', { journalSeq: JSON.parse(fs.readFileSync(path.join(sb.root, 'journal.jsonl'), 'utf8').trim().split('\n').at(-2) as string).seq });
+  c = Controller.open(sb.root);
+  try {
+    assert.deepEqual(c.resume().transitionsReplayed, ['B:planned->ready']);
+  } finally {
+    c.close();
+  }
+});
+
+test('a refusal is reported with its problems even when the forensic record cannot be written', () => {
+  const sb = sandbox();
+  const c0 = Controller.open(sb.root);
+  c0.importPlan(twoIndependent, sb.repo, 'h');
+  c0.close();
+  openStore(statePaths(sb.root), { create: false }).compareAndSetState('A', 'planned', 'done');
+  fs.writeFileSync(path.join(sb.root, 'forensics'), 'not a directory');
+  assert.throws(() => Controller.open(sb.root), (err: Error) => {
+    assert.ok(err instanceof RecoveryRefusedError);
+    assert.match(err.message, /A is done at journal seq 0, journal says planned at seq 0/);
+    assert.match(err.message, /The forensic record could not be written \(/);
+    return true;
+  });
+});
+
+test('a torn journal tail is preserved in a forensic record before the repair drops it', () => {
+  const sb = sandbox();
+  const jf = path.join(sb.root, 'journal.jsonl');
+  const torn = '{"seq":99,"ts":"2026-10-19T00:00:00.000Z","type":"task.tr';
+  fs.appendFileSync(jf, torn);
+  const c = Controller.open(sb.root);
+  c.close();
+  assert.equal(fs.readFileSync(jf, 'utf8').includes(torn), false, 'the repair dropped the partial line');
+  const dir = path.join(sb.root, 'forensics');
+  const kept = fs.readdirSync(dir).filter((f) => f.includes('torn-journal')).map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as { journal: string });
+  assert.equal(kept.length, 1);
+  assert.ok(kept[0]?.journal.endsWith(torn), 'the torn bytes were kept');
+});
+
+test('other refusals to open also leave a forensic record', () => {
+  const sb = sandbox();
+  const pf = path.join(sb.root, 'policy.json');
+  fs.writeFileSync(pf, fs.readFileSync(pf, 'utf8').replace('"max": 2', '"max": 1'));
+  assert.throws(() => Controller.open(sb.root), /policy.json differs .* Forensic record: .*open-refused/);
 });
 
 test('a legitimate crash between the journal append and the store update is recovered', () => {
@@ -632,14 +706,8 @@ test('a task injected into the store behind the controller is refused, not run',
   editStore(sb, (t) => {
     t['X'] = { ...(t['A'] as object), id: 'X', epicId: 'EVIL', state: 'ready' };
   });
-  const log = path.join(sb.dir, 'exec.log');
-  const c = Controller.open(sb.root);
-  try {
-    await assert.rejects(c.run(new FakeRunner({ default: { behaviour: 'pass' }, execLog: log }), { repoPath: sb.repo }), /X is not in any journaled plan/);
-    assert.deepEqual(readExecLog(log), []);
-  } finally {
-    c.close();
-  }
+  // Refused on open, before any command (run, unblock, import) could act on it.
+  assert.throws(() => Controller.open(sb.root), /X is not in any journaled plan/);
   assert.match(doctor(sb.root).problems.join(';'), /X is not in any journaled plan/);
 });
 
@@ -650,12 +718,7 @@ test('a task whose epic or dependencies were edited in the store is refused', { 
     c0.importPlan({ ...samplePlan(), tasks: [...samplePlan().tasks, { id: 'A', title: 'a', deps: [] }] }, sb.repo, 'h');
     c0.close();
     editStore(sb, edit);
-    const c = Controller.open(sb.root);
-    try {
-      await assert.rejects(c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo }), /does not match the journaled plans/);
-    } finally {
-      c.close();
-    }
+    assert.throws(() => Controller.open(sb.root), /does not match the journaled plans/);
   }
 });
 

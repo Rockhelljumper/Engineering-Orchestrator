@@ -186,14 +186,8 @@ test('changes made with bd directly, behind the controller, are refused', { skip
     c0.importPlan(samplePlan(), sb.repo, 'h');
     c0.close();
     tamper(statePaths(sb.root).store);
-    const log = path.join(sb.dir, 'exec.log');
-    const c = Controller.open(sb.root, { store: sb.store });
-    try {
-      await assert.rejects(c.run(new FakeRunner({ default: { behaviour: 'pass' }, execLog: log }), { repoPath: sb.repo }), re, name);
-    } finally {
-      c.close();
-    }
-    assert.deepEqual(readExecLog(log), [], `${name}: nothing ran`);
+    // Refused on open, before any command (run, unblock, import) could act on it.
+    assert.throws(() => Controller.open(sb.root, { store: sb.store }), re, name);
     assert.match(doctor(sb.root).problems.join(';'), doctorRe, `${name}: doctor reports it`);
   }
 });
@@ -349,7 +343,7 @@ test('a beads store that lost its initialisation marker after plans were importe
   const storeDir = statePaths(sb.root).store;
   fs.rmSync(path.join(storeDir, '.eo-initialised'));
   const beadsBefore = fs.readdirSync(path.join(storeDir, '.beads')).sort();
-  assert.throws(() => Controller.open(sb.root), /not initialised, but the journal has imported plans; refusing to re-initialise it/);
+  assert.throws(() => Controller.open(sb.root), /not initialised, but the journal records it as set up; refusing to re-initialise it/);
   // Re-initialising would have deleted .beads and its tasks.
   assert.deepEqual(fs.readdirSync(path.join(storeDir, '.beads')).sort(), beadsBefore);
   assert.equal(bdRaw(storeDir, ['list', '--json', '--all']).includes('eo-T5'), true, 'the tasks are still there');

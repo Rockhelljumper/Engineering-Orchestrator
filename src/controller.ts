@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Journal, verifyJournalFile, type JournalRecord } from './journal.ts';
 import { EvidenceLedger } from './evidence.ts';
 import { BudgetGovernor, type Amount } from './budget.ts';
@@ -64,6 +64,36 @@ export interface RunSummary {
 
 export class ControllerError extends Error {}
 
+/** A refusal to work on a state root whose store, evidence or journal no crash can explain. */
+export class RecoveryRefusedError extends ControllerError {}
+
+/**
+ * Write a forensic record under <root>/forensics, beside the journal and the store and never
+ * into them. Returns a sentence for the refusal message; a failure to write is reported in it
+ * rather than replacing the refusal.
+ */
+function writeForensic(root: string, kind: string, body: unknown): string {
+  try {
+    const dir = path.join(root, 'forensics');
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const file = path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}-${kind}.json`);
+    writeFileAtomic(file, JSON.stringify(body, null, 2));
+    return `Forensic record: ${file}.`;
+  } catch (err) {
+    return `The forensic record could not be written (${(err as Error).message}).`;
+  }
+}
+
+/** Facts about the journal file as found, for forensic records. */
+function journalFileFacts(file: string): { bytes: number; sha256: string } | { error: string } {
+  try {
+    const buf = fs.readFileSync(file);
+    return { bytes: buf.length, sha256: createHash('sha256').update(buf).digest('hex') };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
 /**
  * The controller owns every state change. It is single-instance per state root (controller
  * lock), journals each intent before acting, and can resume from any step boundary.
@@ -85,6 +115,12 @@ export class Controller {
     this.owner = `ctl:${os.hostname()}:${process.pid}:${randomUUID().slice(0, 8)}`;
     const key = readJournalKey(paths);
     const before = verifyJournalFile(paths.journal, key);
+    if (before.ok && before.tornTail) {
+      // A crash during an append: the repair below drops the partial line. Keep the file as
+      // found first; if that is impossible, do not repair.
+      const note = writeForensic(paths.root, 'torn-journal', { journal: fs.readFileSync(paths.journal, 'utf8'), records: before.records.length });
+      if (!note.startsWith('Forensic record:')) throw new ControllerError(`the journal has a torn final line, and it could not be preserved before repair. ${note}`);
+    }
     this.journal = Journal.open(paths.journal, key, { repairTornTail: true });
     this.tornTailRepaired = before.tornTail;
     this.policy = loadPolicy(paths.policy);
@@ -92,6 +128,10 @@ export class Controller {
     // repairs anything.
     this.store = opts.store ?? openStore(paths, { create: true, records: this.journal.records() });
     this.evidence = new EvidenceLedger(paths.evidence, key);
+    this.planIndex = journaledTasks(this.journal.records());
+    // Before this controller writes anything (policy records, the store binding, or any
+    // command run on it), the state root must be one a crash can explain.
+    this.assertRecoverable('open');
     this.budget = new BudgetGovernor(this.journal, this.policy.budget);
     const now = policyHash(this.policy);
     const { committed, pending } = policyRecords(this.journal.records());
@@ -133,7 +173,15 @@ export class Controller {
     try {
       return new Controller(paths, lock, opts);
     } catch (err) {
-      lock.release();
+      try {
+        // Every refusal to open leaves a record; a recovery refusal has written its own.
+        if (!(err instanceof RecoveryRefusedError) && fs.existsSync(paths.root)) {
+          const note = writeForensic(paths.root, 'open-refused', { error: (err as Error).message, journal: journalFileFacts(paths.journal) });
+          if (err instanceof Error) err.message = `${err.message} ${note}`;
+        }
+      } finally {
+        lock.release();
+      }
       throw err;
     }
   }
@@ -255,32 +303,33 @@ export class Controller {
   }
 
   /**
-   * Keep what a human needs to investigate a refused recovery: the problems, the journal's
-   * head, and the store as found. Written beside the journal and the store, never into them.
+   * Refuse a state root whose store, evidence or escalation files no crash can explain from
+   * this journal (see recoveryProblems), before anything is written. The refusal keeps what a
+   * human needs to investigate: the problems, the journal's head, and the store as found.
    */
-  private recordRefusal(kind: string, problems: string[]): string {
-    const recs = this.journal.records();
-    const last = recs[recs.length - 1];
-    const dir = path.join(this.paths.root, 'forensics');
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    const file = path.join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}-${kind}-refused.json`);
-    writeFileAtomic(
-      file,
-      JSON.stringify(
-        {
-          kind,
-          at: new Date().toISOString(),
-          problems,
-          journal: { records: recs.length, lastSeq: last?.seq ?? 0, lastMac: last?.mac ?? null },
-          store: this.store.list(),
-          evidenceAttempts: this.evidenceAttempts(),
-          escalationFiles: this.escalationFiles(),
-        },
-        null,
-        2,
-      ),
+  private assertRecoverable(kind: string): void {
+    const records = this.journal.records();
+    const tasks = this.store.list();
+    const mismatches = planMismatches(tasks, this.planIndex);
+    const problems = mismatches.length > 0 ? mismatches : recoveryProblems(records, tasks, this.evidenceAttempts(), this.escalationFiles());
+    if (problems.length === 0) return;
+    const last = records[records.length - 1];
+    const note = writeForensic(this.paths.root, `${kind}-refused`, {
+      kind,
+      at: new Date().toISOString(),
+      problems,
+      journal: { records: records.length, lastSeq: last?.seq ?? 0, lastMac: last?.mac ?? null, file: journalFileFacts(this.paths.journal) },
+      policyHash: policyHash(this.policy),
+      store: tasks,
+      evidenceAttempts: this.evidenceAttempts(),
+      escalationFiles: this.escalationFiles(),
+    });
+    if (mismatches.length > 0) {
+      throw new RecoveryRefusedError(`task store does not match the journaled plans (${mismatches.join('; ')}); nothing was changed. ${note} Investigate with "eo doctor"`);
+    }
+    throw new RecoveryRefusedError(
+      `task store is ahead of or diverged from the journal (${problems.join('; ')}); nothing was changed. This needs a human: the store, evidence or escalations were changed behind the controller, or the journal was truncated or restored from an older copy. ${note} Investigate with "eo doctor"`,
     );
-    return file;
   }
 
   /**
@@ -302,18 +351,7 @@ export class Controller {
     // 1. Before anything is written: refuse any combination of store, evidence and journal that
     //    no crash can produce (the journal is written ahead of both). Recovering from one would
     //    rewind finished work, re-run attempts or lose spend, so a human must decide.
-    const mismatches = planMismatches(this.store.list(), this.planIndex);
-    if (mismatches.length > 0) {
-      const file = this.recordRefusal('resume', mismatches);
-      throw new ControllerError(`task store does not match the journaled plans (${mismatches.join('; ')}); nothing was changed. Forensic record: ${file}. Investigate with "eo doctor"`);
-    }
-    const problems = recoveryProblems(records, this.store.list(), this.evidenceAttempts(), this.escalationFiles());
-    if (problems.length > 0) {
-      const file = this.recordRefusal('resume', problems);
-      throw new ControllerError(
-        `task store is ahead of or diverged from the journal (${problems.join('; ')}); nothing was changed. This needs a human: the store, evidence or escalations were changed behind the controller, or the journal was truncated or restored from an older copy. Forensic record: ${file}. Investigate with "eo doctor"`,
-      );
-    }
+    this.assertRecoverable('resume');
 
     // 2. Tasks from imported plans, escalation files, and the one transition a crash can leave
     //    unapplied per task.
@@ -720,6 +758,9 @@ function attemptKey(e: { taskId: string; attempt: number }): string {
 
 const COUNTER_KEYS = ['attempt', 'correctionFailures', 'infraFailures', 'lastFailureSignature', 'repeatCount', 'journalSeq'] as const;
 
+/** A new task's counters, as every store creates it; every key is compared from the start. */
+const INITIAL_COUNTERS: TaskCounters = { attempt: 0, correctionFailures: 0, infraFailures: 0, lastFailureSignature: null, repeatCount: 0, journalSeq: 0 };
+
 /** Fold transitions into the state and counters the store should hold for each task. */
 export interface ExpectedState {
   state: TaskState;
@@ -737,11 +778,11 @@ export function expectedStates(records: readonly JournalRecord[]): Map<string, E
   for (const r of records) {
     if (r.type === 'plan.import') {
       for (const t of (r.data as { plan: Plan }).plan.tasks) {
-        if (!out.has(t.id)) out.set(t.id, { state: 'planned', counters: { journalSeq: 0 } });
+        if (!out.has(t.id)) out.set(t.id, { state: 'planned', counters: { ...INITIAL_COUNTERS } });
       }
     } else if (r.type === 'task.transition') {
       const tr = r.data as TransitionRecord;
-      const cur: ExpectedState = out.get(tr.taskId) ?? { state: 'planned', counters: { journalSeq: 0 } };
+      const cur: ExpectedState = out.get(tr.taskId) ?? { state: 'planned', counters: { ...INITIAL_COUNTERS } };
       cur.prev = { state: cur.state, counters: { ...cur.counters } };
       cur.state = tr.to;
       Object.assign(cur.counters, tr.counters ?? {}, tr.attempt !== undefined ? { attempt: tr.attempt } : {}, { journalSeq: r.seq });
@@ -776,14 +817,26 @@ export function storeDrift(t: TaskRecord, exp: ExpectedState): 'none' | 'behind'
 export function recoveryProblems(records: readonly JournalRecord[], tasks: readonly TaskRecord[], evidenceAttempts: readonly string[], escalationFiles: readonly string[]): string[] {
   const problems: string[] = [];
   const byId = new Map(tasks.map((t) => [t.id, t]));
+  // A single writer applies one transition at a time, so a crash can leave at most the
+  // journal's last transition unapplied.
+  const transitions = records.filter((r) => r.type === 'task.transition');
+  const lastTransition = transitions[transitions.length - 1]?.seq;
   for (const [id, exp] of expectedStates(records)) {
     const t = byId.get(id);
     if (!t) {
       if (exp.prev) problems.push(`${id} is missing from the store, but the journal has transitions for it (last at seq ${exp.counters.journalSeq})`);
       continue;
     }
-    if (storeDrift(t, exp) === 'diverged') {
-      problems.push(`${id} is ${t.state} at journal seq ${t.journalSeq}, journal says ${exp.state} at seq ${exp.counters.journalSeq}${exp.prev ? ` (or ${exp.prev.state} at seq ${exp.prev.counters.journalSeq} after a crash)` : ''}`);
+    const drift = storeDrift(t, exp);
+    if (drift === 'diverged') {
+      const counters = COUNTER_KEYS.filter((k) => exp.counters[k] !== undefined && t[k] !== exp.counters[k]).map((k) => `${k} ${JSON.stringify(t[k])}, journal says ${JSON.stringify(exp.counters[k])}`);
+      if (t.state === exp.state && t.journalSeq === exp.counters.journalSeq) {
+        problems.push(`${id} counters differ from the journal (${counters.join('; ')})`);
+      } else {
+        problems.push(`${id} is ${t.state} at journal seq ${t.journalSeq}, journal says ${exp.state} at seq ${exp.counters.journalSeq}${exp.prev ? ` (or ${exp.prev.state} at seq ${exp.prev.counters.journalSeq} after a crash)` : ''}`);
+      }
+    } else if (drift === 'behind' && exp.counters.journalSeq !== lastTransition) {
+      problems.push(`${id} is one transition behind (store at seq ${t.journalSeq}, journal at seq ${exp.counters.journalSeq}), but only the journal's last transition (seq ${lastTransition}) can be left unapplied by a crash`);
     }
   }
   const ended = new Set(records.filter((r) => r.type === 'attempt.end').map((r) => attemptKey(r.data as AttemptEndRecord)));
