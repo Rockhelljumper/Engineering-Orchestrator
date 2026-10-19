@@ -144,10 +144,11 @@ export class BeadsStore implements TaskStore {
     const want = opts.sha256 ?? pinnedBdSha256();
     if (!want) throw new StoreError(`no pinned bd build for ${platformKey()} in deps.lock.json`);
     this.want = want;
-    // Execute only a private entry inside the store whose bytes were hashed, so renaming
-    // something else onto the source path later cannot swap the binary. The entry is a hard
-    // link where possible (the binary is ~200 MB) and a copy otherwise; an in-place write to
-    // a linked file changes its ctime, which run() detects and re-hashes before every spawn.
+    // Execute only a private copy inside the store whose bytes were hashed, so neither renaming
+    // something onto the source path nor writing to the source file can change what runs. (A
+    // hard link would share the source's inode, and every link or unlink of that inode changes
+    // its ctime, which run() would read as a replacement.) The copy is a reflink where the file
+    // system supports it.
     // The identity recorded for run() is taken before hashing and confirmed unchanged after,
     // so a write that lands while the file is being hashed is never recorded as verified.
     const binDir = path.join(dir, 'bin');
@@ -160,15 +161,11 @@ export class BeadsStore implements TaskStore {
       const tmp = `${this.bin}.${process.pid}.tmp`;
       try {
         fs.rmSync(tmp, { force: true });
-        try {
-          fs.linkSync(src, tmp);
-        } catch {
-          fs.copyFileSync(src, tmp);
-          fs.chmodSync(tmp, 0o500);
-        }
+        fs.copyFileSync(src, tmp, fs.constants.COPYFILE_FICLONE);
+        fs.chmodSync(tmp, 0o500);
         const got = sha256(fs.readFileSync(tmp));
         if (got !== want) throw new StoreError(`bd binary ${src} has SHA-256 ${got}, expected the pinned ${want}`);
-        // A read-only copy (the Windows fallback) cannot be replaced by rename.
+        // On Windows a read-only file cannot be replaced by rename.
         if (fs.existsSync(this.bin)) fs.chmodSync(this.bin, 0o700);
         fs.renameSync(tmp, this.bin);
       } catch (err) {

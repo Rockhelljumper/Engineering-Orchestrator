@@ -261,7 +261,7 @@ test('the executed bd is a verified private entry: swapping the source path or m
   fs.writeFileSync(path.join(dir, 'evil'), evil, { mode: 0o755 });
   fs.renameSync(path.join(dir, 'evil'), src);
   assert.equal(s.get('A')?.state, 'planned');
-  // Writing into the store's entry in place (it may be a hard link) is detected before the next spawn.
+  // Writing into the store's entry in place is detected before the next spawn.
   const entry = path.join(dir, 'store', 'bin', 'bd');
   fs.chmodSync(entry, 0o700);
   fs.appendFileSync(entry, Buffer.from([0]));
@@ -271,16 +271,35 @@ test('the executed bd is a verified private entry: swapping the source path or m
   assert.throws(() => BeadsStore.atDir(path.join(dir, 'store'), { bin: src, create: true }), /expected the pinned/);
 });
 
+test('the store runs its own copy: links to, unlinks of and writes to the source file do not affect it', { skip, timeout: 300_000 }, async () => {
+  const dir = tmpDir();
+  const src = path.join(dir, 'bd-src');
+  fs.copyFileSync(bin, src);
+  fs.chmodSync(src, 0o755);
+  const s = BeadsStore.atDir(path.join(dir, 'store'), { bin: src, create: true });
+  // Other stores (or tests) linking and unlinking the source change its ctime continuously.
+  const { spawn } = await import('node:child_process');
+  const churn = spawn(process.execPath, ['-e', `const fs=require('fs');const t=Date.now()+8000;let i=0;while(Date.now()<t){const l=${JSON.stringify(src)}+'.l'+(i++%4);try{fs.linkSync(${JSON.stringify(src)},l);fs.unlinkSync(l)}catch{}}`], { stdio: 'ignore' });
+  const exited = new Promise((r) => churn.on('exit', r));
+  for (let i = 0; i < 6; i++) s.createTask({ id: `C${i}`, epicId: 'E', title: 'c', deps: [] });
+  await exited;
+  assert.equal(s.list().length, 6);
+  // Writing to the source after the store was opened changes nothing the store runs.
+  fs.appendFileSync(src, Buffer.from([0]));
+  assert.equal(s.get('C0')?.state, 'planned');
+  assert.equal(BeadsStore.atDir(path.join(dir, 'store'), { bin: src, create: false }).get('C1')?.state, 'planned');
+});
+
 test('a store entry that is stale or tampered with is replaced on the next open, even when read-only', { skip }, () => {
   const dir = path.join(tmpDir(), 'store');
   BeadsStore.atDir(dir, { bin, create: true }).createTask({ id: 'A', epicId: 'E', title: 'a', deps: [] });
   const binDir = path.join(dir, 'bin');
   const entry = path.join(binDir, process.platform === 'win32' ? 'bd.exe' : 'bd');
-  // Replace the entry (never write through it: it may be a hard link to the pinned binary).
+  // Replace the entry with something else.
   fs.chmodSync(entry, 0o700);
   fs.rmSync(entry);
   fs.writeFileSync(entry, 'not bd');
-  fs.chmodSync(entry, 0o400); // read-only, as the Windows copy fallback leaves it
+  fs.chmodSync(entry, 0o400); // read-only, as the store leaves its own copy
   const s = BeadsStore.atDir(dir, { bin, create: false });
   assert.equal(s.get('A')?.state, 'planned');
   assert.equal(createHash('sha256').update(fs.readFileSync(entry)).digest('hex'), pinnedBdSha256());
