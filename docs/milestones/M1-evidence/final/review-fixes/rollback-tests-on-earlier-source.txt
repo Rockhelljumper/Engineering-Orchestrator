@@ -1,0 +1,28 @@
+# tests@ac54edd, src@72fe3f3 (2026-10-19T16:38:41Z); new and changed recovery tests; expected: each fails, except the known-limit test, which pins behaviour that no version detects yet (M2-0b)
+not ok 1 - restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record
+not ok 2 - a journal cut back past a repeated block cannot undo the block by passing for a crash
+not ok 3 - evidence or escalation files the journal never recorded make recovery refuse
+not ok 4 - a legitimate crash between the journal append and the store update is recovered
+ok 5 - known limit (M2-0b): restoring the journal and the store together to an older consistent snapshot is not detected
+# pass 1
+# fail 4
+not ok 1 - eo doctor reports a store that is ahead of the journal, and resume refuses to rewind it
+# pass 0
+# fail 1
+not ok 1 - a beads store that lost its initialisation marker after plans were imported is refused, not re-initialised
+# pass 0
+# fail 1
+# tests@ac54edd, src@f26bee0 (2026-10-19T16:39:18Z); new and changed recovery tests; expected: each fails, except the known-limit test, which pins behaviour that no version detects yet (M2-0b)
+not ok 1 - restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record
+not ok 2 - a journal cut back past a repeated block cannot undo the block by passing for a crash
+not ok 3 - evidence or escalation files the journal never recorded make recovery refuse
+not ok 4 - a legitimate crash between the journal append and the store update is recovered
+ok 5 - known limit (M2-0b): restoring the journal and the store together to an older consistent snapshot is not detected
+# pass 1
+# fail 4
+not ok 1 - eo doctor reports a store that is ahead of the journal, and resume refuses to rewind it
+# pass 0
+# fail 1
+not ok 1 - a beads store that lost its initialisation marker after plans were imported is refused, not re-initialised
+# pass 0
+# fail 1

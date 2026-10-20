@@ -1,0 +1,21 @@
+# mutation check at e8fdaa45e31dad83325b0535cbafd19f0877af6f, started 2026-10-19T17:54:37Z
+KILLED  M1 states: allow planned -> done  [src/states.ts]  # fail 1  (tests/unit/states.test.ts)
+KILLED  budget: USD cap never exceeded  [src/budget.ts]  # fail 8  (tests/unit/budget.test.ts, tests/unit/controller.test.ts)
+KILLED  budget: open reservations not counted (no defer)  [src/budget.ts]  # fail 6  (tests/unit/budget.test.ts)
+KILLED  store: claims without the cross-process lock  [src/store/fake.ts]  # fail 1  (tests/integration/concurrent-claims.test.ts)
+KILLED  resume: never-launched reservations left open  [src/controller.ts]  # fail 2  (tests/behavioral/crash-recovery.test.ts)
+KILLED  journal: MAC omits the chain link  [src/journal.ts]  # fail 1  (tests/unit/journal.test.ts)
+KILLED  limits: one extra correction attempt  [src/controller.ts]  # fail 1  (tests/unit/controller.test.ts)
+KILLED  evidence: artefact hashes not checked  [src/evidence.ts]  # fail 3  (tests/unit/evidence-policy-plan.test.ts, tests/integration/cli.test.ts)
+KILLED  recovery: a store ahead of or off the journal is accepted  [src/controller.ts]  # fail 7  (tests/unit/controller.test.ts, tests/integration/cli.test.ts)
+KILLED  recovery: any task behind is accepted, not only the last transition  [src/controller.ts]  # fail 1  (tests/unit/controller.test.ts)
+KILLED  recovery: evidence the journal never recorded is accepted  [src/controller.ts]  # fail 1  (tests/unit/controller.test.ts)
+KILLED  recovery: escalation files the journal never recorded are accepted  [src/controller.ts]  # fail 1  (tests/unit/controller.test.ts)
+KILLED  recovery: not checked on open (only in resume)  [src/controller.ts]  # fail 13  (tests/unit/controller.test.ts)
+KILLED  forensics: written through a link  [src/controller.ts]  # fail 1  (tests/unit/controller.test.ts)
+KILLED  transition: journal position not recorded  [src/controller.ts]  # fail 5  (tests/unit/controller.test.ts)
+KILLED  state root: group/other write not checked  [src/util/fsx.ts]  # fail 1  (tests/integration/cli.test.ts)
+KILLED  init: initialises over an existing journal  [src/stateRoot.ts]  # fail 1  (tests/integration/cli.test.ts)
+KILLED  plan import: journaled ids not reserved  [src/controller.ts]  # fail 1  (tests/unit/controller.test.ts)
+ALL KILLED
+# finished 2026-10-19T17:59:52Z

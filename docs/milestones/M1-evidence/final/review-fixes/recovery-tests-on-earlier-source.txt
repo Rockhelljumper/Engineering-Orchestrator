@@ -1,0 +1,57 @@
+# tests@957fb59, src@72fe3f3 plus a one-line shim that only declares RecoveryRefusedError so the test file loads (2026-10-19T16:57:42Z). Expected: each test fails unless the source already had that fix; the known-limit test passes everywhere (M2-0b)
+not ok 1 - restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record
+not ok 2 - a journal cut back past a repeated block cannot undo the block by passing for a crash
+not ok 3 - evidence or escalation files the journal never recorded make recovery refuse
+not ok 4 - no command can act on a state root that recovery refuses: the controller refuses on open
+not ok 5 - counters changed in the store behind the controller are refused, even ones the journal never set
+not ok 6 - two tasks behind the journal at once are refused: a crash leaves at most the last transition unapplied
+not ok 7 - a refusal is reported with its problems even when the forensic record cannot be written
+not ok 8 - a torn journal tail is preserved in a forensic record before the repair drops it
+not ok 9 - other refusals to open also leave a forensic record
+not ok 10 - a legitimate crash between the journal append and the store update is recovered
+ok 11 - known limit (M2-0b): restoring the journal and the store together to an older consistent snapshot is not detected
+not ok 12 - a task injected into the store behind the controller is refused, not run
+not ok 13 - a task whose epic or dependencies were edited in the store is refused
+# pass 1
+# fail 12
+not ok 1 - eo doctor reports a store that is ahead of the journal, and resume refuses to rewind it
+# pass 0
+# fail 1
+# tests@957fb59, src@f26bee0 plus a one-line shim that only declares RecoveryRefusedError so the test file loads (2026-10-19T16:57:44Z). Expected: each test fails unless the source already had that fix; the known-limit test passes everywhere (M2-0b)
+not ok 1 - restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record
+not ok 2 - a journal cut back past a repeated block cannot undo the block by passing for a crash
+not ok 3 - evidence or escalation files the journal never recorded make recovery refuse
+not ok 4 - no command can act on a state root that recovery refuses: the controller refuses on open
+not ok 5 - counters changed in the store behind the controller are refused, even ones the journal never set
+not ok 6 - two tasks behind the journal at once are refused: a crash leaves at most the last transition unapplied
+not ok 7 - a refusal is reported with its problems even when the forensic record cannot be written
+not ok 8 - a torn journal tail is preserved in a forensic record before the repair drops it
+not ok 9 - other refusals to open also leave a forensic record
+not ok 10 - a legitimate crash between the journal append and the store update is recovered
+ok 11 - known limit (M2-0b): restoring the journal and the store together to an older consistent snapshot is not detected
+not ok 12 - a task injected into the store behind the controller is refused, not run
+not ok 13 - a task whose epic or dependencies were edited in the store is refused
+# pass 1
+# fail 12
+not ok 1 - eo doctor reports a store that is ahead of the journal, and resume refuses to rewind it
+# pass 0
+# fail 1
+# tests@957fb59, src@ac54edd plus a one-line shim that only declares RecoveryRefusedError so the test file loads (2026-10-19T16:57:46Z). Expected: each test fails unless the source already had that fix; the known-limit test passes everywhere (M2-0b)
+not ok 1 - restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record
+not ok 2 - a journal cut back past a repeated block cannot undo the block by passing for a crash
+not ok 3 - evidence or escalation files the journal never recorded make recovery refuse
+not ok 4 - no command can act on a state root that recovery refuses: the controller refuses on open
+not ok 5 - counters changed in the store behind the controller are refused, even ones the journal never set
+not ok 6 - two tasks behind the journal at once are refused: a crash leaves at most the last transition unapplied
+not ok 7 - a refusal is reported with its problems even when the forensic record cannot be written
+not ok 8 - a torn journal tail is preserved in a forensic record before the repair drops it
+not ok 9 - other refusals to open also leave a forensic record
+ok 10 - a legitimate crash between the journal append and the store update is recovered
+ok 11 - known limit (M2-0b): restoring the journal and the store together to an older consistent snapshot is not detected
+not ok 12 - a task injected into the store behind the controller is refused, not run
+not ok 13 - a task whose epic or dependencies were edited in the store is refused
+# pass 2
+# fail 11
+ok 1 - eo doctor reports a store that is ahead of the journal, and resume refuses to rewind it
+# pass 1
+# fail 0

@@ -1,0 +1,5 @@
+12306     1 12306 12218    05:55:05 /bin/bash -c source /root/.claude/shell-snapshots/snapshot-bash-1792422210430-8eawhz.sh 2>/dev/null || true && export BUN_OPTIONS="--smol${BUN_OPTIONS:+ $BUN_OPTION
+12308 12306 12308 12308    05:55:05 /bin/bash /tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/run-r8.sh
+26452 12308 12308 12308    03:54:04 node --test --test-reporter=tap --test-concurrency=1 tests/behavioral/crash-recovery.test.ts
+26461 26452 12308 12308    03:54:04 /opt/node22/bin/node --test-concurrency=1 tests/behavioral/crash-recovery.test.ts
+30507 26461 12308 12308       00:05 /tmp/eo-test-B6Gj4m/state/store/bin/bd init --prefix eo --skip-agents --skip-hooks --non-interactive --quiet

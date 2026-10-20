@@ -1,0 +1,8 @@
+unit start 2026-10-19T17:47:47Z commit e8fdaa45e31dad83325b0535cbafd19f0877af6f dirty=0 node=v22.22.0 bd=2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef strace=strace -- version 6.8 host=Linux 6.18.44-fc-v139 x86_64
+unit exit=0 2026-10-19T17:48:04Z
+integration start 2026-10-19T17:48:04Z commit e8fdaa45e31dad83325b0535cbafd19f0877af6f dirty=0 node=v22.22.0 bd=2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef strace=strace -- version 6.8 host=Linux 6.18.44-fc-v139 x86_64
+integration exit=0 2026-10-19T17:48:51Z
+behavioral start 2026-10-19T17:48:51Z commit e8fdaa45e31dad83325b0535cbafd19f0877af6f dirty=0 node=v22.22.0 bd=2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef strace=strace -- version 6.8 host=Linux 6.18.44-fc-v139 x86_64
+behavioral exit=0 2026-10-19T17:54:27Z
+typecheck exit=0 2026-10-19T17:54:37Z
+chain finished 2026-10-19T17:59:52Z

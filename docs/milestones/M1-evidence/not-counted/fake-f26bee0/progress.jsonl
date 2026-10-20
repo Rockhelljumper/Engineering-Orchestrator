@@ -1,0 +1,1040 @@
+{"ts":"2026-10-19T16:00:16.830Z","test":"M1-3 fake claim race","scenario":"","completed":0,"total":100,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T16:00:16.831Z","test":"M1-3 fake claim race","scenario":"round 1","completed":0,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:00:16.842Z","test":"M1-3 fake claim race","scenario":"round 1","completed":0,"total":100,"activity":"round 1 released to 20 workers","elapsedS":0}
+{"ts":"2026-10-19T16:00:16.951Z","test":"M1-3 fake claim race","scenario":"round 1","completed":1,"total":100,"activity":"completed","elapsedS":0}
+{"ts":"2026-10-19T16:00:16.951Z","test":"M1-3 fake claim race","scenario":"round 2","completed":1,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:00:16.967Z","test":"M1-3 fake claim race","scenario":"round 2","completed":1,"total":100,"activity":"round 2 released to 20 workers","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.000Z","test":"M1-3 fake claim race","scenario":"round 2","completed":2,"total":100,"activity":"completed","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.000Z","test":"M1-3 fake claim race","scenario":"round 3","completed":2,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.015Z","test":"M1-3 fake claim race","scenario":"round 3","completed":2,"total":100,"activity":"round 3 released to 20 workers","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.062Z","test":"M1-3 fake claim race","scenario":"round 3","completed":3,"total":100,"activity":"completed","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.063Z","test":"M1-3 fake claim race","scenario":"round 4","completed":3,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.072Z","test":"M1-3 fake claim race","scenario":"round 4","completed":3,"total":100,"activity":"round 4 released to 20 workers","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.123Z","test":"M1-3 fake claim race","scenario":"round 4","completed":4,"total":100,"activity":"completed","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.123Z","test":"M1-3 fake claim race","scenario":"round 5","completed":4,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.131Z","test":"M1-3 fake claim race","scenario":"round 5","completed":4,"total":100,"activity":"round 5 released to 20 workers","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.167Z","test":"M1-3 fake claim race","scenario":"round 5","completed":5,"total":100,"activity":"completed","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.167Z","test":"M1-3 fake claim race","scenario":"round 6","completed":5,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.179Z","test":"M1-3 fake claim race","scenario":"round 6","completed":5,"total":100,"activity":"round 6 released to 20 workers","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.249Z","test":"M1-3 fake claim race","scenario":"round 6","completed":6,"total":100,"activity":"completed","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.249Z","test":"M1-3 fake claim race","scenario":"round 7","completed":6,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.261Z","test":"M1-3 fake claim race","scenario":"round 7","completed":6,"total":100,"activity":"round 7 released to 20 workers","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.325Z","test":"M1-3 fake claim race","scenario":"round 7","completed":7,"total":100,"activity":"completed","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.325Z","test":"M1-3 fake claim race","scenario":"round 8","completed":7,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.329Z","test":"M1-3 fake claim race","scenario":"round 8","completed":7,"total":100,"activity":"round 8 released to 20 workers","elapsedS":0}
+{"ts":"2026-10-19T16:00:17.383Z","test":"M1-3 fake claim race","scenario":"round 8","completed":8,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.383Z","test":"M1-3 fake claim race","scenario":"round 9","completed":8,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.389Z","test":"M1-3 fake claim race","scenario":"round 9","completed":8,"total":100,"activity":"round 9 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.450Z","test":"M1-3 fake claim race","scenario":"round 9","completed":9,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.451Z","test":"M1-3 fake claim race","scenario":"round 10","completed":9,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.462Z","test":"M1-3 fake claim race","scenario":"round 10","completed":9,"total":100,"activity":"round 10 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.535Z","test":"M1-3 fake claim race","scenario":"round 10","completed":10,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.535Z","test":"M1-3 fake claim race","scenario":"round 11","completed":10,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.545Z","test":"M1-3 fake claim race","scenario":"round 11","completed":10,"total":100,"activity":"round 11 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.632Z","test":"M1-3 fake claim race","scenario":"round 11","completed":11,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.632Z","test":"M1-3 fake claim race","scenario":"round 12","completed":11,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.640Z","test":"M1-3 fake claim race","scenario":"round 12","completed":11,"total":100,"activity":"round 12 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.732Z","test":"M1-3 fake claim race","scenario":"round 12","completed":12,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.732Z","test":"M1-3 fake claim race","scenario":"round 13","completed":12,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.744Z","test":"M1-3 fake claim race","scenario":"round 13","completed":12,"total":100,"activity":"round 13 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.798Z","test":"M1-3 fake claim race","scenario":"round 13","completed":13,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.798Z","test":"M1-3 fake claim race","scenario":"round 14","completed":13,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.804Z","test":"M1-3 fake claim race","scenario":"round 14","completed":13,"total":100,"activity":"round 14 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.852Z","test":"M1-3 fake claim race","scenario":"round 14","completed":14,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.852Z","test":"M1-3 fake claim race","scenario":"round 15","completed":14,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.860Z","test":"M1-3 fake claim race","scenario":"round 15","completed":14,"total":100,"activity":"round 15 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.910Z","test":"M1-3 fake claim race","scenario":"round 15","completed":15,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.910Z","test":"M1-3 fake claim race","scenario":"round 16","completed":15,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.918Z","test":"M1-3 fake claim race","scenario":"round 16","completed":15,"total":100,"activity":"round 16 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.989Z","test":"M1-3 fake claim race","scenario":"round 16","completed":16,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:17.989Z","test":"M1-3 fake claim race","scenario":"round 17","completed":16,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.006Z","test":"M1-3 fake claim race","scenario":"round 17","completed":16,"total":100,"activity":"round 17 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.046Z","test":"M1-3 fake claim race","scenario":"round 17","completed":17,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.047Z","test":"M1-3 fake claim race","scenario":"round 18","completed":17,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.054Z","test":"M1-3 fake claim race","scenario":"round 18","completed":17,"total":100,"activity":"round 18 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.102Z","test":"M1-3 fake claim race","scenario":"round 18","completed":18,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.102Z","test":"M1-3 fake claim race","scenario":"round 19","completed":18,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.113Z","test":"M1-3 fake claim race","scenario":"round 19","completed":18,"total":100,"activity":"round 19 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.172Z","test":"M1-3 fake claim race","scenario":"round 19","completed":19,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.172Z","test":"M1-3 fake claim race","scenario":"round 20","completed":19,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.178Z","test":"M1-3 fake claim race","scenario":"round 20","completed":19,"total":100,"activity":"round 20 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.246Z","test":"M1-3 fake claim race","scenario":"round 20","completed":20,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.246Z","test":"M1-3 fake claim race","scenario":"round 21","completed":20,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.263Z","test":"M1-3 fake claim race","scenario":"round 21","completed":20,"total":100,"activity":"round 21 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.319Z","test":"M1-3 fake claim race","scenario":"round 21","completed":21,"total":100,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.319Z","test":"M1-3 fake claim race","scenario":"round 22","completed":21,"total":100,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.325Z","test":"M1-3 fake claim race","scenario":"round 22","completed":21,"total":100,"activity":"round 22 released to 20 workers","elapsedS":1}
+{"ts":"2026-10-19T16:00:18.371Z","test":"M1-3 fake claim race","scenario":"round 22","completed":22,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.371Z","test":"M1-3 fake claim race","scenario":"round 23","completed":22,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.382Z","test":"M1-3 fake claim race","scenario":"round 23","completed":22,"total":100,"activity":"round 23 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.433Z","test":"M1-3 fake claim race","scenario":"round 23","completed":23,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.433Z","test":"M1-3 fake claim race","scenario":"round 24","completed":23,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.440Z","test":"M1-3 fake claim race","scenario":"round 24","completed":23,"total":100,"activity":"round 24 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.487Z","test":"M1-3 fake claim race","scenario":"round 24","completed":24,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.487Z","test":"M1-3 fake claim race","scenario":"round 25","completed":24,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.492Z","test":"M1-3 fake claim race","scenario":"round 25","completed":24,"total":100,"activity":"round 25 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.551Z","test":"M1-3 fake claim race","scenario":"round 25","completed":25,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.551Z","test":"M1-3 fake claim race","scenario":"round 26","completed":25,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.566Z","test":"M1-3 fake claim race","scenario":"round 26","completed":25,"total":100,"activity":"round 26 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.646Z","test":"M1-3 fake claim race","scenario":"round 26","completed":26,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.646Z","test":"M1-3 fake claim race","scenario":"round 27","completed":26,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.673Z","test":"M1-3 fake claim race","scenario":"round 27","completed":26,"total":100,"activity":"round 27 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.747Z","test":"M1-3 fake claim race","scenario":"round 27","completed":27,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.747Z","test":"M1-3 fake claim race","scenario":"round 28","completed":27,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.771Z","test":"M1-3 fake claim race","scenario":"round 28","completed":27,"total":100,"activity":"round 28 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.843Z","test":"M1-3 fake claim race","scenario":"round 28","completed":28,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.843Z","test":"M1-3 fake claim race","scenario":"round 29","completed":28,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.853Z","test":"M1-3 fake claim race","scenario":"round 29","completed":28,"total":100,"activity":"round 29 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.932Z","test":"M1-3 fake claim race","scenario":"round 29","completed":29,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.932Z","test":"M1-3 fake claim race","scenario":"round 30","completed":29,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:18.939Z","test":"M1-3 fake claim race","scenario":"round 30","completed":29,"total":100,"activity":"round 30 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.001Z","test":"M1-3 fake claim race","scenario":"round 30","completed":30,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.001Z","test":"M1-3 fake claim race","scenario":"round 31","completed":30,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.009Z","test":"M1-3 fake claim race","scenario":"round 31","completed":30,"total":100,"activity":"round 31 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.074Z","test":"M1-3 fake claim race","scenario":"round 31","completed":31,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.074Z","test":"M1-3 fake claim race","scenario":"round 32","completed":31,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.080Z","test":"M1-3 fake claim race","scenario":"round 32","completed":31,"total":100,"activity":"round 32 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.197Z","test":"M1-3 fake claim race","scenario":"round 32","completed":32,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.197Z","test":"M1-3 fake claim race","scenario":"round 33","completed":32,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.213Z","test":"M1-3 fake claim race","scenario":"round 33","completed":32,"total":100,"activity":"round 33 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.269Z","test":"M1-3 fake claim race","scenario":"round 33","completed":33,"total":100,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.269Z","test":"M1-3 fake claim race","scenario":"round 34","completed":33,"total":100,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.277Z","test":"M1-3 fake claim race","scenario":"round 34","completed":33,"total":100,"activity":"round 34 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T16:00:19.339Z","test":"M1-3 fake claim race","scenario":"round 34","completed":34,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.339Z","test":"M1-3 fake claim race","scenario":"round 35","completed":34,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.348Z","test":"M1-3 fake claim race","scenario":"round 35","completed":34,"total":100,"activity":"round 35 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.410Z","test":"M1-3 fake claim race","scenario":"round 35","completed":35,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.410Z","test":"M1-3 fake claim race","scenario":"round 36","completed":35,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.418Z","test":"M1-3 fake claim race","scenario":"round 36","completed":35,"total":100,"activity":"round 36 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.515Z","test":"M1-3 fake claim race","scenario":"round 36","completed":36,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.515Z","test":"M1-3 fake claim race","scenario":"round 37","completed":36,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.542Z","test":"M1-3 fake claim race","scenario":"round 37","completed":36,"total":100,"activity":"round 37 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.626Z","test":"M1-3 fake claim race","scenario":"round 37","completed":37,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.626Z","test":"M1-3 fake claim race","scenario":"round 38","completed":37,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.636Z","test":"M1-3 fake claim race","scenario":"round 38","completed":37,"total":100,"activity":"round 38 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.705Z","test":"M1-3 fake claim race","scenario":"round 38","completed":38,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.705Z","test":"M1-3 fake claim race","scenario":"round 39","completed":38,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.713Z","test":"M1-3 fake claim race","scenario":"round 39","completed":38,"total":100,"activity":"round 39 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.772Z","test":"M1-3 fake claim race","scenario":"round 39","completed":39,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.772Z","test":"M1-3 fake claim race","scenario":"round 40","completed":39,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.787Z","test":"M1-3 fake claim race","scenario":"round 40","completed":39,"total":100,"activity":"round 40 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.844Z","test":"M1-3 fake claim race","scenario":"round 40","completed":40,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.844Z","test":"M1-3 fake claim race","scenario":"round 41","completed":40,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.856Z","test":"M1-3 fake claim race","scenario":"round 41","completed":40,"total":100,"activity":"round 41 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.940Z","test":"M1-3 fake claim race","scenario":"round 41","completed":41,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.940Z","test":"M1-3 fake claim race","scenario":"round 42","completed":41,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:19.958Z","test":"M1-3 fake claim race","scenario":"round 42","completed":41,"total":100,"activity":"round 42 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.031Z","test":"M1-3 fake claim race","scenario":"round 42","completed":42,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.031Z","test":"M1-3 fake claim race","scenario":"round 43","completed":42,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.039Z","test":"M1-3 fake claim race","scenario":"round 43","completed":42,"total":100,"activity":"round 43 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.123Z","test":"M1-3 fake claim race","scenario":"round 43","completed":43,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.123Z","test":"M1-3 fake claim race","scenario":"round 44","completed":43,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.133Z","test":"M1-3 fake claim race","scenario":"round 44","completed":43,"total":100,"activity":"round 44 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.192Z","test":"M1-3 fake claim race","scenario":"round 44","completed":44,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.192Z","test":"M1-3 fake claim race","scenario":"round 45","completed":44,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.198Z","test":"M1-3 fake claim race","scenario":"round 45","completed":44,"total":100,"activity":"round 45 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.251Z","test":"M1-3 fake claim race","scenario":"round 45","completed":45,"total":100,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.251Z","test":"M1-3 fake claim race","scenario":"round 46","completed":45,"total":100,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.257Z","test":"M1-3 fake claim race","scenario":"round 46","completed":45,"total":100,"activity":"round 46 released to 20 workers","elapsedS":3}
+{"ts":"2026-10-19T16:00:20.341Z","test":"M1-3 fake claim race","scenario":"round 46","completed":46,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.341Z","test":"M1-3 fake claim race","scenario":"round 47","completed":46,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.357Z","test":"M1-3 fake claim race","scenario":"round 47","completed":46,"total":100,"activity":"round 47 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.444Z","test":"M1-3 fake claim race","scenario":"round 47","completed":47,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.444Z","test":"M1-3 fake claim race","scenario":"round 48","completed":47,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.457Z","test":"M1-3 fake claim race","scenario":"round 48","completed":47,"total":100,"activity":"round 48 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.506Z","test":"M1-3 fake claim race","scenario":"round 48","completed":48,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.507Z","test":"M1-3 fake claim race","scenario":"round 49","completed":48,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.514Z","test":"M1-3 fake claim race","scenario":"round 49","completed":48,"total":100,"activity":"round 49 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.612Z","test":"M1-3 fake claim race","scenario":"round 49","completed":49,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.612Z","test":"M1-3 fake claim race","scenario":"round 50","completed":49,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.629Z","test":"M1-3 fake claim race","scenario":"round 50","completed":49,"total":100,"activity":"round 50 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.691Z","test":"M1-3 fake claim race","scenario":"round 50","completed":50,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.691Z","test":"M1-3 fake claim race","scenario":"round 51","completed":50,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.703Z","test":"M1-3 fake claim race","scenario":"round 51","completed":50,"total":100,"activity":"round 51 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.763Z","test":"M1-3 fake claim race","scenario":"round 51","completed":51,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.763Z","test":"M1-3 fake claim race","scenario":"round 52","completed":51,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.767Z","test":"M1-3 fake claim race","scenario":"round 52","completed":51,"total":100,"activity":"round 52 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.835Z","test":"M1-3 fake claim race","scenario":"round 52","completed":52,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.835Z","test":"M1-3 fake claim race","scenario":"round 53","completed":52,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.845Z","test":"M1-3 fake claim race","scenario":"round 53","completed":52,"total":100,"activity":"round 53 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.914Z","test":"M1-3 fake claim race","scenario":"round 53","completed":53,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.914Z","test":"M1-3 fake claim race","scenario":"round 54","completed":53,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.924Z","test":"M1-3 fake claim race","scenario":"round 54","completed":53,"total":100,"activity":"round 54 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.992Z","test":"M1-3 fake claim race","scenario":"round 54","completed":54,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:20.992Z","test":"M1-3 fake claim race","scenario":"round 55","completed":54,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.008Z","test":"M1-3 fake claim race","scenario":"round 55","completed":54,"total":100,"activity":"round 55 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.098Z","test":"M1-3 fake claim race","scenario":"round 55","completed":55,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.098Z","test":"M1-3 fake claim race","scenario":"round 56","completed":55,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.116Z","test":"M1-3 fake claim race","scenario":"round 56","completed":55,"total":100,"activity":"round 56 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.214Z","test":"M1-3 fake claim race","scenario":"round 56","completed":56,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.215Z","test":"M1-3 fake claim race","scenario":"round 57","completed":56,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.224Z","test":"M1-3 fake claim race","scenario":"round 57","completed":56,"total":100,"activity":"round 57 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.282Z","test":"M1-3 fake claim race","scenario":"round 57","completed":57,"total":100,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.282Z","test":"M1-3 fake claim race","scenario":"round 58","completed":57,"total":100,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.287Z","test":"M1-3 fake claim race","scenario":"round 58","completed":57,"total":100,"activity":"round 58 released to 20 workers","elapsedS":4}
+{"ts":"2026-10-19T16:00:21.349Z","test":"M1-3 fake claim race","scenario":"round 58","completed":58,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.349Z","test":"M1-3 fake claim race","scenario":"round 59","completed":58,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.355Z","test":"M1-3 fake claim race","scenario":"round 59","completed":58,"total":100,"activity":"round 59 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.430Z","test":"M1-3 fake claim race","scenario":"round 59","completed":59,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.431Z","test":"M1-3 fake claim race","scenario":"round 60","completed":59,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.441Z","test":"M1-3 fake claim race","scenario":"round 60","completed":59,"total":100,"activity":"round 60 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.511Z","test":"M1-3 fake claim race","scenario":"round 60","completed":60,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.511Z","test":"M1-3 fake claim race","scenario":"round 61","completed":60,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.517Z","test":"M1-3 fake claim race","scenario":"round 61","completed":60,"total":100,"activity":"round 61 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.607Z","test":"M1-3 fake claim race","scenario":"round 61","completed":61,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.607Z","test":"M1-3 fake claim race","scenario":"round 62","completed":61,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.622Z","test":"M1-3 fake claim race","scenario":"round 62","completed":61,"total":100,"activity":"round 62 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.700Z","test":"M1-3 fake claim race","scenario":"round 62","completed":62,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.700Z","test":"M1-3 fake claim race","scenario":"round 63","completed":62,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.707Z","test":"M1-3 fake claim race","scenario":"round 63","completed":62,"total":100,"activity":"round 63 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.799Z","test":"M1-3 fake claim race","scenario":"round 63","completed":63,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.800Z","test":"M1-3 fake claim race","scenario":"round 64","completed":63,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.807Z","test":"M1-3 fake claim race","scenario":"round 64","completed":63,"total":100,"activity":"round 64 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.870Z","test":"M1-3 fake claim race","scenario":"round 64","completed":64,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.870Z","test":"M1-3 fake claim race","scenario":"round 65","completed":64,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.887Z","test":"M1-3 fake claim race","scenario":"round 65","completed":64,"total":100,"activity":"round 65 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.964Z","test":"M1-3 fake claim race","scenario":"round 65","completed":65,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.965Z","test":"M1-3 fake claim race","scenario":"round 66","completed":65,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:21.973Z","test":"M1-3 fake claim race","scenario":"round 66","completed":65,"total":100,"activity":"round 66 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:22.047Z","test":"M1-3 fake claim race","scenario":"round 66","completed":66,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:22.047Z","test":"M1-3 fake claim race","scenario":"round 67","completed":66,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:22.064Z","test":"M1-3 fake claim race","scenario":"round 67","completed":66,"total":100,"activity":"round 67 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:22.176Z","test":"M1-3 fake claim race","scenario":"round 67","completed":67,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:22.177Z","test":"M1-3 fake claim race","scenario":"round 68","completed":67,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:22.198Z","test":"M1-3 fake claim race","scenario":"round 68","completed":67,"total":100,"activity":"round 68 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:22.264Z","test":"M1-3 fake claim race","scenario":"round 68","completed":68,"total":100,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:22.264Z","test":"M1-3 fake claim race","scenario":"round 69","completed":68,"total":100,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:22.283Z","test":"M1-3 fake claim race","scenario":"round 69","completed":68,"total":100,"activity":"round 69 released to 20 workers","elapsedS":5}
+{"ts":"2026-10-19T16:00:22.342Z","test":"M1-3 fake claim race","scenario":"round 69","completed":69,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.342Z","test":"M1-3 fake claim race","scenario":"round 70","completed":69,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.355Z","test":"M1-3 fake claim race","scenario":"round 70","completed":69,"total":100,"activity":"round 70 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.421Z","test":"M1-3 fake claim race","scenario":"round 70","completed":70,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.421Z","test":"M1-3 fake claim race","scenario":"round 71","completed":70,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.436Z","test":"M1-3 fake claim race","scenario":"round 71","completed":70,"total":100,"activity":"round 71 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.525Z","test":"M1-3 fake claim race","scenario":"round 71","completed":71,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.525Z","test":"M1-3 fake claim race","scenario":"round 72","completed":71,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.532Z","test":"M1-3 fake claim race","scenario":"round 72","completed":71,"total":100,"activity":"round 72 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.610Z","test":"M1-3 fake claim race","scenario":"round 72","completed":72,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.610Z","test":"M1-3 fake claim race","scenario":"round 73","completed":72,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.616Z","test":"M1-3 fake claim race","scenario":"round 73","completed":72,"total":100,"activity":"round 73 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.699Z","test":"M1-3 fake claim race","scenario":"round 73","completed":73,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.699Z","test":"M1-3 fake claim race","scenario":"round 74","completed":73,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.710Z","test":"M1-3 fake claim race","scenario":"round 74","completed":73,"total":100,"activity":"round 74 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.767Z","test":"M1-3 fake claim race","scenario":"round 74","completed":74,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.767Z","test":"M1-3 fake claim race","scenario":"round 75","completed":74,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.781Z","test":"M1-3 fake claim race","scenario":"round 75","completed":74,"total":100,"activity":"round 75 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.845Z","test":"M1-3 fake claim race","scenario":"round 75","completed":75,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.845Z","test":"M1-3 fake claim race","scenario":"round 76","completed":75,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.854Z","test":"M1-3 fake claim race","scenario":"round 76","completed":75,"total":100,"activity":"round 76 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.915Z","test":"M1-3 fake claim race","scenario":"round 76","completed":76,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.915Z","test":"M1-3 fake claim race","scenario":"round 77","completed":76,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:22.927Z","test":"M1-3 fake claim race","scenario":"round 77","completed":76,"total":100,"activity":"round 77 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.006Z","test":"M1-3 fake claim race","scenario":"round 77","completed":77,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.006Z","test":"M1-3 fake claim race","scenario":"round 78","completed":77,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.011Z","test":"M1-3 fake claim race","scenario":"round 78","completed":77,"total":100,"activity":"round 78 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.096Z","test":"M1-3 fake claim race","scenario":"round 78","completed":78,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.096Z","test":"M1-3 fake claim race","scenario":"round 79","completed":78,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.101Z","test":"M1-3 fake claim race","scenario":"round 79","completed":78,"total":100,"activity":"round 79 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.186Z","test":"M1-3 fake claim race","scenario":"round 79","completed":79,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.186Z","test":"M1-3 fake claim race","scenario":"round 80","completed":79,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.198Z","test":"M1-3 fake claim race","scenario":"round 80","completed":79,"total":100,"activity":"round 80 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.262Z","test":"M1-3 fake claim race","scenario":"round 80","completed":80,"total":100,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.262Z","test":"M1-3 fake claim race","scenario":"round 81","completed":80,"total":100,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.269Z","test":"M1-3 fake claim race","scenario":"round 81","completed":80,"total":100,"activity":"round 81 released to 20 workers","elapsedS":6}
+{"ts":"2026-10-19T16:00:23.351Z","test":"M1-3 fake claim race","scenario":"round 81","completed":81,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.352Z","test":"M1-3 fake claim race","scenario":"round 82","completed":81,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.359Z","test":"M1-3 fake claim race","scenario":"round 82","completed":81,"total":100,"activity":"round 82 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.456Z","test":"M1-3 fake claim race","scenario":"round 82","completed":82,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.456Z","test":"M1-3 fake claim race","scenario":"round 83","completed":82,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.465Z","test":"M1-3 fake claim race","scenario":"round 83","completed":82,"total":100,"activity":"round 83 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.538Z","test":"M1-3 fake claim race","scenario":"round 83","completed":83,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.538Z","test":"M1-3 fake claim race","scenario":"round 84","completed":83,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.545Z","test":"M1-3 fake claim race","scenario":"round 84","completed":83,"total":100,"activity":"round 84 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.608Z","test":"M1-3 fake claim race","scenario":"round 84","completed":84,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.608Z","test":"M1-3 fake claim race","scenario":"round 85","completed":84,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.614Z","test":"M1-3 fake claim race","scenario":"round 85","completed":84,"total":100,"activity":"round 85 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.681Z","test":"M1-3 fake claim race","scenario":"round 85","completed":85,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.681Z","test":"M1-3 fake claim race","scenario":"round 86","completed":85,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.689Z","test":"M1-3 fake claim race","scenario":"round 86","completed":85,"total":100,"activity":"round 86 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.761Z","test":"M1-3 fake claim race","scenario":"round 86","completed":86,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.762Z","test":"M1-3 fake claim race","scenario":"round 87","completed":86,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.771Z","test":"M1-3 fake claim race","scenario":"round 87","completed":86,"total":100,"activity":"round 87 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.862Z","test":"M1-3 fake claim race","scenario":"round 87","completed":87,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.862Z","test":"M1-3 fake claim race","scenario":"round 88","completed":87,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.872Z","test":"M1-3 fake claim race","scenario":"round 88","completed":87,"total":100,"activity":"round 88 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.940Z","test":"M1-3 fake claim race","scenario":"round 88","completed":88,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.940Z","test":"M1-3 fake claim race","scenario":"round 89","completed":88,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:23.951Z","test":"M1-3 fake claim race","scenario":"round 89","completed":88,"total":100,"activity":"round 89 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.027Z","test":"M1-3 fake claim race","scenario":"round 89","completed":89,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.027Z","test":"M1-3 fake claim race","scenario":"round 90","completed":89,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.037Z","test":"M1-3 fake claim race","scenario":"round 90","completed":89,"total":100,"activity":"round 90 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.114Z","test":"M1-3 fake claim race","scenario":"round 90","completed":90,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.114Z","test":"M1-3 fake claim race","scenario":"round 91","completed":90,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.128Z","test":"M1-3 fake claim race","scenario":"round 91","completed":90,"total":100,"activity":"round 91 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.197Z","test":"M1-3 fake claim race","scenario":"round 91","completed":91,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.197Z","test":"M1-3 fake claim race","scenario":"round 92","completed":91,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.218Z","test":"M1-3 fake claim race","scenario":"round 92","completed":91,"total":100,"activity":"round 92 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.291Z","test":"M1-3 fake claim race","scenario":"round 92","completed":92,"total":100,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.291Z","test":"M1-3 fake claim race","scenario":"round 93","completed":92,"total":100,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.301Z","test":"M1-3 fake claim race","scenario":"round 93","completed":92,"total":100,"activity":"round 93 released to 20 workers","elapsedS":7}
+{"ts":"2026-10-19T16:00:24.377Z","test":"M1-3 fake claim race","scenario":"round 93","completed":93,"total":100,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.377Z","test":"M1-3 fake claim race","scenario":"round 94","completed":93,"total":100,"activity":"begin","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.390Z","test":"M1-3 fake claim race","scenario":"round 94","completed":93,"total":100,"activity":"round 94 released to 20 workers","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.476Z","test":"M1-3 fake claim race","scenario":"round 94","completed":94,"total":100,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.476Z","test":"M1-3 fake claim race","scenario":"round 95","completed":94,"total":100,"activity":"begin","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.486Z","test":"M1-3 fake claim race","scenario":"round 95","completed":94,"total":100,"activity":"round 95 released to 20 workers","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.539Z","test":"M1-3 fake claim race","scenario":"round 95","completed":95,"total":100,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.539Z","test":"M1-3 fake claim race","scenario":"round 96","completed":95,"total":100,"activity":"begin","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.546Z","test":"M1-3 fake claim race","scenario":"round 96","completed":95,"total":100,"activity":"round 96 released to 20 workers","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.606Z","test":"M1-3 fake claim race","scenario":"round 96","completed":96,"total":100,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.607Z","test":"M1-3 fake claim race","scenario":"round 97","completed":96,"total":100,"activity":"begin","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.613Z","test":"M1-3 fake claim race","scenario":"round 97","completed":96,"total":100,"activity":"round 97 released to 20 workers","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.682Z","test":"M1-3 fake claim race","scenario":"round 97","completed":97,"total":100,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.682Z","test":"M1-3 fake claim race","scenario":"round 98","completed":97,"total":100,"activity":"begin","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.696Z","test":"M1-3 fake claim race","scenario":"round 98","completed":97,"total":100,"activity":"round 98 released to 20 workers","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.794Z","test":"M1-3 fake claim race","scenario":"round 98","completed":98,"total":100,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.794Z","test":"M1-3 fake claim race","scenario":"round 99","completed":98,"total":100,"activity":"begin","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.807Z","test":"M1-3 fake claim race","scenario":"round 99","completed":98,"total":100,"activity":"round 99 released to 20 workers","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.922Z","test":"M1-3 fake claim race","scenario":"round 99","completed":99,"total":100,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.922Z","test":"M1-3 fake claim race","scenario":"round 100","completed":99,"total":100,"activity":"begin","elapsedS":8}
+{"ts":"2026-10-19T16:00:24.933Z","test":"M1-3 fake claim race","scenario":"round 100","completed":99,"total":100,"activity":"round 100 released to 20 workers","elapsedS":8}
+{"ts":"2026-10-19T16:00:25.060Z","test":"M1-3 fake claim race","scenario":"round 100","completed":100,"total":100,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:00:33.160Z","test":"M1-4 every boundary","scenario":"","completed":0,"total":70,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T16:00:33.160Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:00:33.542Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"crashed after journal append 1","elapsedS":0}
+{"ts":"2026-10-19T16:00:33.890Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"resume finished","elapsedS":1}
+{"ts":"2026-10-19T16:00:34.569Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"run after resume finished","elapsedS":1}
+{"ts":"2026-10-19T16:00:34.935Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":1,"total":70,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:00:34.936Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:00:35.330Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"crashed after journal append 2","elapsedS":2}
+{"ts":"2026-10-19T16:00:35.641Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"resume finished","elapsedS":2}
+{"ts":"2026-10-19T16:00:36.158Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"run after resume finished","elapsedS":3}
+{"ts":"2026-10-19T16:00:36.479Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":2,"total":70,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:00:36.479Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:00:36.827Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"crashed after journal append 3","elapsedS":4}
+{"ts":"2026-10-19T16:00:37.149Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":4}
+{"ts":"2026-10-19T16:00:37.488Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"resume finished","elapsedS":4}
+{"ts":"2026-10-19T16:00:37.942Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"run after resume finished","elapsedS":5}
+{"ts":"2026-10-19T16:00:38.285Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":3,"total":70,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:00:38.285Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:00:38.640Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"crashed after journal append 4","elapsedS":5}
+{"ts":"2026-10-19T16:00:38.921Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"resume finished","elapsedS":6}
+{"ts":"2026-10-19T16:00:39.444Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"run after resume finished","elapsedS":6}
+{"ts":"2026-10-19T16:00:39.822Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":4,"total":70,"activity":"completed","elapsedS":7}
+{"ts":"2026-10-19T16:00:39.822Z","test":"M1-4 every boundary","scenario":"boundary 5","completed":4,"total":70,"activity":"begin","elapsedS":7}
+{"ts":"2026-10-19T16:00:40.192Z","test":"M1-4 every boundary","scenario":"boundary 5","completed":4,"total":70,"activity":"crashed after journal append 5","elapsedS":7}
+{"ts":"2026-10-19T16:00:40.548Z","test":"M1-4 every boundary","scenario":"boundary 5","completed":4,"total":70,"activity":"resume finished","elapsedS":7}
+{"ts":"2026-10-19T16:00:41.102Z","test":"M1-4 every boundary","scenario":"boundary 5","completed":4,"total":70,"activity":"run after resume finished","elapsedS":8}
+{"ts":"2026-10-19T16:00:41.519Z","test":"M1-4 every boundary","scenario":"boundary 5","completed":5,"total":70,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:00:41.519Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":5,"total":70,"activity":"begin","elapsedS":8}
+{"ts":"2026-10-19T16:00:41.975Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":5,"total":70,"activity":"crashed after journal append 6","elapsedS":9}
+{"ts":"2026-10-19T16:00:42.358Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":5,"total":70,"activity":"second crash during recovery at append 13 (exit 137)","elapsedS":9}
+{"ts":"2026-10-19T16:00:42.755Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":5,"total":70,"activity":"resume finished","elapsedS":10}
+{"ts":"2026-10-19T16:00:43.285Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":5,"total":70,"activity":"run after resume finished","elapsedS":10}
+{"ts":"2026-10-19T16:00:43.718Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":6,"total":70,"activity":"completed","elapsedS":11}
+{"ts":"2026-10-19T16:00:43.718Z","test":"M1-4 every boundary","scenario":"boundary 7","completed":6,"total":70,"activity":"begin","elapsedS":11}
+{"ts":"2026-10-19T16:00:44.075Z","test":"M1-4 every boundary","scenario":"boundary 7","completed":6,"total":70,"activity":"crashed after journal append 7","elapsedS":11}
+{"ts":"2026-10-19T16:00:44.412Z","test":"M1-4 every boundary","scenario":"boundary 7","completed":6,"total":70,"activity":"resume finished","elapsedS":11}
+{"ts":"2026-10-19T16:00:44.893Z","test":"M1-4 every boundary","scenario":"boundary 7","completed":6,"total":70,"activity":"run after resume finished","elapsedS":12}
+{"ts":"2026-10-19T16:00:45.190Z","test":"M1-4 every boundary","scenario":"boundary 7","completed":7,"total":70,"activity":"completed","elapsedS":12}
+{"ts":"2026-10-19T16:00:45.190Z","test":"M1-4 every boundary","scenario":"boundary 8","completed":7,"total":70,"activity":"begin","elapsedS":12}
+{"ts":"2026-10-19T16:00:45.506Z","test":"M1-4 every boundary","scenario":"boundary 8","completed":7,"total":70,"activity":"crashed after journal append 8","elapsedS":12}
+{"ts":"2026-10-19T16:00:45.833Z","test":"M1-4 every boundary","scenario":"boundary 8","completed":7,"total":70,"activity":"resume finished","elapsedS":13}
+{"ts":"2026-10-19T16:00:46.386Z","test":"M1-4 every boundary","scenario":"boundary 8","completed":7,"total":70,"activity":"run after resume finished","elapsedS":13}
+{"ts":"2026-10-19T16:00:46.722Z","test":"M1-4 every boundary","scenario":"boundary 8","completed":8,"total":70,"activity":"completed","elapsedS":14}
+{"ts":"2026-10-19T16:00:46.722Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":8,"total":70,"activity":"begin","elapsedS":14}
+{"ts":"2026-10-19T16:00:47.054Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":8,"total":70,"activity":"crashed after journal append 9","elapsedS":14}
+{"ts":"2026-10-19T16:00:47.404Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":8,"total":70,"activity":"second crash during recovery at append 4 (exit 137)","elapsedS":14}
+{"ts":"2026-10-19T16:00:47.776Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":8,"total":70,"activity":"resume finished","elapsedS":15}
+{"ts":"2026-10-19T16:00:48.297Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":8,"total":70,"activity":"run after resume finished","elapsedS":15}
+{"ts":"2026-10-19T16:00:48.580Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":9,"total":70,"activity":"completed","elapsedS":15}
+{"ts":"2026-10-19T16:00:48.580Z","test":"M1-4 every boundary","scenario":"boundary 10","completed":9,"total":70,"activity":"begin","elapsedS":15}
+{"ts":"2026-10-19T16:00:48.926Z","test":"M1-4 every boundary","scenario":"boundary 10","completed":9,"total":70,"activity":"crashed after journal append 10","elapsedS":16}
+{"ts":"2026-10-19T16:00:49.298Z","test":"M1-4 every boundary","scenario":"boundary 10","completed":9,"total":70,"activity":"resume finished","elapsedS":16}
+{"ts":"2026-10-19T16:00:49.751Z","test":"M1-4 every boundary","scenario":"boundary 10","completed":9,"total":70,"activity":"run after resume finished","elapsedS":17}
+{"ts":"2026-10-19T16:00:50.073Z","test":"M1-4 every boundary","scenario":"boundary 10","completed":10,"total":70,"activity":"completed","elapsedS":17}
+{"ts":"2026-10-19T16:00:50.073Z","test":"M1-4 every boundary","scenario":"boundary 11","completed":10,"total":70,"activity":"begin","elapsedS":17}
+{"ts":"2026-10-19T16:00:50.424Z","test":"M1-4 every boundary","scenario":"boundary 11","completed":10,"total":70,"activity":"crashed after journal append 11","elapsedS":17}
+{"ts":"2026-10-19T16:00:50.785Z","test":"M1-4 every boundary","scenario":"boundary 11","completed":10,"total":70,"activity":"resume finished","elapsedS":18}
+{"ts":"2026-10-19T16:00:51.252Z","test":"M1-4 every boundary","scenario":"boundary 11","completed":10,"total":70,"activity":"run after resume finished","elapsedS":18}
+{"ts":"2026-10-19T16:00:51.712Z","test":"M1-4 every boundary","scenario":"boundary 11","completed":11,"total":70,"activity":"completed","elapsedS":19}
+{"ts":"2026-10-19T16:00:51.712Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":11,"total":70,"activity":"begin","elapsedS":19}
+{"ts":"2026-10-19T16:00:52.059Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":11,"total":70,"activity":"crashed after journal append 12","elapsedS":19}
+{"ts":"2026-10-19T16:00:52.384Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":11,"total":70,"activity":"second crash during recovery at append 10 (exit 137)","elapsedS":19}
+{"ts":"2026-10-19T16:00:52.711Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":11,"total":70,"activity":"resume finished","elapsedS":20}
+{"ts":"2026-10-19T16:00:53.137Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":11,"total":70,"activity":"run after resume finished","elapsedS":20}
+{"ts":"2026-10-19T16:00:53.469Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":12,"total":70,"activity":"completed","elapsedS":20}
+{"ts":"2026-10-19T16:00:53.469Z","test":"M1-4 every boundary","scenario":"boundary 13","completed":12,"total":70,"activity":"begin","elapsedS":20}
+{"ts":"2026-10-19T16:00:53.834Z","test":"M1-4 every boundary","scenario":"boundary 13","completed":12,"total":70,"activity":"crashed after journal append 13","elapsedS":21}
+{"ts":"2026-10-19T16:00:54.173Z","test":"M1-4 every boundary","scenario":"boundary 13","completed":12,"total":70,"activity":"resume finished","elapsedS":21}
+{"ts":"2026-10-19T16:00:54.660Z","test":"M1-4 every boundary","scenario":"boundary 13","completed":12,"total":70,"activity":"run after resume finished","elapsedS":22}
+{"ts":"2026-10-19T16:00:54.989Z","test":"M1-4 every boundary","scenario":"boundary 13","completed":13,"total":70,"activity":"completed","elapsedS":22}
+{"ts":"2026-10-19T16:00:54.989Z","test":"M1-4 every boundary","scenario":"boundary 14","completed":13,"total":70,"activity":"begin","elapsedS":22}
+{"ts":"2026-10-19T16:00:55.334Z","test":"M1-4 every boundary","scenario":"boundary 14","completed":13,"total":70,"activity":"crashed after journal append 14","elapsedS":22}
+{"ts":"2026-10-19T16:00:55.665Z","test":"M1-4 every boundary","scenario":"boundary 14","completed":13,"total":70,"activity":"resume finished","elapsedS":23}
+{"ts":"2026-10-19T16:00:56.231Z","test":"M1-4 every boundary","scenario":"boundary 14","completed":13,"total":70,"activity":"run after resume finished","elapsedS":23}
+{"ts":"2026-10-19T16:00:56.631Z","test":"M1-4 every boundary","scenario":"boundary 14","completed":14,"total":70,"activity":"completed","elapsedS":23}
+{"ts":"2026-10-19T16:00:56.631Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":14,"total":70,"activity":"begin","elapsedS":23}
+{"ts":"2026-10-19T16:00:57.062Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":14,"total":70,"activity":"crashed after journal append 15","elapsedS":24}
+{"ts":"2026-10-19T16:00:57.393Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":14,"total":70,"activity":"second crash during recovery at append 1 (exit 137)","elapsedS":24}
+{"ts":"2026-10-19T16:00:57.730Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":14,"total":70,"activity":"resume finished","elapsedS":25}
+{"ts":"2026-10-19T16:00:58.302Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":14,"total":70,"activity":"run after resume finished","elapsedS":25}
+{"ts":"2026-10-19T16:00:58.603Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":15,"total":70,"activity":"completed","elapsedS":25}
+{"ts":"2026-10-19T16:00:58.603Z","test":"M1-4 every boundary","scenario":"boundary 16","completed":15,"total":70,"activity":"begin","elapsedS":25}
+{"ts":"2026-10-19T16:00:58.980Z","test":"M1-4 every boundary","scenario":"boundary 16","completed":15,"total":70,"activity":"crashed after journal append 16","elapsedS":26}
+{"ts":"2026-10-19T16:00:59.383Z","test":"M1-4 every boundary","scenario":"boundary 16","completed":15,"total":70,"activity":"resume finished","elapsedS":26}
+{"ts":"2026-10-19T16:00:59.900Z","test":"M1-4 every boundary","scenario":"boundary 16","completed":15,"total":70,"activity":"run after resume finished","elapsedS":27}
+{"ts":"2026-10-19T16:01:00.209Z","test":"M1-4 every boundary","scenario":"boundary 16","completed":16,"total":70,"activity":"completed","elapsedS":27}
+{"ts":"2026-10-19T16:01:00.209Z","test":"M1-4 every boundary","scenario":"boundary 17","completed":16,"total":70,"activity":"begin","elapsedS":27}
+{"ts":"2026-10-19T16:01:00.617Z","test":"M1-4 every boundary","scenario":"boundary 17","completed":16,"total":70,"activity":"crashed after journal append 17","elapsedS":27}
+{"ts":"2026-10-19T16:01:00.945Z","test":"M1-4 every boundary","scenario":"boundary 17","completed":16,"total":70,"activity":"resume finished","elapsedS":28}
+{"ts":"2026-10-19T16:01:01.428Z","test":"M1-4 every boundary","scenario":"boundary 17","completed":16,"total":70,"activity":"run after resume finished","elapsedS":28}
+{"ts":"2026-10-19T16:01:01.825Z","test":"M1-4 every boundary","scenario":"boundary 17","completed":17,"total":70,"activity":"completed","elapsedS":29}
+{"ts":"2026-10-19T16:01:01.825Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":17,"total":70,"activity":"begin","elapsedS":29}
+{"ts":"2026-10-19T16:01:02.224Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":17,"total":70,"activity":"crashed after journal append 18","elapsedS":29}
+{"ts":"2026-10-19T16:01:02.583Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":17,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":29}
+{"ts":"2026-10-19T16:01:02.919Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":17,"total":70,"activity":"resume finished","elapsedS":30}
+{"ts":"2026-10-19T16:01:03.430Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":17,"total":70,"activity":"run after resume finished","elapsedS":30}
+{"ts":"2026-10-19T16:01:03.770Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":18,"total":70,"activity":"completed","elapsedS":31}
+{"ts":"2026-10-19T16:01:03.770Z","test":"M1-4 every boundary","scenario":"boundary 19","completed":18,"total":70,"activity":"begin","elapsedS":31}
+{"ts":"2026-10-19T16:01:04.204Z","test":"M1-4 every boundary","scenario":"boundary 19","completed":18,"total":70,"activity":"crashed after journal append 19","elapsedS":31}
+{"ts":"2026-10-19T16:01:04.555Z","test":"M1-4 every boundary","scenario":"boundary 19","completed":18,"total":70,"activity":"resume finished","elapsedS":31}
+{"ts":"2026-10-19T16:01:05.054Z","test":"M1-4 every boundary","scenario":"boundary 19","completed":18,"total":70,"activity":"run after resume finished","elapsedS":32}
+{"ts":"2026-10-19T16:01:05.378Z","test":"M1-4 every boundary","scenario":"boundary 19","completed":19,"total":70,"activity":"completed","elapsedS":32}
+{"ts":"2026-10-19T16:01:05.378Z","test":"M1-4 every boundary","scenario":"boundary 20","completed":19,"total":70,"activity":"begin","elapsedS":32}
+{"ts":"2026-10-19T16:01:05.786Z","test":"M1-4 every boundary","scenario":"boundary 20","completed":19,"total":70,"activity":"crashed after journal append 20","elapsedS":33}
+{"ts":"2026-10-19T16:01:06.169Z","test":"M1-4 every boundary","scenario":"boundary 20","completed":19,"total":70,"activity":"resume finished","elapsedS":33}
+{"ts":"2026-10-19T16:01:06.676Z","test":"M1-4 every boundary","scenario":"boundary 20","completed":19,"total":70,"activity":"run after resume finished","elapsedS":34}
+{"ts":"2026-10-19T16:01:06.993Z","test":"M1-4 every boundary","scenario":"boundary 20","completed":20,"total":70,"activity":"completed","elapsedS":34}
+{"ts":"2026-10-19T16:01:06.993Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":20,"total":70,"activity":"begin","elapsedS":34}
+{"ts":"2026-10-19T16:01:07.432Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":20,"total":70,"activity":"crashed after journal append 21","elapsedS":34}
+{"ts":"2026-10-19T16:01:07.815Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":20,"total":70,"activity":"second crash during recovery at append 13 (exit 137)","elapsedS":35}
+{"ts":"2026-10-19T16:01:08.121Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":20,"total":70,"activity":"resume finished","elapsedS":35}
+{"ts":"2026-10-19T16:01:08.615Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":20,"total":70,"activity":"run after resume finished","elapsedS":35}
+{"ts":"2026-10-19T16:01:09.046Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":21,"total":70,"activity":"completed","elapsedS":36}
+{"ts":"2026-10-19T16:01:09.046Z","test":"M1-4 every boundary","scenario":"boundary 22","completed":21,"total":70,"activity":"begin","elapsedS":36}
+{"ts":"2026-10-19T16:01:09.479Z","test":"M1-4 every boundary","scenario":"boundary 22","completed":21,"total":70,"activity":"crashed after journal append 22","elapsedS":36}
+{"ts":"2026-10-19T16:01:09.792Z","test":"M1-4 every boundary","scenario":"boundary 22","completed":21,"total":70,"activity":"resume finished","elapsedS":37}
+{"ts":"2026-10-19T16:01:10.330Z","test":"M1-4 every boundary","scenario":"boundary 22","completed":21,"total":70,"activity":"run after resume finished","elapsedS":37}
+{"ts":"2026-10-19T16:01:10.723Z","test":"M1-4 every boundary","scenario":"boundary 22","completed":22,"total":70,"activity":"completed","elapsedS":38}
+{"ts":"2026-10-19T16:01:10.723Z","test":"M1-4 every boundary","scenario":"boundary 23","completed":22,"total":70,"activity":"begin","elapsedS":38}
+{"ts":"2026-10-19T16:01:11.225Z","test":"M1-4 every boundary","scenario":"boundary 23","completed":22,"total":70,"activity":"crashed after journal append 23","elapsedS":38}
+{"ts":"2026-10-19T16:01:11.610Z","test":"M1-4 every boundary","scenario":"boundary 23","completed":22,"total":70,"activity":"resume finished","elapsedS":38}
+{"ts":"2026-10-19T16:01:12.206Z","test":"M1-4 every boundary","scenario":"boundary 23","completed":22,"total":70,"activity":"run after resume finished","elapsedS":39}
+{"ts":"2026-10-19T16:01:12.551Z","test":"M1-4 every boundary","scenario":"boundary 23","completed":23,"total":70,"activity":"completed","elapsedS":39}
+{"ts":"2026-10-19T16:01:12.552Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":23,"total":70,"activity":"begin","elapsedS":39}
+{"ts":"2026-10-19T16:01:13.081Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":23,"total":70,"activity":"crashed after journal append 24","elapsedS":40}
+{"ts":"2026-10-19T16:01:13.409Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":23,"total":70,"activity":"second crash during recovery at append 4 (exit 137)","elapsedS":40}
+{"ts":"2026-10-19T16:01:13.781Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":23,"total":70,"activity":"resume finished","elapsedS":41}
+{"ts":"2026-10-19T16:01:14.256Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":23,"total":70,"activity":"run after resume finished","elapsedS":41}
+{"ts":"2026-10-19T16:01:14.588Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":24,"total":70,"activity":"completed","elapsedS":41}
+{"ts":"2026-10-19T16:01:14.588Z","test":"M1-4 every boundary","scenario":"boundary 25","completed":24,"total":70,"activity":"begin","elapsedS":41}
+{"ts":"2026-10-19T16:01:15.016Z","test":"M1-4 every boundary","scenario":"boundary 25","completed":24,"total":70,"activity":"crashed after journal append 25","elapsedS":42}
+{"ts":"2026-10-19T16:01:15.353Z","test":"M1-4 every boundary","scenario":"boundary 25","completed":24,"total":70,"activity":"resume finished","elapsedS":42}
+{"ts":"2026-10-19T16:01:15.792Z","test":"M1-4 every boundary","scenario":"boundary 25","completed":24,"total":70,"activity":"run after resume finished","elapsedS":43}
+{"ts":"2026-10-19T16:01:16.094Z","test":"M1-4 every boundary","scenario":"boundary 25","completed":25,"total":70,"activity":"completed","elapsedS":43}
+{"ts":"2026-10-19T16:01:16.094Z","test":"M1-4 every boundary","scenario":"boundary 26","completed":25,"total":70,"activity":"begin","elapsedS":43}
+{"ts":"2026-10-19T16:01:16.514Z","test":"M1-4 every boundary","scenario":"boundary 26","completed":25,"total":70,"activity":"crashed after journal append 26","elapsedS":43}
+{"ts":"2026-10-19T16:01:16.813Z","test":"M1-4 every boundary","scenario":"boundary 26","completed":25,"total":70,"activity":"resume finished","elapsedS":44}
+{"ts":"2026-10-19T16:01:17.246Z","test":"M1-4 every boundary","scenario":"boundary 26","completed":25,"total":70,"activity":"run after resume finished","elapsedS":44}
+{"ts":"2026-10-19T16:01:17.552Z","test":"M1-4 every boundary","scenario":"boundary 26","completed":26,"total":70,"activity":"completed","elapsedS":44}
+{"ts":"2026-10-19T16:01:17.552Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":26,"total":70,"activity":"begin","elapsedS":44}
+{"ts":"2026-10-19T16:01:17.994Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":26,"total":70,"activity":"crashed after journal append 27","elapsedS":45}
+{"ts":"2026-10-19T16:01:18.322Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":26,"total":70,"activity":"second crash during recovery at append 10 (exit 137)","elapsedS":45}
+{"ts":"2026-10-19T16:01:18.653Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":26,"total":70,"activity":"resume finished","elapsedS":45}
+{"ts":"2026-10-19T16:01:19.103Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":26,"total":70,"activity":"run after resume finished","elapsedS":46}
+{"ts":"2026-10-19T16:01:19.470Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":27,"total":70,"activity":"completed","elapsedS":46}
+{"ts":"2026-10-19T16:01:19.470Z","test":"M1-4 every boundary","scenario":"boundary 28","completed":27,"total":70,"activity":"begin","elapsedS":46}
+{"ts":"2026-10-19T16:01:19.973Z","test":"M1-4 every boundary","scenario":"boundary 28","completed":27,"total":70,"activity":"crashed after journal append 28","elapsedS":47}
+{"ts":"2026-10-19T16:01:20.329Z","test":"M1-4 every boundary","scenario":"boundary 28","completed":27,"total":70,"activity":"resume finished","elapsedS":47}
+{"ts":"2026-10-19T16:01:20.773Z","test":"M1-4 every boundary","scenario":"boundary 28","completed":27,"total":70,"activity":"run after resume finished","elapsedS":48}
+{"ts":"2026-10-19T16:01:21.121Z","test":"M1-4 every boundary","scenario":"boundary 28","completed":28,"total":70,"activity":"completed","elapsedS":48}
+{"ts":"2026-10-19T16:01:21.121Z","test":"M1-4 every boundary","scenario":"boundary 29","completed":28,"total":70,"activity":"begin","elapsedS":48}
+{"ts":"2026-10-19T16:01:21.563Z","test":"M1-4 every boundary","scenario":"boundary 29","completed":28,"total":70,"activity":"crashed after journal append 29","elapsedS":48}
+{"ts":"2026-10-19T16:01:21.909Z","test":"M1-4 every boundary","scenario":"boundary 29","completed":28,"total":70,"activity":"resume finished","elapsedS":49}
+{"ts":"2026-10-19T16:01:22.388Z","test":"M1-4 every boundary","scenario":"boundary 29","completed":28,"total":70,"activity":"run after resume finished","elapsedS":49}
+{"ts":"2026-10-19T16:01:22.735Z","test":"M1-4 every boundary","scenario":"boundary 29","completed":29,"total":70,"activity":"completed","elapsedS":50}
+{"ts":"2026-10-19T16:01:22.735Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":29,"total":70,"activity":"begin","elapsedS":50}
+{"ts":"2026-10-19T16:01:23.164Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":29,"total":70,"activity":"crashed after journal append 30","elapsedS":50}
+{"ts":"2026-10-19T16:01:23.485Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":29,"total":70,"activity":"second crash during recovery at append 1 (exit 137)","elapsedS":50}
+{"ts":"2026-10-19T16:01:23.797Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":29,"total":70,"activity":"resume finished","elapsedS":51}
+{"ts":"2026-10-19T16:01:24.350Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":29,"total":70,"activity":"run after resume finished","elapsedS":51}
+{"ts":"2026-10-19T16:01:24.737Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":30,"total":70,"activity":"completed","elapsedS":52}
+{"ts":"2026-10-19T16:01:24.737Z","test":"M1-4 every boundary","scenario":"boundary 31","completed":30,"total":70,"activity":"begin","elapsedS":52}
+{"ts":"2026-10-19T16:01:25.181Z","test":"M1-4 every boundary","scenario":"boundary 31","completed":30,"total":70,"activity":"crashed after journal append 31","elapsedS":52}
+{"ts":"2026-10-19T16:01:25.593Z","test":"M1-4 every boundary","scenario":"boundary 31","completed":30,"total":70,"activity":"resume finished","elapsedS":52}
+{"ts":"2026-10-19T16:01:26.119Z","test":"M1-4 every boundary","scenario":"boundary 31","completed":30,"total":70,"activity":"run after resume finished","elapsedS":53}
+{"ts":"2026-10-19T16:01:26.505Z","test":"M1-4 every boundary","scenario":"boundary 31","completed":31,"total":70,"activity":"completed","elapsedS":53}
+{"ts":"2026-10-19T16:01:26.505Z","test":"M1-4 every boundary","scenario":"boundary 32","completed":31,"total":70,"activity":"begin","elapsedS":53}
+{"ts":"2026-10-19T16:01:27.030Z","test":"M1-4 every boundary","scenario":"boundary 32","completed":31,"total":70,"activity":"crashed after journal append 32","elapsedS":54}
+{"ts":"2026-10-19T16:01:27.317Z","test":"M1-4 every boundary","scenario":"boundary 32","completed":31,"total":70,"activity":"resume finished","elapsedS":54}
+{"ts":"2026-10-19T16:01:27.729Z","test":"M1-4 every boundary","scenario":"boundary 32","completed":31,"total":70,"activity":"run after resume finished","elapsedS":55}
+{"ts":"2026-10-19T16:01:28.131Z","test":"M1-4 every boundary","scenario":"boundary 32","completed":32,"total":70,"activity":"completed","elapsedS":55}
+{"ts":"2026-10-19T16:01:28.131Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":32,"total":70,"activity":"begin","elapsedS":55}
+{"ts":"2026-10-19T16:01:28.568Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":32,"total":70,"activity":"crashed after journal append 33","elapsedS":55}
+{"ts":"2026-10-19T16:01:28.932Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":32,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":56}
+{"ts":"2026-10-19T16:01:29.254Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":32,"total":70,"activity":"resume finished","elapsedS":56}
+{"ts":"2026-10-19T16:01:29.780Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":32,"total":70,"activity":"run after resume finished","elapsedS":57}
+{"ts":"2026-10-19T16:01:30.107Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":33,"total":70,"activity":"completed","elapsedS":57}
+{"ts":"2026-10-19T16:01:30.107Z","test":"M1-4 every boundary","scenario":"boundary 34","completed":33,"total":70,"activity":"begin","elapsedS":57}
+{"ts":"2026-10-19T16:01:30.535Z","test":"M1-4 every boundary","scenario":"boundary 34","completed":33,"total":70,"activity":"crashed after journal append 34","elapsedS":57}
+{"ts":"2026-10-19T16:01:30.894Z","test":"M1-4 every boundary","scenario":"boundary 34","completed":33,"total":70,"activity":"resume finished","elapsedS":58}
+{"ts":"2026-10-19T16:01:31.266Z","test":"M1-4 every boundary","scenario":"boundary 34","completed":33,"total":70,"activity":"run after resume finished","elapsedS":58}
+{"ts":"2026-10-19T16:01:31.634Z","test":"M1-4 every boundary","scenario":"boundary 34","completed":34,"total":70,"activity":"completed","elapsedS":58}
+{"ts":"2026-10-19T16:01:31.634Z","test":"M1-4 every boundary","scenario":"boundary 35","completed":34,"total":70,"activity":"begin","elapsedS":58}
+{"ts":"2026-10-19T16:01:32.061Z","test":"M1-4 every boundary","scenario":"boundary 35","completed":34,"total":70,"activity":"crashed after journal append 35","elapsedS":59}
+{"ts":"2026-10-19T16:01:32.358Z","test":"M1-4 every boundary","scenario":"boundary 35","completed":34,"total":70,"activity":"resume finished","elapsedS":59}
+{"ts":"2026-10-19T16:01:32.802Z","test":"M1-4 every boundary","scenario":"boundary 35","completed":34,"total":70,"activity":"run after resume finished","elapsedS":60}
+{"ts":"2026-10-19T16:01:33.140Z","test":"M1-4 every boundary","scenario":"boundary 35","completed":35,"total":70,"activity":"completed","elapsedS":60}
+{"ts":"2026-10-19T16:01:33.140Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":35,"total":70,"activity":"begin","elapsedS":60}
+{"ts":"2026-10-19T16:01:33.642Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":35,"total":70,"activity":"crashed after journal append 36","elapsedS":60}
+{"ts":"2026-10-19T16:01:34.027Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":35,"total":70,"activity":"second crash during recovery at append 13 (exit 137)","elapsedS":61}
+{"ts":"2026-10-19T16:01:34.355Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":35,"total":70,"activity":"resume finished","elapsedS":61}
+{"ts":"2026-10-19T16:01:34.768Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":35,"total":70,"activity":"run after resume finished","elapsedS":62}
+{"ts":"2026-10-19T16:01:35.123Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":36,"total":70,"activity":"completed","elapsedS":62}
+{"ts":"2026-10-19T16:01:35.123Z","test":"M1-4 every boundary","scenario":"boundary 37","completed":36,"total":70,"activity":"begin","elapsedS":62}
+{"ts":"2026-10-19T16:01:35.672Z","test":"M1-4 every boundary","scenario":"boundary 37","completed":36,"total":70,"activity":"crashed after journal append 37","elapsedS":63}
+{"ts":"2026-10-19T16:01:36.052Z","test":"M1-4 every boundary","scenario":"boundary 37","completed":36,"total":70,"activity":"resume finished","elapsedS":63}
+{"ts":"2026-10-19T16:01:36.453Z","test":"M1-4 every boundary","scenario":"boundary 37","completed":36,"total":70,"activity":"run after resume finished","elapsedS":63}
+{"ts":"2026-10-19T16:01:36.790Z","test":"M1-4 every boundary","scenario":"boundary 37","completed":37,"total":70,"activity":"completed","elapsedS":64}
+{"ts":"2026-10-19T16:01:36.790Z","test":"M1-4 every boundary","scenario":"boundary 38","completed":37,"total":70,"activity":"begin","elapsedS":64}
+{"ts":"2026-10-19T16:01:37.231Z","test":"M1-4 every boundary","scenario":"boundary 38","completed":37,"total":70,"activity":"crashed after journal append 38","elapsedS":64}
+{"ts":"2026-10-19T16:01:37.565Z","test":"M1-4 every boundary","scenario":"boundary 38","completed":37,"total":70,"activity":"resume finished","elapsedS":64}
+{"ts":"2026-10-19T16:01:37.997Z","test":"M1-4 every boundary","scenario":"boundary 38","completed":37,"total":70,"activity":"run after resume finished","elapsedS":65}
+{"ts":"2026-10-19T16:01:38.346Z","test":"M1-4 every boundary","scenario":"boundary 38","completed":38,"total":70,"activity":"completed","elapsedS":65}
+{"ts":"2026-10-19T16:01:38.346Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":38,"total":70,"activity":"begin","elapsedS":65}
+{"ts":"2026-10-19T16:01:38.843Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":38,"total":70,"activity":"crashed after journal append 39","elapsedS":66}
+{"ts":"2026-10-19T16:01:39.138Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":38,"total":70,"activity":"second crash during recovery at append 4 (exit 137)","elapsedS":66}
+{"ts":"2026-10-19T16:01:39.499Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":38,"total":70,"activity":"resume finished","elapsedS":66}
+{"ts":"2026-10-19T16:01:39.962Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":38,"total":70,"activity":"run after resume finished","elapsedS":67}
+{"ts":"2026-10-19T16:01:40.365Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":39,"total":70,"activity":"completed","elapsedS":67}
+{"ts":"2026-10-19T16:01:40.365Z","test":"M1-4 every boundary","scenario":"boundary 40","completed":39,"total":70,"activity":"begin","elapsedS":67}
+{"ts":"2026-10-19T16:01:40.860Z","test":"M1-4 every boundary","scenario":"boundary 40","completed":39,"total":70,"activity":"crashed after journal append 40","elapsedS":68}
+{"ts":"2026-10-19T16:01:41.226Z","test":"M1-4 every boundary","scenario":"boundary 40","completed":39,"total":70,"activity":"resume finished","elapsedS":68}
+{"ts":"2026-10-19T16:01:41.805Z","test":"M1-4 every boundary","scenario":"boundary 40","completed":39,"total":70,"activity":"run after resume finished","elapsedS":69}
+{"ts":"2026-10-19T16:01:42.221Z","test":"M1-4 every boundary","scenario":"boundary 40","completed":40,"total":70,"activity":"completed","elapsedS":69}
+{"ts":"2026-10-19T16:01:42.221Z","test":"M1-4 every boundary","scenario":"boundary 41","completed":40,"total":70,"activity":"begin","elapsedS":69}
+{"ts":"2026-10-19T16:01:42.899Z","test":"M1-4 every boundary","scenario":"boundary 41","completed":40,"total":70,"activity":"crashed after journal append 41","elapsedS":70}
+{"ts":"2026-10-19T16:01:43.414Z","test":"M1-4 every boundary","scenario":"boundary 41","completed":40,"total":70,"activity":"resume finished","elapsedS":70}
+{"ts":"2026-10-19T16:01:44.029Z","test":"M1-4 every boundary","scenario":"boundary 41","completed":40,"total":70,"activity":"run after resume finished","elapsedS":71}
+{"ts":"2026-10-19T16:01:44.399Z","test":"M1-4 every boundary","scenario":"boundary 41","completed":41,"total":70,"activity":"completed","elapsedS":71}
+{"ts":"2026-10-19T16:01:44.399Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":41,"total":70,"activity":"begin","elapsedS":71}
+{"ts":"2026-10-19T16:01:44.953Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":41,"total":70,"activity":"crashed after journal append 42","elapsedS":72}
+{"ts":"2026-10-19T16:01:45.309Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":41,"total":70,"activity":"second crash during recovery at append 10 (exit 137)","elapsedS":72}
+{"ts":"2026-10-19T16:01:45.674Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":41,"total":70,"activity":"resume finished","elapsedS":73}
+{"ts":"2026-10-19T16:01:46.184Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":41,"total":70,"activity":"run after resume finished","elapsedS":73}
+{"ts":"2026-10-19T16:01:46.551Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":42,"total":70,"activity":"completed","elapsedS":73}
+{"ts":"2026-10-19T16:01:46.551Z","test":"M1-4 every boundary","scenario":"boundary 43","completed":42,"total":70,"activity":"begin","elapsedS":73}
+{"ts":"2026-10-19T16:01:46.963Z","test":"M1-4 every boundary","scenario":"boundary 43","completed":42,"total":70,"activity":"crashed after journal append 43","elapsedS":74}
+{"ts":"2026-10-19T16:01:47.287Z","test":"M1-4 every boundary","scenario":"boundary 43","completed":42,"total":70,"activity":"resume finished","elapsedS":74}
+{"ts":"2026-10-19T16:01:47.612Z","test":"M1-4 every boundary","scenario":"boundary 43","completed":42,"total":70,"activity":"run after resume finished","elapsedS":74}
+{"ts":"2026-10-19T16:01:47.918Z","test":"M1-4 every boundary","scenario":"boundary 43","completed":43,"total":70,"activity":"completed","elapsedS":75}
+{"ts":"2026-10-19T16:01:47.918Z","test":"M1-4 every boundary","scenario":"boundary 44","completed":43,"total":70,"activity":"begin","elapsedS":75}
+{"ts":"2026-10-19T16:01:48.425Z","test":"M1-4 every boundary","scenario":"boundary 44","completed":43,"total":70,"activity":"crashed after journal append 44","elapsedS":75}
+{"ts":"2026-10-19T16:01:48.849Z","test":"M1-4 every boundary","scenario":"boundary 44","completed":43,"total":70,"activity":"resume finished","elapsedS":76}
+{"ts":"2026-10-19T16:01:49.218Z","test":"M1-4 every boundary","scenario":"boundary 44","completed":43,"total":70,"activity":"run after resume finished","elapsedS":76}
+{"ts":"2026-10-19T16:01:49.561Z","test":"M1-4 every boundary","scenario":"boundary 44","completed":44,"total":70,"activity":"completed","elapsedS":76}
+{"ts":"2026-10-19T16:01:49.561Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":44,"total":70,"activity":"begin","elapsedS":76}
+{"ts":"2026-10-19T16:01:50.100Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":44,"total":70,"activity":"crashed after journal append 45","elapsedS":77}
+{"ts":"2026-10-19T16:01:50.445Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":44,"total":70,"activity":"second crash during recovery at append 1 (exit 137)","elapsedS":77}
+{"ts":"2026-10-19T16:01:50.793Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":44,"total":70,"activity":"resume finished","elapsedS":78}
+{"ts":"2026-10-19T16:01:51.121Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":44,"total":70,"activity":"run after resume finished","elapsedS":78}
+{"ts":"2026-10-19T16:01:51.451Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":45,"total":70,"activity":"completed","elapsedS":78}
+{"ts":"2026-10-19T16:01:51.451Z","test":"M1-4 every boundary","scenario":"boundary 46","completed":45,"total":70,"activity":"begin","elapsedS":78}
+{"ts":"2026-10-19T16:01:51.984Z","test":"M1-4 every boundary","scenario":"boundary 46","completed":45,"total":70,"activity":"crashed after journal append 46","elapsedS":79}
+{"ts":"2026-10-19T16:01:52.285Z","test":"M1-4 every boundary","scenario":"boundary 46","completed":45,"total":70,"activity":"resume finished","elapsedS":79}
+{"ts":"2026-10-19T16:01:52.726Z","test":"M1-4 every boundary","scenario":"boundary 46","completed":45,"total":70,"activity":"run after resume finished","elapsedS":80}
+{"ts":"2026-10-19T16:01:53.119Z","test":"M1-4 every boundary","scenario":"boundary 46","completed":46,"total":70,"activity":"completed","elapsedS":80}
+{"ts":"2026-10-19T16:01:53.119Z","test":"M1-4 every boundary","scenario":"boundary 47","completed":46,"total":70,"activity":"begin","elapsedS":80}
+{"ts":"2026-10-19T16:01:53.597Z","test":"M1-4 every boundary","scenario":"boundary 47","completed":46,"total":70,"activity":"crashed after journal append 47","elapsedS":80}
+{"ts":"2026-10-19T16:01:53.955Z","test":"M1-4 every boundary","scenario":"boundary 47","completed":46,"total":70,"activity":"resume finished","elapsedS":81}
+{"ts":"2026-10-19T16:01:54.396Z","test":"M1-4 every boundary","scenario":"boundary 47","completed":46,"total":70,"activity":"run after resume finished","elapsedS":81}
+{"ts":"2026-10-19T16:01:54.873Z","test":"M1-4 every boundary","scenario":"boundary 47","completed":47,"total":70,"activity":"completed","elapsedS":82}
+{"ts":"2026-10-19T16:01:54.873Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":47,"total":70,"activity":"begin","elapsedS":82}
+{"ts":"2026-10-19T16:01:55.441Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":47,"total":70,"activity":"crashed after journal append 48","elapsedS":82}
+{"ts":"2026-10-19T16:01:55.754Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":47,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":83}
+{"ts":"2026-10-19T16:01:56.101Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":47,"total":70,"activity":"resume finished","elapsedS":83}
+{"ts":"2026-10-19T16:01:56.477Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":47,"total":70,"activity":"run after resume finished","elapsedS":83}
+{"ts":"2026-10-19T16:01:56.900Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":48,"total":70,"activity":"completed","elapsedS":84}
+{"ts":"2026-10-19T16:01:56.901Z","test":"M1-4 every boundary","scenario":"boundary 49","completed":48,"total":70,"activity":"begin","elapsedS":84}
+{"ts":"2026-10-19T16:01:57.445Z","test":"M1-4 every boundary","scenario":"boundary 49","completed":48,"total":70,"activity":"crashed after journal append 49","elapsedS":84}
+{"ts":"2026-10-19T16:01:57.818Z","test":"M1-4 every boundary","scenario":"boundary 49","completed":48,"total":70,"activity":"resume finished","elapsedS":85}
+{"ts":"2026-10-19T16:01:58.280Z","test":"M1-4 every boundary","scenario":"boundary 49","completed":48,"total":70,"activity":"run after resume finished","elapsedS":85}
+{"ts":"2026-10-19T16:01:58.659Z","test":"M1-4 every boundary","scenario":"boundary 49","completed":49,"total":70,"activity":"completed","elapsedS":85}
+{"ts":"2026-10-19T16:01:58.659Z","test":"M1-4 every boundary","scenario":"boundary 50","completed":49,"total":70,"activity":"begin","elapsedS":85}
+{"ts":"2026-10-19T16:01:59.177Z","test":"M1-4 every boundary","scenario":"boundary 50","completed":49,"total":70,"activity":"crashed after journal append 50","elapsedS":86}
+{"ts":"2026-10-19T16:01:59.527Z","test":"M1-4 every boundary","scenario":"boundary 50","completed":49,"total":70,"activity":"resume finished","elapsedS":86}
+{"ts":"2026-10-19T16:01:59.974Z","test":"M1-4 every boundary","scenario":"boundary 50","completed":49,"total":70,"activity":"run after resume finished","elapsedS":87}
+{"ts":"2026-10-19T16:02:00.337Z","test":"M1-4 every boundary","scenario":"boundary 50","completed":50,"total":70,"activity":"completed","elapsedS":87}
+{"ts":"2026-10-19T16:02:00.338Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":50,"total":70,"activity":"begin","elapsedS":87}
+{"ts":"2026-10-19T16:02:00.876Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":50,"total":70,"activity":"crashed after journal append 51","elapsedS":88}
+{"ts":"2026-10-19T16:02:01.228Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":50,"total":70,"activity":"second crash during recovery at append 13 (exit 137)","elapsedS":88}
+{"ts":"2026-10-19T16:02:01.573Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":50,"total":70,"activity":"resume finished","elapsedS":88}
+{"ts":"2026-10-19T16:02:01.880Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":50,"total":70,"activity":"run after resume finished","elapsedS":89}
+{"ts":"2026-10-19T16:02:02.183Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":51,"total":70,"activity":"completed","elapsedS":89}
+{"ts":"2026-10-19T16:02:02.183Z","test":"M1-4 every boundary","scenario":"boundary 52","completed":51,"total":70,"activity":"begin","elapsedS":89}
+{"ts":"2026-10-19T16:02:03.021Z","test":"M1-4 every boundary","scenario":"boundary 52","completed":51,"total":70,"activity":"crashed after journal append 52","elapsedS":90}
+{"ts":"2026-10-19T16:02:03.337Z","test":"M1-4 every boundary","scenario":"boundary 52","completed":51,"total":70,"activity":"resume finished","elapsedS":90}
+{"ts":"2026-10-19T16:02:03.644Z","test":"M1-4 every boundary","scenario":"boundary 52","completed":51,"total":70,"activity":"run after resume finished","elapsedS":90}
+{"ts":"2026-10-19T16:02:04.069Z","test":"M1-4 every boundary","scenario":"boundary 52","completed":52,"total":70,"activity":"completed","elapsedS":91}
+{"ts":"2026-10-19T16:02:04.069Z","test":"M1-4 every boundary","scenario":"boundary 53","completed":52,"total":70,"activity":"begin","elapsedS":91}
+{"ts":"2026-10-19T16:02:04.635Z","test":"M1-4 every boundary","scenario":"boundary 53","completed":52,"total":70,"activity":"crashed after journal append 53","elapsedS":91}
+{"ts":"2026-10-19T16:02:05.029Z","test":"M1-4 every boundary","scenario":"boundary 53","completed":52,"total":70,"activity":"resume finished","elapsedS":92}
+{"ts":"2026-10-19T16:02:05.433Z","test":"M1-4 every boundary","scenario":"boundary 53","completed":52,"total":70,"activity":"run after resume finished","elapsedS":92}
+{"ts":"2026-10-19T16:02:05.773Z","test":"M1-4 every boundary","scenario":"boundary 53","completed":53,"total":70,"activity":"completed","elapsedS":93}
+{"ts":"2026-10-19T16:02:05.773Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":53,"total":70,"activity":"begin","elapsedS":93}
+{"ts":"2026-10-19T16:02:06.361Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":53,"total":70,"activity":"crashed after journal append 54","elapsedS":93}
+{"ts":"2026-10-19T16:02:06.687Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":53,"total":70,"activity":"second crash during recovery at append 4 (exit 137)","elapsedS":94}
+{"ts":"2026-10-19T16:02:06.998Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":53,"total":70,"activity":"resume finished","elapsedS":94}
+{"ts":"2026-10-19T16:02:07.328Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":53,"total":70,"activity":"run after resume finished","elapsedS":94}
+{"ts":"2026-10-19T16:02:07.626Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":54,"total":70,"activity":"completed","elapsedS":94}
+{"ts":"2026-10-19T16:02:07.626Z","test":"M1-4 every boundary","scenario":"boundary 55","completed":54,"total":70,"activity":"begin","elapsedS":94}
+{"ts":"2026-10-19T16:02:08.228Z","test":"M1-4 every boundary","scenario":"boundary 55","completed":54,"total":70,"activity":"crashed after journal append 55","elapsedS":95}
+{"ts":"2026-10-19T16:02:08.553Z","test":"M1-4 every boundary","scenario":"boundary 55","completed":54,"total":70,"activity":"resume finished","elapsedS":95}
+{"ts":"2026-10-19T16:02:08.935Z","test":"M1-4 every boundary","scenario":"boundary 55","completed":54,"total":70,"activity":"run after resume finished","elapsedS":96}
+{"ts":"2026-10-19T16:02:09.287Z","test":"M1-4 every boundary","scenario":"boundary 55","completed":55,"total":70,"activity":"completed","elapsedS":96}
+{"ts":"2026-10-19T16:02:09.287Z","test":"M1-4 every boundary","scenario":"boundary 56","completed":55,"total":70,"activity":"begin","elapsedS":96}
+{"ts":"2026-10-19T16:02:09.801Z","test":"M1-4 every boundary","scenario":"boundary 56","completed":55,"total":70,"activity":"crashed after journal append 56","elapsedS":97}
+{"ts":"2026-10-19T16:02:10.187Z","test":"M1-4 every boundary","scenario":"boundary 56","completed":55,"total":70,"activity":"resume finished","elapsedS":97}
+{"ts":"2026-10-19T16:02:10.628Z","test":"M1-4 every boundary","scenario":"boundary 56","completed":55,"total":70,"activity":"run after resume finished","elapsedS":97}
+{"ts":"2026-10-19T16:02:11.101Z","test":"M1-4 every boundary","scenario":"boundary 56","completed":56,"total":70,"activity":"completed","elapsedS":98}
+{"ts":"2026-10-19T16:02:11.101Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":56,"total":70,"activity":"begin","elapsedS":98}
+{"ts":"2026-10-19T16:02:11.809Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":56,"total":70,"activity":"crashed after journal append 57","elapsedS":99}
+{"ts":"2026-10-19T16:02:12.244Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":56,"total":70,"activity":"second crash during recovery at append 10 (exit 137)","elapsedS":99}
+{"ts":"2026-10-19T16:02:12.676Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":56,"total":70,"activity":"resume finished","elapsedS":100}
+{"ts":"2026-10-19T16:02:13.105Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":56,"total":70,"activity":"run after resume finished","elapsedS":100}
+{"ts":"2026-10-19T16:02:13.589Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":57,"total":70,"activity":"completed","elapsedS":100}
+{"ts":"2026-10-19T16:02:13.589Z","test":"M1-4 every boundary","scenario":"boundary 58","completed":57,"total":70,"activity":"begin","elapsedS":100}
+{"ts":"2026-10-19T16:02:14.273Z","test":"M1-4 every boundary","scenario":"boundary 58","completed":57,"total":70,"activity":"crashed after journal append 58","elapsedS":101}
+{"ts":"2026-10-19T16:02:14.661Z","test":"M1-4 every boundary","scenario":"boundary 58","completed":57,"total":70,"activity":"resume finished","elapsedS":102}
+{"ts":"2026-10-19T16:02:15.048Z","test":"M1-4 every boundary","scenario":"boundary 58","completed":57,"total":70,"activity":"run after resume finished","elapsedS":102}
+{"ts":"2026-10-19T16:02:15.484Z","test":"M1-4 every boundary","scenario":"boundary 58","completed":58,"total":70,"activity":"completed","elapsedS":102}
+{"ts":"2026-10-19T16:02:15.484Z","test":"M1-4 every boundary","scenario":"boundary 59","completed":58,"total":70,"activity":"begin","elapsedS":102}
+{"ts":"2026-10-19T16:02:16.213Z","test":"M1-4 every boundary","scenario":"boundary 59","completed":58,"total":70,"activity":"crashed after journal append 59","elapsedS":103}
+{"ts":"2026-10-19T16:02:16.543Z","test":"M1-4 every boundary","scenario":"boundary 59","completed":58,"total":70,"activity":"resume finished","elapsedS":103}
+{"ts":"2026-10-19T16:02:16.958Z","test":"M1-4 every boundary","scenario":"boundary 59","completed":58,"total":70,"activity":"run after resume finished","elapsedS":104}
+{"ts":"2026-10-19T16:02:17.341Z","test":"M1-4 every boundary","scenario":"boundary 59","completed":59,"total":70,"activity":"completed","elapsedS":104}
+{"ts":"2026-10-19T16:02:17.341Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":59,"total":70,"activity":"begin","elapsedS":104}
+{"ts":"2026-10-19T16:02:18.021Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":59,"total":70,"activity":"crashed after journal append 60","elapsedS":105}
+{"ts":"2026-10-19T16:02:18.423Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":59,"total":70,"activity":"second crash during recovery at append 1 (exit 137)","elapsedS":105}
+{"ts":"2026-10-19T16:02:18.816Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":59,"total":70,"activity":"resume finished","elapsedS":106}
+{"ts":"2026-10-19T16:02:19.275Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":59,"total":70,"activity":"run after resume finished","elapsedS":106}
+{"ts":"2026-10-19T16:02:19.682Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":60,"total":70,"activity":"completed","elapsedS":107}
+{"ts":"2026-10-19T16:02:19.682Z","test":"M1-4 every boundary","scenario":"boundary 61","completed":60,"total":70,"activity":"begin","elapsedS":107}
+{"ts":"2026-10-19T16:02:20.378Z","test":"M1-4 every boundary","scenario":"boundary 61","completed":60,"total":70,"activity":"crashed after journal append 61","elapsedS":107}
+{"ts":"2026-10-19T16:02:20.790Z","test":"M1-4 every boundary","scenario":"boundary 61","completed":60,"total":70,"activity":"resume finished","elapsedS":108}
+{"ts":"2026-10-19T16:02:21.197Z","test":"M1-4 every boundary","scenario":"boundary 61","completed":60,"total":70,"activity":"run after resume finished","elapsedS":108}
+{"ts":"2026-10-19T16:02:21.618Z","test":"M1-4 every boundary","scenario":"boundary 61","completed":61,"total":70,"activity":"completed","elapsedS":108}
+{"ts":"2026-10-19T16:02:21.618Z","test":"M1-4 every boundary","scenario":"boundary 62","completed":61,"total":70,"activity":"begin","elapsedS":108}
+{"ts":"2026-10-19T16:02:22.232Z","test":"M1-4 every boundary","scenario":"boundary 62","completed":61,"total":70,"activity":"crashed after journal append 62","elapsedS":109}
+{"ts":"2026-10-19T16:02:22.596Z","test":"M1-4 every boundary","scenario":"boundary 62","completed":61,"total":70,"activity":"resume finished","elapsedS":109}
+{"ts":"2026-10-19T16:02:22.923Z","test":"M1-4 every boundary","scenario":"boundary 62","completed":61,"total":70,"activity":"run after resume finished","elapsedS":110}
+{"ts":"2026-10-19T16:02:23.278Z","test":"M1-4 every boundary","scenario":"boundary 62","completed":62,"total":70,"activity":"completed","elapsedS":110}
+{"ts":"2026-10-19T16:02:23.278Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":62,"total":70,"activity":"begin","elapsedS":110}
+{"ts":"2026-10-19T16:02:23.852Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":62,"total":70,"activity":"crashed after journal append 63","elapsedS":111}
+{"ts":"2026-10-19T16:02:24.236Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":62,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":111}
+{"ts":"2026-10-19T16:02:24.537Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":62,"total":70,"activity":"resume finished","elapsedS":111}
+{"ts":"2026-10-19T16:02:24.857Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":62,"total":70,"activity":"run after resume finished","elapsedS":112}
+{"ts":"2026-10-19T16:02:25.195Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":63,"total":70,"activity":"completed","elapsedS":112}
+{"ts":"2026-10-19T16:02:25.195Z","test":"M1-4 every boundary","scenario":"boundary 64","completed":63,"total":70,"activity":"begin","elapsedS":112}
+{"ts":"2026-10-19T16:02:25.831Z","test":"M1-4 every boundary","scenario":"boundary 64","completed":63,"total":70,"activity":"crashed after journal append 64","elapsedS":113}
+{"ts":"2026-10-19T16:02:26.221Z","test":"M1-4 every boundary","scenario":"boundary 64","completed":63,"total":70,"activity":"resume finished","elapsedS":113}
+{"ts":"2026-10-19T16:02:26.625Z","test":"M1-4 every boundary","scenario":"boundary 64","completed":63,"total":70,"activity":"run after resume finished","elapsedS":113}
+{"ts":"2026-10-19T16:02:26.962Z","test":"M1-4 every boundary","scenario":"boundary 64","completed":64,"total":70,"activity":"completed","elapsedS":114}
+{"ts":"2026-10-19T16:02:26.962Z","test":"M1-4 every boundary","scenario":"boundary 65","completed":64,"total":70,"activity":"begin","elapsedS":114}
+{"ts":"2026-10-19T16:02:27.612Z","test":"M1-4 every boundary","scenario":"boundary 65","completed":64,"total":70,"activity":"crashed after journal append 65","elapsedS":114}
+{"ts":"2026-10-19T16:02:27.944Z","test":"M1-4 every boundary","scenario":"boundary 65","completed":64,"total":70,"activity":"resume finished","elapsedS":115}
+{"ts":"2026-10-19T16:02:28.264Z","test":"M1-4 every boundary","scenario":"boundary 65","completed":64,"total":70,"activity":"run after resume finished","elapsedS":115}
+{"ts":"2026-10-19T16:02:28.661Z","test":"M1-4 every boundary","scenario":"boundary 65","completed":65,"total":70,"activity":"completed","elapsedS":116}
+{"ts":"2026-10-19T16:02:28.661Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":65,"total":70,"activity":"begin","elapsedS":116}
+{"ts":"2026-10-19T16:02:29.215Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":65,"total":70,"activity":"crashed after journal append 66","elapsedS":116}
+{"ts":"2026-10-19T16:02:29.625Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":65,"total":70,"activity":"second crash during recovery at append 13 (exit 0)","elapsedS":116}
+{"ts":"2026-10-19T16:02:29.962Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":65,"total":70,"activity":"resume finished","elapsedS":117}
+{"ts":"2026-10-19T16:02:30.299Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":65,"total":70,"activity":"run after resume finished","elapsedS":117}
+{"ts":"2026-10-19T16:02:30.676Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":66,"total":70,"activity":"completed","elapsedS":118}
+{"ts":"2026-10-19T16:02:30.676Z","test":"M1-4 every boundary","scenario":"boundary 67","completed":66,"total":70,"activity":"begin","elapsedS":118}
+{"ts":"2026-10-19T16:02:31.317Z","test":"M1-4 every boundary","scenario":"boundary 67","completed":66,"total":70,"activity":"crashed after journal append 67","elapsedS":118}
+{"ts":"2026-10-19T16:02:31.714Z","test":"M1-4 every boundary","scenario":"boundary 67","completed":66,"total":70,"activity":"resume finished","elapsedS":119}
+{"ts":"2026-10-19T16:02:32.040Z","test":"M1-4 every boundary","scenario":"boundary 67","completed":66,"total":70,"activity":"run after resume finished","elapsedS":119}
+{"ts":"2026-10-19T16:02:32.349Z","test":"M1-4 every boundary","scenario":"boundary 67","completed":67,"total":70,"activity":"completed","elapsedS":119}
+{"ts":"2026-10-19T16:02:32.349Z","test":"M1-4 every boundary","scenario":"boundary 68","completed":67,"total":70,"activity":"begin","elapsedS":119}
+{"ts":"2026-10-19T16:02:33.067Z","test":"M1-4 every boundary","scenario":"boundary 68","completed":67,"total":70,"activity":"crashed after journal append 68","elapsedS":120}
+{"ts":"2026-10-19T16:02:33.429Z","test":"M1-4 every boundary","scenario":"boundary 68","completed":67,"total":70,"activity":"resume finished","elapsedS":120}
+{"ts":"2026-10-19T16:02:33.730Z","test":"M1-4 every boundary","scenario":"boundary 68","completed":67,"total":70,"activity":"run after resume finished","elapsedS":121}
+{"ts":"2026-10-19T16:02:34.059Z","test":"M1-4 every boundary","scenario":"boundary 68","completed":68,"total":70,"activity":"completed","elapsedS":121}
+{"ts":"2026-10-19T16:02:34.059Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":68,"total":70,"activity":"begin","elapsedS":121}
+{"ts":"2026-10-19T16:02:34.671Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":68,"total":70,"activity":"crashed after journal append 69","elapsedS":122}
+{"ts":"2026-10-19T16:02:35.025Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":68,"total":70,"activity":"second crash during recovery at append 4 (exit 0)","elapsedS":122}
+{"ts":"2026-10-19T16:02:35.313Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":68,"total":70,"activity":"resume finished","elapsedS":122}
+{"ts":"2026-10-19T16:02:35.712Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":68,"total":70,"activity":"run after resume finished","elapsedS":123}
+{"ts":"2026-10-19T16:02:36.181Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":69,"total":70,"activity":"completed","elapsedS":123}
+{"ts":"2026-10-19T16:02:36.181Z","test":"M1-4 every boundary","scenario":"boundary 70","completed":69,"total":70,"activity":"begin","elapsedS":123}
+{"ts":"2026-10-19T16:02:36.782Z","test":"M1-4 every boundary","scenario":"boundary 70","completed":69,"total":70,"activity":"crashed after journal append 70","elapsedS":124}
+{"ts":"2026-10-19T16:02:37.178Z","test":"M1-4 every boundary","scenario":"boundary 70","completed":69,"total":70,"activity":"resume finished","elapsedS":124}
+{"ts":"2026-10-19T16:02:37.590Z","test":"M1-4 every boundary","scenario":"boundary 70","completed":69,"total":70,"activity":"run after resume finished","elapsedS":124}
+{"ts":"2026-10-19T16:02:37.977Z","test":"M1-4 every boundary","scenario":"boundary 70","completed":70,"total":70,"activity":"completed","elapsedS":125}
+{"ts":"2026-10-19T16:02:39.491Z","test":"M1-4 random SIGKILLs","scenario":"","completed":0,"total":8,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T16:02:39.491Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:02:40.175Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":1}
+{"ts":"2026-10-19T16:02:40.497Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":1}
+{"ts":"2026-10-19T16:02:40.910Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":1}
+{"ts":"2026-10-19T16:02:41.372Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":2}
+{"ts":"2026-10-19T16:02:41.872Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"resume finished","elapsedS":2}
+{"ts":"2026-10-19T16:02:43.045Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"run after resume finished","elapsedS":4}
+{"ts":"2026-10-19T16:02:43.408Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":1,"total":8,"activity":"completed","elapsedS":4}
+{"ts":"2026-10-19T16:02:43.408Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"begin","elapsedS":4}
+{"ts":"2026-10-19T16:02:44.105Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":5}
+{"ts":"2026-10-19T16:02:44.605Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":5}
+{"ts":"2026-10-19T16:02:44.837Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":5}
+{"ts":"2026-10-19T16:02:45.274Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":6}
+{"ts":"2026-10-19T16:02:45.647Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"resume finished","elapsedS":6}
+{"ts":"2026-10-19T16:02:46.849Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"run after resume finished","elapsedS":7}
+{"ts":"2026-10-19T16:02:47.180Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":2,"total":8,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:02:47.181Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"begin","elapsedS":8}
+{"ts":"2026-10-19T16:02:47.910Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":8}
+{"ts":"2026-10-19T16:02:48.485Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":9}
+{"ts":"2026-10-19T16:02:48.922Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":9}
+{"ts":"2026-10-19T16:02:49.185Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":10}
+{"ts":"2026-10-19T16:03:19.209Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"resume finished","elapsedS":40}
+{"ts":"2026-10-19T16:03:19.939Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"run after resume finished","elapsedS":40}
+{"ts":"2026-10-19T16:03:20.263Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":3,"total":8,"activity":"completed","elapsedS":41}
+{"ts":"2026-10-19T16:03:20.263Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"begin","elapsedS":41}
+{"ts":"2026-10-19T16:03:21.039Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":42}
+{"ts":"2026-10-19T16:03:21.301Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":42}
+{"ts":"2026-10-19T16:03:21.679Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":42}
+{"ts":"2026-10-19T16:03:21.911Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":42}
+{"ts":"2026-10-19T16:03:22.243Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"resume finished","elapsedS":43}
+{"ts":"2026-10-19T16:03:23.428Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"run after resume finished","elapsedS":44}
+{"ts":"2026-10-19T16:03:23.820Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":4,"total":8,"activity":"completed","elapsedS":44}
+{"ts":"2026-10-19T16:03:23.820Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"begin","elapsedS":44}
+{"ts":"2026-10-19T16:03:24.177Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":45}
+{"ts":"2026-10-19T16:03:24.734Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":45}
+{"ts":"2026-10-19T16:03:25.221Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":46}
+{"ts":"2026-10-19T16:03:25.634Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":46}
+{"ts":"2026-10-19T16:03:54.195Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"resume finished","elapsedS":75}
+{"ts":"2026-10-19T16:03:55.585Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"run after resume finished","elapsedS":76}
+{"ts":"2026-10-19T16:03:56.011Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":5,"total":8,"activity":"completed","elapsedS":77}
+{"ts":"2026-10-19T16:03:56.011Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"begin","elapsedS":77}
+{"ts":"2026-10-19T16:03:56.297Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":77}
+{"ts":"2026-10-19T16:03:56.709Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":77}
+{"ts":"2026-10-19T16:03:57.146Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":78}
+{"ts":"2026-10-19T16:03:57.422Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":78}
+{"ts":"2026-10-19T16:03:57.752Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"resume finished","elapsedS":78}
+{"ts":"2026-10-19T16:03:59.076Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"run after resume finished","elapsedS":80}
+{"ts":"2026-10-19T16:03:59.416Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":6,"total":8,"activity":"completed","elapsedS":80}
+{"ts":"2026-10-19T16:03:59.416Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"begin","elapsedS":80}
+{"ts":"2026-10-19T16:03:59.810Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":80}
+{"ts":"2026-10-19T16:04:00.157Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":81}
+{"ts":"2026-10-19T16:04:00.669Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":81}
+{"ts":"2026-10-19T16:04:01.092Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":82}
+{"ts":"2026-10-19T16:04:01.443Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"resume finished","elapsedS":82}
+{"ts":"2026-10-19T16:04:02.871Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"run after resume finished","elapsedS":83}
+{"ts":"2026-10-19T16:04:03.243Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":7,"total":8,"activity":"completed","elapsedS":84}
+{"ts":"2026-10-19T16:04:03.243Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"begin","elapsedS":84}
+{"ts":"2026-10-19T16:04:03.744Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":84}
+{"ts":"2026-10-19T16:04:04.121Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":85}
+{"ts":"2026-10-19T16:04:04.589Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":85}
+{"ts":"2026-10-19T16:04:04.805Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":85}
+{"ts":"2026-10-19T16:04:05.179Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"resume finished","elapsedS":86}
+{"ts":"2026-10-19T16:04:06.466Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"run after resume finished","elapsedS":87}
+{"ts":"2026-10-19T16:04:06.818Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":8,"total":8,"activity":"completed","elapsedS":87}
+{"ts":"2026-10-19T16:04:07.305Z","test":"M1-4 escalation boundaries","scenario":"","completed":0,"total":37,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T16:04:07.305Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:04:07.637Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"crashed after journal append 1","elapsedS":0}
+{"ts":"2026-10-19T16:04:07.985Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"resume finished","elapsedS":1}
+{"ts":"2026-10-19T16:04:08.370Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"run after resume finished","elapsedS":1}
+{"ts":"2026-10-19T16:04:08.694Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":1,"total":37,"activity":"completed","elapsedS":1}
+{"ts":"2026-10-19T16:04:08.694Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"begin","elapsedS":1}
+{"ts":"2026-10-19T16:04:09.062Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"crashed after journal append 2","elapsedS":2}
+{"ts":"2026-10-19T16:04:09.373Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"resume finished","elapsedS":2}
+{"ts":"2026-10-19T16:04:09.772Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"run after resume finished","elapsedS":2}
+{"ts":"2026-10-19T16:04:10.121Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":2,"total":37,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:04:10.121Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:04:10.527Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"crashed after journal append 3","elapsedS":3}
+{"ts":"2026-10-19T16:04:10.895Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"resume finished","elapsedS":4}
+{"ts":"2026-10-19T16:04:11.441Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"run after resume finished","elapsedS":4}
+{"ts":"2026-10-19T16:04:11.848Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":3,"total":37,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:04:11.848Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:04:12.299Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"crashed after journal append 4","elapsedS":5}
+{"ts":"2026-10-19T16:04:12.687Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"resume finished","elapsedS":5}
+{"ts":"2026-10-19T16:04:13.139Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"run after resume finished","elapsedS":6}
+{"ts":"2026-10-19T16:04:13.558Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":4,"total":37,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:04:13.558Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:04:13.949Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"crashed after journal append 5","elapsedS":7}
+{"ts":"2026-10-19T16:04:14.295Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"resume finished","elapsedS":7}
+{"ts":"2026-10-19T16:04:14.776Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"run after resume finished","elapsedS":7}
+{"ts":"2026-10-19T16:04:15.165Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":5,"total":37,"activity":"completed","elapsedS":8}
+{"ts":"2026-10-19T16:04:15.165Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 6","completed":5,"total":37,"activity":"begin","elapsedS":8}
+{"ts":"2026-10-19T16:04:15.532Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 6","completed":5,"total":37,"activity":"crashed after journal append 6","elapsedS":8}
+{"ts":"2026-10-19T16:04:15.988Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 6","completed":5,"total":37,"activity":"resume finished","elapsedS":9}
+{"ts":"2026-10-19T16:04:16.541Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 6","completed":5,"total":37,"activity":"run after resume finished","elapsedS":9}
+{"ts":"2026-10-19T16:04:16.904Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 6","completed":6,"total":37,"activity":"completed","elapsedS":10}
+{"ts":"2026-10-19T16:04:16.904Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 7","completed":6,"total":37,"activity":"begin","elapsedS":10}
+{"ts":"2026-10-19T16:04:17.315Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 7","completed":6,"total":37,"activity":"crashed after journal append 7","elapsedS":10}
+{"ts":"2026-10-19T16:04:17.676Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 7","completed":6,"total":37,"activity":"resume finished","elapsedS":10}
+{"ts":"2026-10-19T16:04:18.111Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 7","completed":6,"total":37,"activity":"run after resume finished","elapsedS":11}
+{"ts":"2026-10-19T16:04:18.518Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 7","completed":7,"total":37,"activity":"completed","elapsedS":11}
+{"ts":"2026-10-19T16:04:18.518Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 8","completed":7,"total":37,"activity":"begin","elapsedS":11}
+{"ts":"2026-10-19T16:04:18.887Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 8","completed":7,"total":37,"activity":"crashed after journal append 8","elapsedS":12}
+{"ts":"2026-10-19T16:04:19.203Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 8","completed":7,"total":37,"activity":"resume finished","elapsedS":12}
+{"ts":"2026-10-19T16:04:19.633Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 8","completed":7,"total":37,"activity":"run after resume finished","elapsedS":12}
+{"ts":"2026-10-19T16:04:19.945Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 8","completed":8,"total":37,"activity":"completed","elapsedS":13}
+{"ts":"2026-10-19T16:04:19.945Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 9","completed":8,"total":37,"activity":"begin","elapsedS":13}
+{"ts":"2026-10-19T16:04:20.319Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 9","completed":8,"total":37,"activity":"crashed after journal append 9","elapsedS":13}
+{"ts":"2026-10-19T16:04:20.683Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 9","completed":8,"total":37,"activity":"resume finished","elapsedS":13}
+{"ts":"2026-10-19T16:04:21.092Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 9","completed":8,"total":37,"activity":"run after resume finished","elapsedS":14}
+{"ts":"2026-10-19T16:04:21.468Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 9","completed":9,"total":37,"activity":"completed","elapsedS":14}
+{"ts":"2026-10-19T16:04:21.469Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 10","completed":9,"total":37,"activity":"begin","elapsedS":14}
+{"ts":"2026-10-19T16:04:21.898Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 10","completed":9,"total":37,"activity":"crashed after journal append 10","elapsedS":15}
+{"ts":"2026-10-19T16:04:22.182Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 10","completed":9,"total":37,"activity":"resume finished","elapsedS":15}
+{"ts":"2026-10-19T16:04:22.572Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 10","completed":9,"total":37,"activity":"run after resume finished","elapsedS":15}
+{"ts":"2026-10-19T16:04:22.911Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 10","completed":10,"total":37,"activity":"completed","elapsedS":16}
+{"ts":"2026-10-19T16:04:22.911Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 11","completed":10,"total":37,"activity":"begin","elapsedS":16}
+{"ts":"2026-10-19T16:04:23.324Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 11","completed":10,"total":37,"activity":"crashed after journal append 11","elapsedS":16}
+{"ts":"2026-10-19T16:04:23.724Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 11","completed":10,"total":37,"activity":"resume finished","elapsedS":16}
+{"ts":"2026-10-19T16:04:24.232Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 11","completed":10,"total":37,"activity":"run after resume finished","elapsedS":17}
+{"ts":"2026-10-19T16:04:24.633Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 11","completed":11,"total":37,"activity":"completed","elapsedS":17}
+{"ts":"2026-10-19T16:04:24.633Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 12","completed":11,"total":37,"activity":"begin","elapsedS":17}
+{"ts":"2026-10-19T16:04:25.058Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 12","completed":11,"total":37,"activity":"crashed after journal append 12","elapsedS":18}
+{"ts":"2026-10-19T16:04:25.432Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 12","completed":11,"total":37,"activity":"resume finished","elapsedS":18}
+{"ts":"2026-10-19T16:04:25.870Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 12","completed":11,"total":37,"activity":"run after resume finished","elapsedS":19}
+{"ts":"2026-10-19T16:04:26.231Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 12","completed":12,"total":37,"activity":"completed","elapsedS":19}
+{"ts":"2026-10-19T16:04:26.231Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 13","completed":12,"total":37,"activity":"begin","elapsedS":19}
+{"ts":"2026-10-19T16:04:26.662Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 13","completed":12,"total":37,"activity":"crashed after journal append 13","elapsedS":19}
+{"ts":"2026-10-19T16:04:27.038Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 13","completed":12,"total":37,"activity":"resume finished","elapsedS":20}
+{"ts":"2026-10-19T16:04:27.501Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 13","completed":12,"total":37,"activity":"run after resume finished","elapsedS":20}
+{"ts":"2026-10-19T16:04:27.828Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 13","completed":13,"total":37,"activity":"completed","elapsedS":21}
+{"ts":"2026-10-19T16:04:27.829Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 14","completed":13,"total":37,"activity":"begin","elapsedS":21}
+{"ts":"2026-10-19T16:04:28.201Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 14","completed":13,"total":37,"activity":"crashed after journal append 14","elapsedS":21}
+{"ts":"2026-10-19T16:04:28.540Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 14","completed":13,"total":37,"activity":"resume finished","elapsedS":21}
+{"ts":"2026-10-19T16:04:29.012Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 14","completed":13,"total":37,"activity":"run after resume finished","elapsedS":22}
+{"ts":"2026-10-19T16:04:29.343Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 14","completed":14,"total":37,"activity":"completed","elapsedS":22}
+{"ts":"2026-10-19T16:04:29.343Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 15","completed":14,"total":37,"activity":"begin","elapsedS":22}
+{"ts":"2026-10-19T16:04:29.793Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 15","completed":14,"total":37,"activity":"crashed after journal append 15","elapsedS":22}
+{"ts":"2026-10-19T16:04:30.213Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 15","completed":14,"total":37,"activity":"resume finished","elapsedS":23}
+{"ts":"2026-10-19T16:04:30.643Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 15","completed":14,"total":37,"activity":"run after resume finished","elapsedS":23}
+{"ts":"2026-10-19T16:04:31.034Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 15","completed":15,"total":37,"activity":"completed","elapsedS":24}
+{"ts":"2026-10-19T16:04:31.034Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 16","completed":15,"total":37,"activity":"begin","elapsedS":24}
+{"ts":"2026-10-19T16:04:31.465Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 16","completed":15,"total":37,"activity":"crashed after journal append 16","elapsedS":24}
+{"ts":"2026-10-19T16:04:31.749Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 16","completed":15,"total":37,"activity":"resume finished","elapsedS":24}
+{"ts":"2026-10-19T16:04:32.131Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 16","completed":15,"total":37,"activity":"run after resume finished","elapsedS":25}
+{"ts":"2026-10-19T16:04:32.473Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 16","completed":16,"total":37,"activity":"completed","elapsedS":25}
+{"ts":"2026-10-19T16:04:32.473Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 17","completed":16,"total":37,"activity":"begin","elapsedS":25}
+{"ts":"2026-10-19T16:04:32.804Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 17","completed":16,"total":37,"activity":"crashed after journal append 17","elapsedS":25}
+{"ts":"2026-10-19T16:04:33.150Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 17","completed":16,"total":37,"activity":"resume finished","elapsedS":26}
+{"ts":"2026-10-19T16:04:33.490Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 17","completed":16,"total":37,"activity":"run after resume finished","elapsedS":26}
+{"ts":"2026-10-19T16:04:33.828Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 17","completed":17,"total":37,"activity":"completed","elapsedS":27}
+{"ts":"2026-10-19T16:04:33.828Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 18","completed":17,"total":37,"activity":"begin","elapsedS":27}
+{"ts":"2026-10-19T16:04:34.279Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 18","completed":17,"total":37,"activity":"crashed after journal append 18","elapsedS":27}
+{"ts":"2026-10-19T16:04:34.608Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 18","completed":17,"total":37,"activity":"resume finished","elapsedS":27}
+{"ts":"2026-10-19T16:04:34.942Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 18","completed":17,"total":37,"activity":"run after resume finished","elapsedS":28}
+{"ts":"2026-10-19T16:04:35.277Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 18","completed":18,"total":37,"activity":"completed","elapsedS":28}
+{"ts":"2026-10-19T16:04:35.277Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 19","completed":18,"total":37,"activity":"begin","elapsedS":28}
+{"ts":"2026-10-19T16:04:35.712Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 19","completed":18,"total":37,"activity":"crashed after journal append 19","elapsedS":28}
+{"ts":"2026-10-19T16:04:36.026Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 19","completed":18,"total":37,"activity":"resume finished","elapsedS":29}
+{"ts":"2026-10-19T16:04:36.392Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 19","completed":18,"total":37,"activity":"run after resume finished","elapsedS":29}
+{"ts":"2026-10-19T16:04:36.723Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 19","completed":19,"total":37,"activity":"completed","elapsedS":29}
+{"ts":"2026-10-19T16:04:36.723Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 20","completed":19,"total":37,"activity":"begin","elapsedS":29}
+{"ts":"2026-10-19T16:04:37.087Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 20","completed":19,"total":37,"activity":"crashed after journal append 20","elapsedS":30}
+{"ts":"2026-10-19T16:04:37.377Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 20","completed":19,"total":37,"activity":"resume finished","elapsedS":30}
+{"ts":"2026-10-19T16:04:37.739Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 20","completed":19,"total":37,"activity":"run after resume finished","elapsedS":30}
+{"ts":"2026-10-19T16:04:38.041Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 20","completed":20,"total":37,"activity":"completed","elapsedS":31}
+{"ts":"2026-10-19T16:04:38.042Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 21","completed":20,"total":37,"activity":"begin","elapsedS":31}
+{"ts":"2026-10-19T16:04:38.425Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 21","completed":20,"total":37,"activity":"crashed after journal append 21","elapsedS":31}
+{"ts":"2026-10-19T16:04:38.759Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 21","completed":20,"total":37,"activity":"resume finished","elapsedS":31}
+{"ts":"2026-10-19T16:04:39.112Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 21","completed":20,"total":37,"activity":"run after resume finished","elapsedS":32}
+{"ts":"2026-10-19T16:04:39.494Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 21","completed":21,"total":37,"activity":"completed","elapsedS":32}
+{"ts":"2026-10-19T16:04:39.494Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 22","completed":21,"total":37,"activity":"begin","elapsedS":32}
+{"ts":"2026-10-19T16:04:39.845Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 22","completed":21,"total":37,"activity":"crashed after journal append 22","elapsedS":33}
+{"ts":"2026-10-19T16:04:40.267Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 22","completed":21,"total":37,"activity":"resume finished","elapsedS":33}
+{"ts":"2026-10-19T16:04:40.692Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 22","completed":21,"total":37,"activity":"run after resume finished","elapsedS":33}
+{"ts":"2026-10-19T16:04:41.086Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 22","completed":22,"total":37,"activity":"completed","elapsedS":34}
+{"ts":"2026-10-19T16:04:41.086Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 23","completed":22,"total":37,"activity":"begin","elapsedS":34}
+{"ts":"2026-10-19T16:04:41.628Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 23","completed":22,"total":37,"activity":"crashed after journal append 23","elapsedS":34}
+{"ts":"2026-10-19T16:04:42.001Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 23","completed":22,"total":37,"activity":"resume finished","elapsedS":35}
+{"ts":"2026-10-19T16:04:42.472Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 23","completed":22,"total":37,"activity":"run after resume finished","elapsedS":35}
+{"ts":"2026-10-19T16:04:42.796Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 23","completed":23,"total":37,"activity":"completed","elapsedS":35}
+{"ts":"2026-10-19T16:04:42.796Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 24","completed":23,"total":37,"activity":"begin","elapsedS":35}
+{"ts":"2026-10-19T16:04:43.259Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 24","completed":23,"total":37,"activity":"crashed after journal append 24","elapsedS":36}
+{"ts":"2026-10-19T16:04:43.632Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 24","completed":23,"total":37,"activity":"resume finished","elapsedS":36}
+{"ts":"2026-10-19T16:04:43.987Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 24","completed":23,"total":37,"activity":"run after resume finished","elapsedS":37}
+{"ts":"2026-10-19T16:04:44.291Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 24","completed":24,"total":37,"activity":"completed","elapsedS":37}
+{"ts":"2026-10-19T16:04:44.291Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 25","completed":24,"total":37,"activity":"begin","elapsedS":37}
+{"ts":"2026-10-19T16:04:44.656Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 25","completed":24,"total":37,"activity":"crashed after journal append 25","elapsedS":37}
+{"ts":"2026-10-19T16:04:44.995Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 25","completed":24,"total":37,"activity":"resume finished","elapsedS":38}
+{"ts":"2026-10-19T16:04:45.393Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 25","completed":24,"total":37,"activity":"run after resume finished","elapsedS":38}
+{"ts":"2026-10-19T16:04:45.728Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 25","completed":25,"total":37,"activity":"completed","elapsedS":38}
+{"ts":"2026-10-19T16:04:45.728Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 26","completed":25,"total":37,"activity":"begin","elapsedS":38}
+{"ts":"2026-10-19T16:04:46.106Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 26","completed":25,"total":37,"activity":"crashed after journal append 26","elapsedS":39}
+{"ts":"2026-10-19T16:04:46.443Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 26","completed":25,"total":37,"activity":"resume finished","elapsedS":39}
+{"ts":"2026-10-19T16:04:46.778Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 26","completed":25,"total":37,"activity":"run after resume finished","elapsedS":39}
+{"ts":"2026-10-19T16:04:47.132Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 26","completed":26,"total":37,"activity":"completed","elapsedS":40}
+{"ts":"2026-10-19T16:04:47.132Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 27","completed":26,"total":37,"activity":"begin","elapsedS":40}
+{"ts":"2026-10-19T16:04:47.586Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 27","completed":26,"total":37,"activity":"crashed after journal append 27","elapsedS":40}
+{"ts":"2026-10-19T16:04:47.960Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 27","completed":26,"total":37,"activity":"resume finished","elapsedS":41}
+{"ts":"2026-10-19T16:04:48.329Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 27","completed":26,"total":37,"activity":"run after resume finished","elapsedS":41}
+{"ts":"2026-10-19T16:04:48.732Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 27","completed":27,"total":37,"activity":"completed","elapsedS":41}
+{"ts":"2026-10-19T16:04:48.732Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 28","completed":27,"total":37,"activity":"begin","elapsedS":41}
+{"ts":"2026-10-19T16:04:49.163Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 28","completed":27,"total":37,"activity":"crashed after journal append 28","elapsedS":42}
+{"ts":"2026-10-19T16:04:49.502Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 28","completed":27,"total":37,"activity":"resume finished","elapsedS":42}
+{"ts":"2026-10-19T16:04:49.917Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 28","completed":27,"total":37,"activity":"run after resume finished","elapsedS":43}
+{"ts":"2026-10-19T16:04:50.305Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 28","completed":28,"total":37,"activity":"completed","elapsedS":43}
+{"ts":"2026-10-19T16:04:50.306Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 29","completed":28,"total":37,"activity":"begin","elapsedS":43}
+{"ts":"2026-10-19T16:04:50.752Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 29","completed":28,"total":37,"activity":"crashed after journal append 29","elapsedS":43}
+{"ts":"2026-10-19T16:04:51.085Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 29","completed":28,"total":37,"activity":"resume finished","elapsedS":44}
+{"ts":"2026-10-19T16:04:51.444Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 29","completed":28,"total":37,"activity":"run after resume finished","elapsedS":44}
+{"ts":"2026-10-19T16:04:51.783Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 29","completed":29,"total":37,"activity":"completed","elapsedS":44}
+{"ts":"2026-10-19T16:04:51.783Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 30","completed":29,"total":37,"activity":"begin","elapsedS":44}
+{"ts":"2026-10-19T16:04:52.188Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 30","completed":29,"total":37,"activity":"crashed after journal append 30","elapsedS":45}
+{"ts":"2026-10-19T16:04:52.576Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 30","completed":29,"total":37,"activity":"resume finished","elapsedS":45}
+{"ts":"2026-10-19T16:04:52.891Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 30","completed":29,"total":37,"activity":"run after resume finished","elapsedS":46}
+{"ts":"2026-10-19T16:04:53.193Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 30","completed":30,"total":37,"activity":"completed","elapsedS":46}
+{"ts":"2026-10-19T16:04:53.193Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 31","completed":30,"total":37,"activity":"begin","elapsedS":46}
+{"ts":"2026-10-19T16:04:53.604Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 31","completed":30,"total":37,"activity":"crashed after journal append 31","elapsedS":46}
+{"ts":"2026-10-19T16:04:53.988Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 31","completed":30,"total":37,"activity":"resume finished","elapsedS":47}
+{"ts":"2026-10-19T16:04:54.353Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 31","completed":30,"total":37,"activity":"run after resume finished","elapsedS":47}
+{"ts":"2026-10-19T16:04:54.726Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 31","completed":31,"total":37,"activity":"completed","elapsedS":47}
+{"ts":"2026-10-19T16:04:54.727Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 32","completed":31,"total":37,"activity":"begin","elapsedS":47}
+{"ts":"2026-10-19T16:04:55.172Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 32","completed":31,"total":37,"activity":"crashed after journal append 32","elapsedS":48}
+{"ts":"2026-10-19T16:04:55.504Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 32","completed":31,"total":37,"activity":"resume finished","elapsedS":48}
+{"ts":"2026-10-19T16:04:55.820Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 32","completed":31,"total":37,"activity":"run after resume finished","elapsedS":49}
+{"ts":"2026-10-19T16:04:56.176Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 32","completed":32,"total":37,"activity":"completed","elapsedS":49}
+{"ts":"2026-10-19T16:04:56.176Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 33","completed":32,"total":37,"activity":"begin","elapsedS":49}
+{"ts":"2026-10-19T16:04:56.627Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 33","completed":32,"total":37,"activity":"crashed after journal append 33","elapsedS":49}
+{"ts":"2026-10-19T16:04:57.033Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 33","completed":32,"total":37,"activity":"resume finished","elapsedS":50}
+{"ts":"2026-10-19T16:04:57.332Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 33","completed":32,"total":37,"activity":"run after resume finished","elapsedS":50}
+{"ts":"2026-10-19T16:04:57.679Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 33","completed":33,"total":37,"activity":"completed","elapsedS":50}
+{"ts":"2026-10-19T16:04:57.679Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 34","completed":33,"total":37,"activity":"begin","elapsedS":50}
+{"ts":"2026-10-19T16:04:58.061Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 34","completed":33,"total":37,"activity":"crashed after journal append 34","elapsedS":51}
+{"ts":"2026-10-19T16:04:58.418Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 34","completed":33,"total":37,"activity":"resume finished","elapsedS":51}
+{"ts":"2026-10-19T16:04:58.707Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 34","completed":33,"total":37,"activity":"run after resume finished","elapsedS":51}
+{"ts":"2026-10-19T16:04:59.012Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 34","completed":34,"total":37,"activity":"completed","elapsedS":52}
+{"ts":"2026-10-19T16:04:59.012Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 35","completed":34,"total":37,"activity":"begin","elapsedS":52}
+{"ts":"2026-10-19T16:04:59.406Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 35","completed":34,"total":37,"activity":"crashed after journal append 35","elapsedS":52}
+{"ts":"2026-10-19T16:04:59.733Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 35","completed":34,"total":37,"activity":"resume finished","elapsedS":52}
+{"ts":"2026-10-19T16:05:00.026Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 35","completed":34,"total":37,"activity":"run after resume finished","elapsedS":53}
+{"ts":"2026-10-19T16:05:00.334Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 35","completed":35,"total":37,"activity":"completed","elapsedS":53}
+{"ts":"2026-10-19T16:05:00.334Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 36","completed":35,"total":37,"activity":"begin","elapsedS":53}
+{"ts":"2026-10-19T16:05:00.806Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 36","completed":35,"total":37,"activity":"crashed after journal append 36","elapsedS":54}
+{"ts":"2026-10-19T16:05:01.102Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 36","completed":35,"total":37,"activity":"resume finished","elapsedS":54}
+{"ts":"2026-10-19T16:05:01.448Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 36","completed":35,"total":37,"activity":"run after resume finished","elapsedS":54}
+{"ts":"2026-10-19T16:05:01.798Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 36","completed":36,"total":37,"activity":"completed","elapsedS":54}
+{"ts":"2026-10-19T16:05:01.798Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 37","completed":36,"total":37,"activity":"begin","elapsedS":54}
+{"ts":"2026-10-19T16:05:02.252Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 37","completed":36,"total":37,"activity":"crashed after journal append 37","elapsedS":55}
+{"ts":"2026-10-19T16:05:02.575Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 37","completed":36,"total":37,"activity":"resume finished","elapsedS":55}
+{"ts":"2026-10-19T16:05:02.858Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 37","completed":36,"total":37,"activity":"run after resume finished","elapsedS":56}
+{"ts":"2026-10-19T16:05:03.155Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 37","completed":37,"total":37,"activity":"completed","elapsedS":56}
+{"ts":"2026-10-19T16:05:16.778Z","test":"M1-3 fake claim race","scenario":"","completed":0,"total":100,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T16:05:16.779Z","test":"M1-3 fake claim race","scenario":"round 1","completed":0,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:05:16.786Z","test":"M1-3 fake claim race","scenario":"round 1","completed":0,"total":100,"activity":"round 1 released to 20 workers","elapsedS":0}
+{"ts":"2026-10-19T16:05:18.456Z","test":"M1-4 every boundary","scenario":"","completed":0,"total":70,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T16:05:18.456Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:05:18.781Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"crashed after journal append 1","elapsedS":0}
+{"ts":"2026-10-19T16:05:19.063Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"resume finished","elapsedS":1}
+{"ts":"2026-10-19T16:05:19.663Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"run after resume finished","elapsedS":1}
+{"ts":"2026-10-19T16:05:20.004Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":1,"total":70,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:05:20.004Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:05:20.396Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"crashed after journal append 2","elapsedS":2}
+{"ts":"2026-10-19T16:05:20.729Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"resume finished","elapsedS":2}
+{"ts":"2026-10-19T16:05:21.366Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"run after resume finished","elapsedS":3}
+{"ts":"2026-10-19T16:05:21.725Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":2,"total":70,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:05:21.725Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:05:22.136Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"crashed after journal append 3","elapsedS":4}
+{"ts":"2026-10-19T16:05:22.472Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":4}
+{"ts":"2026-10-19T16:05:22.841Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"resume finished","elapsedS":4}
+{"ts":"2026-10-19T16:05:23.351Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"run after resume finished","elapsedS":5}
+{"ts":"2026-10-19T16:05:23.694Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":3,"total":70,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:05:23.694Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:05:24.039Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"crashed after journal append 4","elapsedS":6}
+{"ts":"2026-10-19T16:05:24.389Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"resume finished","elapsedS":6}
+{"ts":"2026-10-19T16:05:25.029Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"run after resume finished","elapsedS":7}
+{"ts":"2026-10-19T16:05:27.046Z","test":"M1-4 random SIGKILLs","scenario":"","completed":0,"total":8,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T16:05:27.046Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:05:27.783Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":1}
+{"ts":"2026-10-19T16:05:28.116Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":1}
+{"ts":"2026-10-19T16:05:28.538Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":1}
+{"ts":"2026-10-19T16:05:29.022Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":2}
+{"ts":"2026-10-19T16:05:58.137Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"resume finished","elapsedS":31}
+{"ts":"2026-10-19T16:05:59.328Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"run after resume finished","elapsedS":32}
+{"ts":"2026-10-19T16:05:59.754Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":1,"total":8,"activity":"completed","elapsedS":33}
+{"ts":"2026-10-19T16:05:59.754Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"begin","elapsedS":33}
+{"ts":"2026-10-19T16:06:00.492Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":33}
+{"ts":"2026-10-19T16:06:01.019Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":34}
+{"ts":"2026-10-19T16:06:01.252Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":34}
+{"ts":"2026-10-19T16:06:01.702Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":35}
+{"ts":"2026-10-19T16:06:02.088Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"resume finished","elapsedS":35}
+{"ts":"2026-10-19T16:06:03.192Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"run after resume finished","elapsedS":36}
+{"ts":"2026-10-19T16:06:03.602Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":2,"total":8,"activity":"completed","elapsedS":37}
+{"ts":"2026-10-19T16:06:03.602Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"begin","elapsedS":37}
+{"ts":"2026-10-19T16:06:04.382Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":37}
+{"ts":"2026-10-19T16:06:04.993Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":38}
+{"ts":"2026-10-19T16:06:05.467Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":38}
+{"ts":"2026-10-19T16:06:05.743Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":39}
+{"ts":"2026-10-19T16:06:06.112Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"resume finished","elapsedS":39}
+{"ts":"2026-10-19T16:06:06.892Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"run after resume finished","elapsedS":40}
+{"ts":"2026-10-19T16:06:07.318Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":3,"total":8,"activity":"completed","elapsedS":40}
+{"ts":"2026-10-19T16:06:07.318Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"begin","elapsedS":40}
+{"ts":"2026-10-19T16:06:08.156Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":41}
+{"ts":"2026-10-19T16:06:08.425Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":41}
+{"ts":"2026-10-19T16:06:08.822Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":42}
+{"ts":"2026-10-19T16:06:09.063Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":42}
+{"ts":"2026-10-19T16:06:09.450Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"resume finished","elapsedS":42}
+{"ts":"2026-10-19T16:06:10.342Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"run after resume finished","elapsedS":43}
+{"ts":"2026-10-19T16:06:10.728Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":4,"total":8,"activity":"completed","elapsedS":44}
+{"ts":"2026-10-19T16:06:10.728Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"begin","elapsedS":44}
+{"ts":"2026-10-19T16:06:11.090Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":44}
+{"ts":"2026-10-19T16:06:11.678Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":45}
+{"ts":"2026-10-19T16:06:12.202Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":45}
+{"ts":"2026-10-19T16:06:12.638Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":46}
+{"ts":"2026-10-19T16:06:13.067Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"resume finished","elapsedS":46}
+{"ts":"2026-10-19T16:06:14.281Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"run after resume finished","elapsedS":47}
+{"ts":"2026-10-19T16:06:14.677Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":5,"total":8,"activity":"completed","elapsedS":48}
+{"ts":"2026-10-19T16:06:14.677Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"begin","elapsedS":48}
+{"ts":"2026-10-19T16:06:14.962Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":48}
+{"ts":"2026-10-19T16:06:15.379Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":48}
+{"ts":"2026-10-19T16:06:15.840Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":49}
+{"ts":"2026-10-19T16:06:16.126Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":49}
+{"ts":"2026-10-19T16:06:16.494Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"resume finished","elapsedS":49}
+{"ts":"2026-10-19T16:06:17.666Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"run after resume finished","elapsedS":51}
+{"ts":"2026-10-19T16:06:17.999Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":6,"total":8,"activity":"completed","elapsedS":51}
+{"ts":"2026-10-19T16:06:18.000Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"begin","elapsedS":51}
+{"ts":"2026-10-19T16:06:18.414Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":51}
+{"ts":"2026-10-19T16:06:18.777Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":52}
+{"ts":"2026-10-19T16:06:19.307Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":52}
+{"ts":"2026-10-19T16:06:19.747Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":53}
+{"ts":"2026-10-19T16:06:20.079Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"resume finished","elapsedS":53}
+{"ts":"2026-10-19T16:06:21.190Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"run after resume finished","elapsedS":54}
+{"ts":"2026-10-19T16:06:21.542Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":7,"total":8,"activity":"completed","elapsedS":54}
+{"ts":"2026-10-19T16:06:21.542Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"begin","elapsedS":54}
+{"ts":"2026-10-19T16:06:22.079Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":55}
+{"ts":"2026-10-19T16:06:22.475Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":55}
+{"ts":"2026-10-19T16:06:22.969Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":56}
+{"ts":"2026-10-19T16:06:23.190Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":56}
+{"ts":"2026-10-19T16:06:23.556Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"resume finished","elapsedS":57}
+{"ts":"2026-10-19T16:06:24.739Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"run after resume finished","elapsedS":58}
+{"ts":"2026-10-19T16:06:25.055Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":8,"total":8,"activity":"completed","elapsedS":58}
+{"ts":"2026-10-19T16:06:25.604Z","test":"M1-4 escalation boundaries","scenario":"","completed":0,"total":37,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T16:06:25.604Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T16:06:25.986Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"crashed after journal append 1","elapsedS":0}
+{"ts":"2026-10-19T16:06:26.292Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"resume finished","elapsedS":1}
+{"ts":"2026-10-19T16:06:26.806Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"run after resume finished","elapsedS":1}
+{"ts":"2026-10-19T16:06:27.192Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":1,"total":37,"activity":"completed","elapsedS":2}
+{"ts":"2026-10-19T16:06:27.192Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"begin","elapsedS":2}
+{"ts":"2026-10-19T16:06:27.614Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"crashed after journal append 2","elapsedS":2}
+{"ts":"2026-10-19T16:06:27.919Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"resume finished","elapsedS":2}
+{"ts":"2026-10-19T16:06:28.358Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"run after resume finished","elapsedS":3}
+{"ts":"2026-10-19T16:06:28.709Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":2,"total":37,"activity":"completed","elapsedS":3}
+{"ts":"2026-10-19T16:06:28.709Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"begin","elapsedS":3}
+{"ts":"2026-10-19T16:06:29.073Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"crashed after journal append 3","elapsedS":3}
+{"ts":"2026-10-19T16:06:29.363Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"resume finished","elapsedS":4}
+{"ts":"2026-10-19T16:06:29.743Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"run after resume finished","elapsedS":4}
+{"ts":"2026-10-19T16:06:30.118Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":3,"total":37,"activity":"completed","elapsedS":5}
+{"ts":"2026-10-19T16:06:30.118Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"begin","elapsedS":5}
+{"ts":"2026-10-19T16:06:30.469Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"crashed after journal append 4","elapsedS":5}
+{"ts":"2026-10-19T16:06:30.781Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"resume finished","elapsedS":5}
+{"ts":"2026-10-19T16:06:31.263Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"run after resume finished","elapsedS":6}
+{"ts":"2026-10-19T16:06:31.589Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":4,"total":37,"activity":"completed","elapsedS":6}
+{"ts":"2026-10-19T16:06:31.589Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"begin","elapsedS":6}
+{"ts":"2026-10-19T16:06:31.996Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"crashed after journal append 5","elapsedS":6}
+{"ts":"2026-10-19T16:06:32.351Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"resume finished","elapsedS":7}
+{"ts":"2026-10-19T16:06:32.757Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"run after resume finished","elapsedS":7}
