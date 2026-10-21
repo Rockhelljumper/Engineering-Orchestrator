@@ -1,0 +1,8 @@
+# Summary of final/beads/m1-6-strace.log
+# The full log (2460699 bytes, SHA-256 b8ef6dc7bd8b17f45afe46103930ca845c4d570eff456b5e17855d0a9d30f522) is archived at commit 605decf6128942da4706b0ece0a5d97a329ed50c:
+# https://github.com/Rockhelljumper/Engineering-Orchestrator/blob/605decf6128942da4706b0ece0a5d97a329ed50c/docs/milestones/M1-evidence/final/beads/m1-6-strace.log
+lines: 29763
+first line: 20804 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=20804, si_uid=0} ---
+connect/sendto/sendmsg lines: 0; of them to AF_INET/AF_INET6: 0
+syscall lines by name: none
+other lines (signals, exits): 29763

@@ -1,0 +1,8 @@
+# Summary of final/beads/m1-6-strace-beads.log
+# The full log (3877087 bytes, SHA-256 1afcc42bcb9b2def52e350c9a0a54f7736bc0a71d9e1116299bdba78ada78521) is archived at commit 605decf6128942da4706b0ece0a5d97a329ed50c:
+# https://github.com/Rockhelljumper/Engineering-Orchestrator/blob/605decf6128942da4706b0ece0a5d97a329ed50c/docs/milestones/M1-evidence/final/beads/m1-6-strace-beads.log
+lines: 47322
+first line: bd processes traced: 261
+connect/sendto/sendmsg lines: 0; of them to AF_INET/AF_INET6: 0
+syscall lines by name: none
+other lines (signals, exits): 47322

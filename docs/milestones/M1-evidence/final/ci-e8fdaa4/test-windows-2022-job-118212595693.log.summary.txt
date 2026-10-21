@@ -1,0 +1,27 @@
+# Summary of final/ci-e8fdaa4/test-windows-2022-job-118212595693.log
+# The full log (271411 bytes, SHA-256 a17c707e70b7727b4ddfcec1672a606aadafb1895ecf37ee62fbba6dfbbc9619) is archived at commit 605decf6128942da4706b0ece0a5d97a329ed50c:
+# https://github.com/Rockhelljumper/Engineering-Orchestrator/blob/605decf6128942da4706b0ece0a5d97a329ed50c/docs/milestones/M1-evidence/final/ci-e8fdaa4/test-windows-2022-job-118212595693.log
+lines: 2152
+key lines (timestamps and ANSI codes removed):
+  HEAD is now at 69ed2c5 Merge e8fdaa45e31dad83325b0535cbafd19f0877af6f into 90ceb6cbe9bb0774f477351f6eb78d71ffb24cd0
+  # tests 97
+  # suites 0
+  # pass 96
+  # fail 0
+  # cancelled 0
+  # skipped 1
+  # todo 0
+  # tests 69
+  # suites 2
+  # pass 48
+  # fail 0
+  # cancelled 0
+  # skipped 21
+  # todo 0
+  # tests 3
+  # suites 0
+  # pass 3
+  # fail 0
+  # cancelled 0
+  # skipped 0
+  # todo 0
