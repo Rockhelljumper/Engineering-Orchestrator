@@ -1,0 +1,475 @@
+TAP version 13
+# Subtest: M1-7: the bd binary is the pinned build, and any other binary is refused
+ok 1 - M1-7: the bd binary is the pinned build, and any other binary is refused
+  ---
+  duration_ms: 4220.260404
+  type: 'test'
+  ...
+# Subtest: M1-7: every bd spawn of a full controller run gets the metrics opt-out and a scrubbed environment
+ok 2 - M1-7: every bd spawn of a full controller run gets the metrics opt-out and a scrubbed environment
+  ---
+  duration_ms: 80638.490544
+  type: 'test'
+  ...
+# Subtest: M1-7: the environment the bd process actually receives (wrapper records it, then runs the pinned bd)
+ok 3 - M1-7: the environment the bd process actually receives (wrapper records it, then runs the pinned bd)
+  ---
+  duration_ms: 6693.216651
+  type: 'test'
+  ...
+# Subtest: M1-6: bd with metrics left on tries to reach the network (positive control for the detector)
+ok 4 - M1-6: bd with metrics left on tries to reach the network (positive control for the detector)
+  ---
+  duration_ms: 6026.498636
+  type: 'test'
+  ...
+# Subtest: M1-6: no outbound connection from bd or the controller during crash, resume and run on beads
+ok 5 - M1-6: no outbound connection from bd or the controller during crash, resume and run on beads
+  ---
+  duration_ms: 204886.15266
+  type: 'test'
+  ...
+# Subtest: changes made with bd directly, behind the controller, are refused
+ok 6 - changes made with bd directly, behind the controller, are refused
+  ---
+  duration_ms: 67322.377922
+  type: 'test'
+  ...
+# Subtest: a state root cannot be switched to a different store kind, and read-only commands notice too
+ok 7 - a state root cannot be switched to a different store kind, and read-only commands notice too
+  ---
+  duration_ms: 4676.005481
+  type: 'test'
+  ...
+# Subtest: bd never touches a git repository that encloses the state root
+ok 8 - bd never touches a git repository that encloses the state root
+  ---
+  duration_ms: 5653.816622
+  type: 'test'
+  ...
+# Subtest: a bd init killed part-way is redone on the next open, and read-only opens refuse it
+ok 9 - a bd init killed part-way is redone on the next open, and read-only opens refuse it
+  ---
+  duration_ms: 11096.72426
+  type: 'test'
+  ...
+# Subtest: the executed bd is a verified private entry: swapping the source path or modifying the binary cannot run other code
+ok 10 - the executed bd is a verified private entry: swapping the source path or modifying the binary cannot run other code
+  ---
+  duration_ms: 8949.172062
+  type: 'test'
+  ...
+# Subtest: eo init --store beads refuses an unpinned binary before writing anything
+ok 11 - eo init --store beads refuses an unpinned binary before writing anything
+  ---
+  duration_ms: 186.160527
+  type: 'test'
+  ...
+# Subtest: eo init creates a state root and refuses to overwrite it
+ok 12 - eo init creates a state root and refuses to overwrite it
+  ---
+  duration_ms: 328.462057
+  type: 'test'
+  ...
+# Subtest: human gates refuse to run without an interactive terminal
+ok 13 - human gates refuse to run without an interactive terminal
+  ---
+  duration_ms: 15171.267872
+  type: 'test'
+  ...
+# Subtest: M1-10: eo run refuses an unapproved repository and launches nothing
+ok 14 - M1-10: eo run refuses an unapproved repository and launches nothing
+  ---
+  duration_ms: 14409.510292
+  type: 'test'
+  ...
+# Subtest: eo run with the fake runner completes the sample epic; status and doctor agree
+ok 15 - eo run with the fake runner completes the sample epic; status and doctor agree
+  ---
+  duration_ms: 81498.045788
+  type: 'test'
+  ...
+# Subtest: M1-5: eo doctor detects an edited journal record and an altered evidence file
+ok 16 - M1-5: eo doctor detects an edited journal record and an altered evidence file
+  ---
+  duration_ms: 75302.109147
+  type: 'test'
+  ...
+# Subtest: eo doctor reports a store that drifted from the journal, and resume repairs it
+ok 17 - eo doctor reports a store that drifted from the journal, and resume repairs it
+  ---
+  duration_ms: 22921.038584
+  type: 'test'
+  ...
+# Subtest: usage errors exit 2
+ok 18 - usage errors exit 2
+  ---
+  duration_ms: 15183.414289
+  type: 'test'
+  ...
+# Subtest: sealed evidence tampered with after a crash is escalated, not silently rewritten
+ok 19 - sealed evidence tampered with after a crash is escalated, not silently rewritten
+  ---
+  duration_ms: 102482.646021
+  type: 'test'
+  ...
+# Subtest: eo policy accept refuses without an interactive terminal
+ok 20 - eo policy accept refuses without an interactive terminal
+  ---
+  duration_ms: 14814.248651
+  type: 'test'
+  ...
+# Subtest: M1-6: the preload detector catches a connection attempt (positive control)
+ok 21 - M1-6: the preload detector catches a connection attempt (positive control)
+  ---
+  duration_ms: 4824.487588
+  type: 'test'
+  ...
+# Subtest: M1-6: no network API is used during crash, resume and run
+ok 22 - M1-6: no network API is used during crash, resume and run
+  ---
+  duration_ms: 93990.325258
+  type: 'test'
+  ...
+# Subtest: M1-6: strace detector sees a connect() inside the namespace (positive control)
+ok 23 - M1-6: strace detector sees a connect() inside the namespace (positive control)
+  ---
+  duration_ms: 4062.177432
+  type: 'test'
+  ...
+# Subtest: M1-6: no connect() syscall to an IP address during crash, resume and run, in an isolated network namespace
+ok 24 - M1-6: no connect() syscall to an IP address during crash, resume and run, in an isolated network namespace
+  ---
+  duration_ms: 200636.583661
+  type: 'test'
+  ...
+# Subtest: TaskStore contract: FakeStore (memory)
+    # Subtest: create: new tasks are planned with zeroed counters; ids and deps are validated
+    ok 1 - create: new tasks are planned with zeroed counters; ids and deps are validated
+      ---
+      duration_ms: 2.620406
+      type: 'test'
+      ...
+    # Subtest: deps: dependencies are stored and returned
+    ok 2 - deps: dependencies are stored and returned
+      ---
+      duration_ms: 0.538776
+      type: 'test'
+      ...
+    # Subtest: compare-and-set changes state only from the expected state
+    ok 3 - compare-and-set changes state only from the expected state
+      ---
+      duration_ms: 0.256817
+      type: 'test'
+      ...
+    # Subtest: counters can be updated without a state change, and unknown fields are ignored
+    ok 4 - counters can be updated without a state change, and unknown fields are ignored
+      ---
+      duration_ms: 0.158582
+      type: 'test'
+      ...
+    # Subtest: ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+    ok 5 - ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+      ---
+      duration_ms: 0.57565
+      type: 'test'
+      ...
+    # Subtest: claim: exclusive while the lease is live; re-claim by the holder renews
+    ok 6 - claim: exclusive while the lease is live; re-claim by the holder renews
+      ---
+      duration_ms: 0.231989
+      type: 'test'
+      ...
+    # Subtest: heartbeat: extends only the live holder's lease
+    ok 7 - heartbeat: extends only the live holder's lease
+      ---
+      duration_ms: 0.206586
+      type: 'test'
+      ...
+    # Subtest: reclaim: expired claims are cleared and the task can be claimed again
+    ok 8 - reclaim: expired claims are cleared and the task can be claimed again
+      ---
+      duration_ms: 0.384533
+      type: 'test'
+      ...
+    # Subtest: release: only the holder can release
+    ok 9 - release: only the holder can release
+      ---
+      duration_ms: 0.334663
+      type: 'test'
+      ...
+    # Subtest: notes: appended in order
+    ok 10 - notes: appended in order
+      ---
+      duration_ms: 0.730093
+      type: 'test'
+      ...
+    # Subtest: close: a done task is never offered as ready
+    ok 11 - close: a done task is never offered as ready
+      ---
+      duration_ms: 0.146522
+      type: 'test'
+      ...
+    # Subtest: state changes do not depend on dependency states: ordering is the controller's job
+    ok 12 - state changes do not depend on dependency states: ordering is the controller's job
+      ---
+      duration_ms: 0.162412
+      type: 'test'
+      ...
+    # Subtest: returned records are copies: mutating them does not change the store
+    ok 13 - returned records are copies: mutating them does not change the store
+      ---
+      duration_ms: 0.147446
+      type: 'test'
+      ...
+    # Subtest: titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+    ok 14 - titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+      ---
+      duration_ms: 0.240915
+      type: 'test'
+      ...
+    # Subtest: notes keep their boundaries, including multi-line text
+    ok 15 - notes keep their boundaries, including multi-line text
+      ---
+      duration_ms: 0.251491
+      type: 'test'
+      ...
+    # Subtest: unknown tasks: reads return nothing, ownership operations return false, writes throw
+    ok 16 - unknown tasks: reads return nothing, ownership operations return false, writes throw
+      ---
+      duration_ms: 0.240863
+      type: 'test'
+      ...
+    1..16
+ok 25 - TaskStore contract: FakeStore (memory)
+  ---
+  duration_ms: 8.431186
+  type: 'suite'
+  ...
+# Subtest: TaskStore contract: FakeStore (file)
+    # Subtest: create: new tasks are planned with zeroed counters; ids and deps are validated
+    ok 1 - create: new tasks are planned with zeroed counters; ids and deps are validated
+      ---
+      duration_ms: 4.694972
+      type: 'test'
+      ...
+    # Subtest: deps: dependencies are stored and returned
+    ok 2 - deps: dependencies are stored and returned
+      ---
+      duration_ms: 4.721933
+      type: 'test'
+      ...
+    # Subtest: compare-and-set changes state only from the expected state
+    ok 3 - compare-and-set changes state only from the expected state
+      ---
+      duration_ms: 3.115245
+      type: 'test'
+      ...
+    # Subtest: counters can be updated without a state change, and unknown fields are ignored
+    ok 4 - counters can be updated without a state change, and unknown fields are ignored
+      ---
+      duration_ms: 1.888112
+      type: 'test'
+      ...
+    # Subtest: ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+    ok 5 - ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+      ---
+      duration_ms: 11.885755
+      type: 'test'
+      ...
+    # Subtest: claim: exclusive while the lease is live; re-claim by the holder renews
+    ok 6 - claim: exclusive while the lease is live; re-claim by the holder renews
+      ---
+      duration_ms: 3.597753
+      type: 'test'
+      ...
+    # Subtest: heartbeat: extends only the live holder's lease
+    ok 7 - heartbeat: extends only the live holder's lease
+      ---
+      duration_ms: 3.387144
+      type: 'test'
+      ...
+    # Subtest: reclaim: expired claims are cleared and the task can be claimed again
+    ok 8 - reclaim: expired claims are cleared and the task can be claimed again
+      ---
+      duration_ms: 8.756039
+      type: 'test'
+      ...
+    # Subtest: release: only the holder can release
+    ok 9 - release: only the holder can release
+      ---
+      duration_ms: 2.625716
+      type: 'test'
+      ...
+    # Subtest: notes: appended in order
+    ok 10 - notes: appended in order
+      ---
+      duration_ms: 3.101585
+      type: 'test'
+      ...
+    # Subtest: close: a done task is never offered as ready
+    ok 11 - close: a done task is never offered as ready
+      ---
+      duration_ms: 4.023024
+      type: 'test'
+      ...
+    # Subtest: state changes do not depend on dependency states: ordering is the controller's job
+    ok 12 - state changes do not depend on dependency states: ordering is the controller's job
+      ---
+      duration_ms: 4.11939
+      type: 'test'
+      ...
+    # Subtest: returned records are copies: mutating them does not change the store
+    ok 13 - returned records are copies: mutating them does not change the store
+      ---
+      duration_ms: 2.783778
+      type: 'test'
+      ...
+    # Subtest: titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+    ok 14 - titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+      ---
+      duration_ms: 3.129138
+      type: 'test'
+      ...
+    # Subtest: notes keep their boundaries, including multi-line text
+    ok 15 - notes keep their boundaries, including multi-line text
+      ---
+      duration_ms: 3.330519
+      type: 'test'
+      ...
+    # Subtest: unknown tasks: reads return nothing, ownership operations return false, writes throw
+    ok 16 - unknown tasks: reads return nothing, ownership operations return false, writes throw
+      ---
+      duration_ms: 2.117064
+      type: 'test'
+      ...
+    # Subtest: durability: a new instance on the same directory sees every change
+    ok 17 - durability: a new instance on the same directory sees every change
+      ---
+      duration_ms: 4.065457
+      type: 'test'
+      ...
+    1..17
+ok 26 - TaskStore contract: FakeStore (file)
+  ---
+  duration_ms: 72.14881
+  type: 'suite'
+  ...
+# Subtest: TaskStore contract: BeadsStore (file)
+    # Subtest: create: new tasks are planned with zeroed counters; ids and deps are validated
+    ok 1 - create: new tasks are planned with zeroed counters; ids and deps are validated
+      ---
+      duration_ms: 6286.301922
+      type: 'test'
+      ...
+    # Subtest: deps: dependencies are stored and returned
+    ok 2 - deps: dependencies are stored and returned
+      ---
+      duration_ms: 9565.361668
+      type: 'test'
+      ...
+    # Subtest: compare-and-set changes state only from the expected state
+    ok 3 - compare-and-set changes state only from the expected state
+      ---
+      duration_ms: 7214.172682
+      type: 'test'
+      ...
+    # Subtest: counters can be updated without a state change, and unknown fields are ignored
+    ok 4 - counters can be updated without a state change, and unknown fields are ignored
+      ---
+      duration_ms: 6505.991124
+      type: 'test'
+      ...
+    # Subtest: ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+    ok 5 - ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+      ---
+      duration_ms: 13669.225887
+      type: 'test'
+      ...
+    # Subtest: claim: exclusive while the lease is live; re-claim by the holder renews
+    ok 6 - claim: exclusive while the lease is live; re-claim by the holder renews
+      ---
+      duration_ms: 7728.109797
+      type: 'test'
+      ...
+    # Subtest: heartbeat: extends only the live holder's lease
+    ok 7 - heartbeat: extends only the live holder's lease
+      ---
+      duration_ms: 7570.715011
+      type: 'test'
+      ...
+    # Subtest: reclaim: expired claims are cleared and the task can be claimed again
+    ok 8 - reclaim: expired claims are cleared and the task can be claimed again
+      ---
+      duration_ms: 12949.641277
+      type: 'test'
+      ...
+    # Subtest: release: only the holder can release
+    ok 9 - release: only the holder can release
+      ---
+      duration_ms: 7649.92447
+      type: 'test'
+      ...
+    # Subtest: notes: appended in order
+    ok 10 - notes: appended in order
+      ---
+      duration_ms: 7403.65751
+      type: 'test'
+      ...
+    # Subtest: close: a done task is never offered as ready
+    ok 11 - close: a done task is never offered as ready
+      ---
+      duration_ms: 7974.882253
+      type: 'test'
+      ...
+    # Subtest: state changes do not depend on dependency states: ordering is the controller's job
+    ok 12 - state changes do not depend on dependency states: ordering is the controller's job
+      ---
+      duration_ms: 7929.053027
+      type: 'test'
+      ...
+    # Subtest: returned records are copies: mutating them does not change the store
+    ok 13 - returned records are copies: mutating them does not change the store
+      ---
+      duration_ms: 6420.543709
+      type: 'test'
+      ...
+    # Subtest: titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+    ok 14 - titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+      ---
+      duration_ms: 7271.985259
+      type: 'test'
+      ...
+    # Subtest: notes keep their boundaries, including multi-line text
+    ok 15 - notes keep their boundaries, including multi-line text
+      ---
+      duration_ms: 7033.765393
+      type: 'test'
+      ...
+    # Subtest: unknown tasks: reads return nothing, ownership operations return false, writes throw
+    ok 16 - unknown tasks: reads return nothing, ownership operations return false, writes throw
+      ---
+      duration_ms: 8068.722733
+      type: 'test'
+      ...
+    # Subtest: durability: a new instance on the same directory sees every change
+    ok 17 - durability: a new instance on the same directory sees every change
+      ---
+      duration_ms: 8421.497267
+      type: 'test'
+      ...
+    1..17
+ok 27 - TaskStore contract: BeadsStore (file)
+  ---
+  duration_ms: 139665.526889
+  type: 'suite'
+  ...
+1..27
+# tests 74
+# suites 3
+# pass 74
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1188698.156112

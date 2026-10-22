@@ -1,0 +1,301 @@
+{"ts":"2026-10-19T04:30:42.564Z","test":"M1-3 beads claim race","scenario":"","completed":0,"total":100,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T04:30:42.565Z","test":"M1-3 beads claim race","scenario":"round 1","completed":0,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T04:30:44.383Z","test":"M1-3 beads claim race","scenario":"round 1","completed":0,"total":100,"activity":"round 1 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T04:30:59.607Z","test":"M1-3 beads claim race","scenario":"round 1","completed":1,"total":100,"activity":"completed","elapsedS":17}
+{"ts":"2026-10-19T04:30:59.607Z","test":"M1-3 beads claim race","scenario":"round 2","completed":1,"total":100,"activity":"begin","elapsedS":17}
+{"ts":"2026-10-19T04:31:01.328Z","test":"M1-3 beads claim race","scenario":"round 2","completed":1,"total":100,"activity":"round 2 released to 20 workers","elapsedS":19}
+{"ts":"2026-10-19T04:31:16.361Z","test":"M1-3 beads claim race","scenario":"round 2","completed":2,"total":100,"activity":"completed","elapsedS":34}
+{"ts":"2026-10-19T04:31:16.362Z","test":"M1-3 beads claim race","scenario":"round 3","completed":2,"total":100,"activity":"begin","elapsedS":34}
+{"ts":"2026-10-19T04:31:18.026Z","test":"M1-3 beads claim race","scenario":"round 3","completed":2,"total":100,"activity":"round 3 released to 20 workers","elapsedS":35}
+{"ts":"2026-10-19T04:31:31.824Z","test":"M1-3 beads claim race","scenario":"round 3","completed":3,"total":100,"activity":"completed","elapsedS":49}
+{"ts":"2026-10-19T04:31:31.824Z","test":"M1-3 beads claim race","scenario":"round 4","completed":3,"total":100,"activity":"begin","elapsedS":49}
+{"ts":"2026-10-19T04:31:33.544Z","test":"M1-3 beads claim race","scenario":"round 4","completed":3,"total":100,"activity":"round 4 released to 20 workers","elapsedS":51}
+{"ts":"2026-10-19T04:31:42.799Z","test":"M1-3 beads claim race","scenario":"round 4","completed":4,"total":100,"activity":"completed","elapsedS":60}
+{"ts":"2026-10-19T04:31:42.799Z","test":"M1-3 beads claim race","scenario":"round 5","completed":4,"total":100,"activity":"begin","elapsedS":60}
+{"ts":"2026-10-19T04:31:44.487Z","test":"M1-3 beads claim race","scenario":"round 5","completed":4,"total":100,"activity":"round 5 released to 20 workers","elapsedS":62}
+{"ts":"2026-10-19T04:31:55.239Z","test":"M1-3 beads claim race","scenario":"round 5","completed":5,"total":100,"activity":"completed","elapsedS":73}
+{"ts":"2026-10-19T04:31:55.239Z","test":"M1-3 beads claim race","scenario":"round 6","completed":5,"total":100,"activity":"begin","elapsedS":73}
+{"ts":"2026-10-19T04:31:57.057Z","test":"M1-3 beads claim race","scenario":"round 6","completed":5,"total":100,"activity":"round 6 released to 20 workers","elapsedS":74}
+{"ts":"2026-10-19T04:32:10.952Z","test":"M1-3 beads claim race","scenario":"round 6","completed":6,"total":100,"activity":"completed","elapsedS":88}
+{"ts":"2026-10-19T04:32:10.952Z","test":"M1-3 beads claim race","scenario":"round 7","completed":6,"total":100,"activity":"begin","elapsedS":88}
+{"ts":"2026-10-19T04:32:12.714Z","test":"M1-3 beads claim race","scenario":"round 7","completed":6,"total":100,"activity":"round 7 released to 20 workers","elapsedS":90}
+{"ts":"2026-10-19T04:32:31.610Z","test":"M1-3 beads claim race","scenario":"round 7","completed":7,"total":100,"activity":"completed","elapsedS":109}
+{"ts":"2026-10-19T04:32:31.610Z","test":"M1-3 beads claim race","scenario":"round 8","completed":7,"total":100,"activity":"begin","elapsedS":109}
+{"ts":"2026-10-19T04:32:33.576Z","test":"M1-3 beads claim race","scenario":"round 8","completed":7,"total":100,"activity":"round 8 released to 20 workers","elapsedS":111}
+{"ts":"2026-10-19T04:32:46.421Z","test":"M1-3 beads claim race","scenario":"round 8","completed":8,"total":100,"activity":"completed","elapsedS":124}
+{"ts":"2026-10-19T04:32:46.421Z","test":"M1-3 beads claim race","scenario":"round 9","completed":8,"total":100,"activity":"begin","elapsedS":124}
+{"ts":"2026-10-19T04:32:48.244Z","test":"M1-3 beads claim race","scenario":"round 9","completed":8,"total":100,"activity":"round 9 released to 20 workers","elapsedS":126}
+{"ts":"2026-10-19T04:33:02.047Z","test":"M1-3 beads claim race","scenario":"round 9","completed":9,"total":100,"activity":"completed","elapsedS":139}
+{"ts":"2026-10-19T04:33:02.047Z","test":"M1-3 beads claim race","scenario":"round 10","completed":9,"total":100,"activity":"begin","elapsedS":139}
+{"ts":"2026-10-19T04:33:03.826Z","test":"M1-3 beads claim race","scenario":"round 10","completed":9,"total":100,"activity":"round 10 released to 20 workers","elapsedS":141}
+{"ts":"2026-10-19T04:33:22.445Z","test":"M1-3 beads claim race","scenario":"round 10","completed":10,"total":100,"activity":"completed","elapsedS":160}
+{"ts":"2026-10-19T04:33:22.445Z","test":"M1-3 beads claim race","scenario":"round 11","completed":10,"total":100,"activity":"begin","elapsedS":160}
+{"ts":"2026-10-19T04:33:24.224Z","test":"M1-3 beads claim race","scenario":"round 11","completed":10,"total":100,"activity":"round 11 released to 20 workers","elapsedS":162}
+{"ts":"2026-10-19T04:33:38.764Z","test":"M1-3 beads claim race","scenario":"round 11","completed":11,"total":100,"activity":"completed","elapsedS":176}
+{"ts":"2026-10-19T04:33:38.764Z","test":"M1-3 beads claim race","scenario":"round 12","completed":11,"total":100,"activity":"begin","elapsedS":176}
+{"ts":"2026-10-19T04:33:40.596Z","test":"M1-3 beads claim race","scenario":"round 12","completed":11,"total":100,"activity":"round 12 released to 20 workers","elapsedS":178}
+{"ts":"2026-10-19T04:33:57.160Z","test":"M1-3 beads claim race","scenario":"round 12","completed":12,"total":100,"activity":"completed","elapsedS":195}
+{"ts":"2026-10-19T04:33:57.160Z","test":"M1-3 beads claim race","scenario":"round 13","completed":12,"total":100,"activity":"begin","elapsedS":195}
+{"ts":"2026-10-19T04:33:58.968Z","test":"M1-3 beads claim race","scenario":"round 13","completed":12,"total":100,"activity":"round 13 released to 20 workers","elapsedS":196}
+{"ts":"2026-10-19T04:34:14.384Z","test":"M1-3 beads claim race","scenario":"round 13","completed":13,"total":100,"activity":"completed","elapsedS":212}
+{"ts":"2026-10-19T04:34:14.384Z","test":"M1-3 beads claim race","scenario":"round 14","completed":13,"total":100,"activity":"begin","elapsedS":212}
+{"ts":"2026-10-19T04:34:16.124Z","test":"M1-3 beads claim race","scenario":"round 14","completed":13,"total":100,"activity":"round 14 released to 20 workers","elapsedS":214}
+{"ts":"2026-10-19T04:34:31.280Z","test":"M1-3 beads claim race","scenario":"round 14","completed":14,"total":100,"activity":"completed","elapsedS":229}
+{"ts":"2026-10-19T04:34:31.280Z","test":"M1-3 beads claim race","scenario":"round 15","completed":14,"total":100,"activity":"begin","elapsedS":229}
+{"ts":"2026-10-19T04:34:33.178Z","test":"M1-3 beads claim race","scenario":"round 15","completed":14,"total":100,"activity":"round 15 released to 20 workers","elapsedS":231}
+{"ts":"2026-10-19T04:34:43.126Z","test":"M1-3 beads claim race","scenario":"round 15","completed":15,"total":100,"activity":"completed","elapsedS":241}
+{"ts":"2026-10-19T04:34:43.126Z","test":"M1-3 beads claim race","scenario":"round 16","completed":15,"total":100,"activity":"begin","elapsedS":241}
+{"ts":"2026-10-19T04:34:44.745Z","test":"M1-3 beads claim race","scenario":"round 16","completed":15,"total":100,"activity":"round 16 released to 20 workers","elapsedS":242}
+{"ts":"2026-10-19T04:34:56.789Z","test":"M1-3 beads claim race","scenario":"round 16","completed":16,"total":100,"activity":"completed","elapsedS":254}
+{"ts":"2026-10-19T04:34:56.790Z","test":"M1-3 beads claim race","scenario":"round 17","completed":16,"total":100,"activity":"begin","elapsedS":254}
+{"ts":"2026-10-19T04:34:58.403Z","test":"M1-3 beads claim race","scenario":"round 17","completed":16,"total":100,"activity":"round 17 released to 20 workers","elapsedS":256}
+{"ts":"2026-10-19T04:35:21.954Z","test":"M1-3 beads claim race","scenario":"round 17","completed":17,"total":100,"activity":"completed","elapsedS":279}
+{"ts":"2026-10-19T04:35:21.955Z","test":"M1-3 beads claim race","scenario":"round 18","completed":17,"total":100,"activity":"begin","elapsedS":279}
+{"ts":"2026-10-19T04:35:23.737Z","test":"M1-3 beads claim race","scenario":"round 18","completed":17,"total":100,"activity":"round 18 released to 20 workers","elapsedS":281}
+{"ts":"2026-10-19T04:35:36.089Z","test":"M1-3 beads claim race","scenario":"round 18","completed":18,"total":100,"activity":"completed","elapsedS":294}
+{"ts":"2026-10-19T04:35:36.089Z","test":"M1-3 beads claim race","scenario":"round 19","completed":18,"total":100,"activity":"begin","elapsedS":294}
+{"ts":"2026-10-19T04:35:38.177Z","test":"M1-3 beads claim race","scenario":"round 19","completed":18,"total":100,"activity":"round 19 released to 20 workers","elapsedS":296}
+{"ts":"2026-10-19T04:35:59.186Z","test":"M1-3 beads claim race","scenario":"round 19","completed":19,"total":100,"activity":"completed","elapsedS":317}
+{"ts":"2026-10-19T04:35:59.186Z","test":"M1-3 beads claim race","scenario":"round 20","completed":19,"total":100,"activity":"begin","elapsedS":317}
+{"ts":"2026-10-19T04:36:00.965Z","test":"M1-3 beads claim race","scenario":"round 20","completed":19,"total":100,"activity":"round 20 released to 20 workers","elapsedS":318}
+{"ts":"2026-10-19T04:36:23.506Z","test":"M1-3 beads claim race","scenario":"round 20","completed":20,"total":100,"activity":"completed","elapsedS":341}
+{"ts":"2026-10-19T04:36:23.506Z","test":"M1-3 beads claim race","scenario":"round 21","completed":20,"total":100,"activity":"begin","elapsedS":341}
+{"ts":"2026-10-19T04:36:25.320Z","test":"M1-3 beads claim race","scenario":"round 21","completed":20,"total":100,"activity":"round 21 released to 20 workers","elapsedS":343}
+{"ts":"2026-10-19T04:36:41.003Z","test":"M1-3 beads claim race","scenario":"round 21","completed":21,"total":100,"activity":"completed","elapsedS":358}
+{"ts":"2026-10-19T04:36:41.004Z","test":"M1-3 beads claim race","scenario":"round 22","completed":21,"total":100,"activity":"begin","elapsedS":358}
+{"ts":"2026-10-19T04:36:43.002Z","test":"M1-3 beads claim race","scenario":"round 22","completed":21,"total":100,"activity":"round 22 released to 20 workers","elapsedS":360}
+{"ts":"2026-10-19T04:36:55.996Z","test":"M1-3 beads claim race","scenario":"round 22","completed":22,"total":100,"activity":"completed","elapsedS":373}
+{"ts":"2026-10-19T04:36:55.996Z","test":"M1-3 beads claim race","scenario":"round 23","completed":22,"total":100,"activity":"begin","elapsedS":373}
+{"ts":"2026-10-19T04:36:57.796Z","test":"M1-3 beads claim race","scenario":"round 23","completed":22,"total":100,"activity":"round 23 released to 20 workers","elapsedS":375}
+{"ts":"2026-10-19T04:37:11.002Z","test":"M1-3 beads claim race","scenario":"round 23","completed":23,"total":100,"activity":"completed","elapsedS":388}
+{"ts":"2026-10-19T04:37:11.003Z","test":"M1-3 beads claim race","scenario":"round 24","completed":23,"total":100,"activity":"begin","elapsedS":388}
+{"ts":"2026-10-19T04:37:13.343Z","test":"M1-3 beads claim race","scenario":"round 24","completed":23,"total":100,"activity":"round 24 released to 20 workers","elapsedS":391}
+{"ts":"2026-10-19T04:37:26.542Z","test":"M1-3 beads claim race","scenario":"round 24","completed":24,"total":100,"activity":"completed","elapsedS":404}
+{"ts":"2026-10-19T04:37:26.542Z","test":"M1-3 beads claim race","scenario":"round 25","completed":24,"total":100,"activity":"begin","elapsedS":404}
+{"ts":"2026-10-19T04:37:28.511Z","test":"M1-3 beads claim race","scenario":"round 25","completed":24,"total":100,"activity":"round 25 released to 20 workers","elapsedS":406}
+{"ts":"2026-10-19T04:37:44.226Z","test":"M1-3 beads claim race","scenario":"round 25","completed":25,"total":100,"activity":"completed","elapsedS":422}
+{"ts":"2026-10-19T04:37:44.226Z","test":"M1-3 beads claim race","scenario":"round 26","completed":25,"total":100,"activity":"begin","elapsedS":422}
+{"ts":"2026-10-19T04:37:46.123Z","test":"M1-3 beads claim race","scenario":"round 26","completed":25,"total":100,"activity":"round 26 released to 20 workers","elapsedS":424}
+{"ts":"2026-10-19T04:38:05.482Z","test":"M1-3 beads claim race","scenario":"round 26","completed":26,"total":100,"activity":"completed","elapsedS":443}
+{"ts":"2026-10-19T04:38:05.482Z","test":"M1-3 beads claim race","scenario":"round 27","completed":26,"total":100,"activity":"begin","elapsedS":443}
+{"ts":"2026-10-19T04:38:07.503Z","test":"M1-3 beads claim race","scenario":"round 27","completed":26,"total":100,"activity":"round 27 released to 20 workers","elapsedS":445}
+{"ts":"2026-10-19T04:38:34.737Z","test":"M1-3 beads claim race","scenario":"round 27","completed":27,"total":100,"activity":"completed","elapsedS":472}
+{"ts":"2026-10-19T04:38:34.737Z","test":"M1-3 beads claim race","scenario":"round 28","completed":27,"total":100,"activity":"begin","elapsedS":472}
+{"ts":"2026-10-19T04:38:36.759Z","test":"M1-3 beads claim race","scenario":"round 28","completed":27,"total":100,"activity":"round 28 released to 20 workers","elapsedS":474}
+{"ts":"2026-10-19T04:38:53.771Z","test":"M1-3 beads claim race","scenario":"round 28","completed":28,"total":100,"activity":"completed","elapsedS":491}
+{"ts":"2026-10-19T04:38:53.771Z","test":"M1-3 beads claim race","scenario":"round 29","completed":28,"total":100,"activity":"begin","elapsedS":491}
+{"ts":"2026-10-19T04:38:55.705Z","test":"M1-3 beads claim race","scenario":"round 29","completed":28,"total":100,"activity":"round 29 released to 20 workers","elapsedS":493}
+{"ts":"2026-10-19T04:39:15.249Z","test":"M1-3 beads claim race","scenario":"round 29","completed":29,"total":100,"activity":"completed","elapsedS":513}
+{"ts":"2026-10-19T04:39:15.249Z","test":"M1-3 beads claim race","scenario":"round 30","completed":29,"total":100,"activity":"begin","elapsedS":513}
+{"ts":"2026-10-19T04:39:17.408Z","test":"M1-3 beads claim race","scenario":"round 30","completed":29,"total":100,"activity":"round 30 released to 20 workers","elapsedS":515}
+{"ts":"2026-10-19T04:39:33.735Z","test":"M1-3 beads claim race","scenario":"round 30","completed":30,"total":100,"activity":"completed","elapsedS":531}
+{"ts":"2026-10-19T04:39:33.735Z","test":"M1-3 beads claim race","scenario":"round 31","completed":30,"total":100,"activity":"begin","elapsedS":531}
+{"ts":"2026-10-19T04:39:35.789Z","test":"M1-3 beads claim race","scenario":"round 31","completed":30,"total":100,"activity":"round 31 released to 20 workers","elapsedS":533}
+{"ts":"2026-10-19T04:39:58.580Z","test":"M1-3 beads claim race","scenario":"round 31","completed":31,"total":100,"activity":"completed","elapsedS":556}
+{"ts":"2026-10-19T04:39:58.580Z","test":"M1-3 beads claim race","scenario":"round 32","completed":31,"total":100,"activity":"begin","elapsedS":556}
+{"ts":"2026-10-19T04:40:00.586Z","test":"M1-3 beads claim race","scenario":"round 32","completed":31,"total":100,"activity":"round 32 released to 20 workers","elapsedS":558}
+{"ts":"2026-10-19T04:40:24.495Z","test":"M1-3 beads claim race","scenario":"round 32","completed":32,"total":100,"activity":"completed","elapsedS":582}
+{"ts":"2026-10-19T04:40:24.495Z","test":"M1-3 beads claim race","scenario":"round 33","completed":32,"total":100,"activity":"begin","elapsedS":582}
+{"ts":"2026-10-19T04:40:26.411Z","test":"M1-3 beads claim race","scenario":"round 33","completed":32,"total":100,"activity":"round 33 released to 20 workers","elapsedS":584}
+{"ts":"2026-10-19T04:40:54.691Z","test":"M1-3 beads claim race","scenario":"round 33","completed":33,"total":100,"activity":"completed","elapsedS":612}
+{"ts":"2026-10-19T04:40:54.691Z","test":"M1-3 beads claim race","scenario":"round 34","completed":33,"total":100,"activity":"begin","elapsedS":612}
+{"ts":"2026-10-19T04:40:56.843Z","test":"M1-3 beads claim race","scenario":"round 34","completed":33,"total":100,"activity":"round 34 released to 20 workers","elapsedS":614}
+{"ts":"2026-10-19T04:41:17.214Z","test":"M1-3 beads claim race","scenario":"round 34","completed":34,"total":100,"activity":"completed","elapsedS":635}
+{"ts":"2026-10-19T04:41:17.214Z","test":"M1-3 beads claim race","scenario":"round 35","completed":34,"total":100,"activity":"begin","elapsedS":635}
+{"ts":"2026-10-19T04:41:19.226Z","test":"M1-3 beads claim race","scenario":"round 35","completed":34,"total":100,"activity":"round 35 released to 20 workers","elapsedS":637}
+{"ts":"2026-10-19T04:41:40.878Z","test":"M1-3 beads claim race","scenario":"round 35","completed":35,"total":100,"activity":"completed","elapsedS":658}
+{"ts":"2026-10-19T04:41:40.879Z","test":"M1-3 beads claim race","scenario":"round 36","completed":35,"total":100,"activity":"begin","elapsedS":658}
+{"ts":"2026-10-19T04:41:43.075Z","test":"M1-3 beads claim race","scenario":"round 36","completed":35,"total":100,"activity":"round 36 released to 20 workers","elapsedS":661}
+{"ts":"2026-10-19T04:41:59.493Z","test":"M1-3 beads claim race","scenario":"round 36","completed":36,"total":100,"activity":"completed","elapsedS":677}
+{"ts":"2026-10-19T04:41:59.494Z","test":"M1-3 beads claim race","scenario":"round 37","completed":36,"total":100,"activity":"begin","elapsedS":677}
+{"ts":"2026-10-19T04:42:01.835Z","test":"M1-3 beads claim race","scenario":"round 37","completed":36,"total":100,"activity":"round 37 released to 20 workers","elapsedS":679}
+{"ts":"2026-10-19T04:42:24.613Z","test":"M1-3 beads claim race","scenario":"round 37","completed":37,"total":100,"activity":"completed","elapsedS":702}
+{"ts":"2026-10-19T04:42:24.613Z","test":"M1-3 beads claim race","scenario":"round 38","completed":37,"total":100,"activity":"begin","elapsedS":702}
+{"ts":"2026-10-19T04:42:26.466Z","test":"M1-3 beads claim race","scenario":"round 38","completed":37,"total":100,"activity":"round 38 released to 20 workers","elapsedS":704}
+{"ts":"2026-10-19T04:42:51.601Z","test":"M1-3 beads claim race","scenario":"round 38","completed":38,"total":100,"activity":"completed","elapsedS":729}
+{"ts":"2026-10-19T04:42:51.601Z","test":"M1-3 beads claim race","scenario":"round 39","completed":38,"total":100,"activity":"begin","elapsedS":729}
+{"ts":"2026-10-19T04:42:53.862Z","test":"M1-3 beads claim race","scenario":"round 39","completed":38,"total":100,"activity":"round 39 released to 20 workers","elapsedS":731}
+{"ts":"2026-10-19T04:43:19.327Z","test":"M1-3 beads claim race","scenario":"round 39","completed":39,"total":100,"activity":"completed","elapsedS":757}
+{"ts":"2026-10-19T04:43:19.327Z","test":"M1-3 beads claim race","scenario":"round 40","completed":39,"total":100,"activity":"begin","elapsedS":757}
+{"ts":"2026-10-19T04:43:21.279Z","test":"M1-3 beads claim race","scenario":"round 40","completed":39,"total":100,"activity":"round 40 released to 20 workers","elapsedS":759}
+{"ts":"2026-10-19T04:43:41.228Z","test":"M1-3 beads claim race","scenario":"round 40","completed":40,"total":100,"activity":"completed","elapsedS":779}
+{"ts":"2026-10-19T04:43:41.229Z","test":"M1-3 beads claim race","scenario":"round 41","completed":40,"total":100,"activity":"begin","elapsedS":779}
+{"ts":"2026-10-19T04:43:43.407Z","test":"M1-3 beads claim race","scenario":"round 41","completed":40,"total":100,"activity":"round 41 released to 20 workers","elapsedS":781}
+{"ts":"2026-10-19T04:43:58.256Z","test":"M1-3 beads claim race","scenario":"round 41","completed":41,"total":100,"activity":"completed","elapsedS":796}
+{"ts":"2026-10-19T04:43:58.256Z","test":"M1-3 beads claim race","scenario":"round 42","completed":41,"total":100,"activity":"begin","elapsedS":796}
+{"ts":"2026-10-19T04:44:00.458Z","test":"M1-3 beads claim race","scenario":"round 42","completed":41,"total":100,"activity":"round 42 released to 20 workers","elapsedS":798}
+{"ts":"2026-10-19T04:44:21.133Z","test":"M1-3 beads claim race","scenario":"round 42","completed":42,"total":100,"activity":"completed","elapsedS":819}
+{"ts":"2026-10-19T04:44:21.134Z","test":"M1-3 beads claim race","scenario":"round 43","completed":42,"total":100,"activity":"begin","elapsedS":819}
+{"ts":"2026-10-19T04:44:23.261Z","test":"M1-3 beads claim race","scenario":"round 43","completed":42,"total":100,"activity":"round 43 released to 20 workers","elapsedS":821}
+{"ts":"2026-10-19T04:44:41.715Z","test":"M1-3 beads claim race","scenario":"round 43","completed":43,"total":100,"activity":"completed","elapsedS":839}
+{"ts":"2026-10-19T04:44:41.715Z","test":"M1-3 beads claim race","scenario":"round 44","completed":43,"total":100,"activity":"begin","elapsedS":839}
+{"ts":"2026-10-19T04:44:43.721Z","test":"M1-3 beads claim race","scenario":"round 44","completed":43,"total":100,"activity":"round 44 released to 20 workers","elapsedS":841}
+{"ts":"2026-10-19T04:44:59.308Z","test":"M1-3 beads claim race","scenario":"round 44","completed":44,"total":100,"activity":"completed","elapsedS":857}
+{"ts":"2026-10-19T04:44:59.309Z","test":"M1-3 beads claim race","scenario":"round 45","completed":44,"total":100,"activity":"begin","elapsedS":857}
+{"ts":"2026-10-19T04:45:01.559Z","test":"M1-3 beads claim race","scenario":"round 45","completed":44,"total":100,"activity":"round 45 released to 20 workers","elapsedS":859}
+{"ts":"2026-10-19T04:45:25.408Z","test":"M1-3 beads claim race","scenario":"round 45","completed":45,"total":100,"activity":"completed","elapsedS":883}
+{"ts":"2026-10-19T04:45:25.408Z","test":"M1-3 beads claim race","scenario":"round 46","completed":45,"total":100,"activity":"begin","elapsedS":883}
+{"ts":"2026-10-19T04:45:27.352Z","test":"M1-3 beads claim race","scenario":"round 46","completed":45,"total":100,"activity":"round 46 released to 20 workers","elapsedS":885}
+{"ts":"2026-10-19T04:45:42.539Z","test":"M1-3 beads claim race","scenario":"round 46","completed":46,"total":100,"activity":"completed","elapsedS":900}
+{"ts":"2026-10-19T04:45:42.541Z","test":"M1-3 beads claim race","scenario":"round 47","completed":46,"total":100,"activity":"begin","elapsedS":900}
+{"ts":"2026-10-19T04:45:44.912Z","test":"M1-3 beads claim race","scenario":"round 47","completed":46,"total":100,"activity":"round 47 released to 20 workers","elapsedS":902}
+{"ts":"2026-10-19T04:46:10.502Z","test":"M1-3 beads claim race","scenario":"round 47","completed":47,"total":100,"activity":"completed","elapsedS":928}
+{"ts":"2026-10-19T04:46:10.503Z","test":"M1-3 beads claim race","scenario":"round 48","completed":47,"total":100,"activity":"begin","elapsedS":928}
+{"ts":"2026-10-19T04:46:12.623Z","test":"M1-3 beads claim race","scenario":"round 48","completed":47,"total":100,"activity":"round 48 released to 20 workers","elapsedS":930}
+{"ts":"2026-10-19T04:46:37.465Z","test":"M1-3 beads claim race","scenario":"round 48","completed":48,"total":100,"activity":"completed","elapsedS":955}
+{"ts":"2026-10-19T04:46:37.465Z","test":"M1-3 beads claim race","scenario":"round 49","completed":48,"total":100,"activity":"begin","elapsedS":955}
+{"ts":"2026-10-19T04:46:39.595Z","test":"M1-3 beads claim race","scenario":"round 49","completed":48,"total":100,"activity":"round 49 released to 20 workers","elapsedS":957}
+{"ts":"2026-10-19T04:46:59.708Z","test":"M1-3 beads claim race","scenario":"round 49","completed":49,"total":100,"activity":"completed","elapsedS":977}
+{"ts":"2026-10-19T04:46:59.708Z","test":"M1-3 beads claim race","scenario":"round 50","completed":49,"total":100,"activity":"begin","elapsedS":977}
+{"ts":"2026-10-19T04:47:02.003Z","test":"M1-3 beads claim race","scenario":"round 50","completed":49,"total":100,"activity":"round 50 released to 20 workers","elapsedS":979}
+{"ts":"2026-10-19T04:47:25.454Z","test":"M1-3 beads claim race","scenario":"round 50","completed":50,"total":100,"activity":"completed","elapsedS":1003}
+{"ts":"2026-10-19T04:47:25.454Z","test":"M1-3 beads claim race","scenario":"round 51","completed":50,"total":100,"activity":"begin","elapsedS":1003}
+{"ts":"2026-10-19T04:47:27.468Z","test":"M1-3 beads claim race","scenario":"round 51","completed":50,"total":100,"activity":"round 51 released to 20 workers","elapsedS":1005}
+{"ts":"2026-10-19T04:47:44.743Z","test":"M1-3 beads claim race","scenario":"round 51","completed":51,"total":100,"activity":"completed","elapsedS":1022}
+{"ts":"2026-10-19T04:47:44.743Z","test":"M1-3 beads claim race","scenario":"round 52","completed":51,"total":100,"activity":"begin","elapsedS":1022}
+{"ts":"2026-10-19T04:47:46.745Z","test":"M1-3 beads claim race","scenario":"round 52","completed":51,"total":100,"activity":"round 52 released to 20 workers","elapsedS":1024}
+{"ts":"2026-10-19T04:48:05.643Z","test":"M1-3 beads claim race","scenario":"round 52","completed":52,"total":100,"activity":"completed","elapsedS":1043}
+{"ts":"2026-10-19T04:48:05.643Z","test":"M1-3 beads claim race","scenario":"round 53","completed":52,"total":100,"activity":"begin","elapsedS":1043}
+{"ts":"2026-10-19T04:48:07.895Z","test":"M1-3 beads claim race","scenario":"round 53","completed":52,"total":100,"activity":"round 53 released to 20 workers","elapsedS":1045}
+{"ts":"2026-10-19T04:48:26.673Z","test":"M1-3 beads claim race","scenario":"round 53","completed":53,"total":100,"activity":"completed","elapsedS":1064}
+{"ts":"2026-10-19T04:48:26.673Z","test":"M1-3 beads claim race","scenario":"round 54","completed":53,"total":100,"activity":"begin","elapsedS":1064}
+{"ts":"2026-10-19T04:48:28.664Z","test":"M1-3 beads claim race","scenario":"round 54","completed":53,"total":100,"activity":"round 54 released to 20 workers","elapsedS":1066}
+{"ts":"2026-10-19T04:48:51.223Z","test":"M1-3 beads claim race","scenario":"round 54","completed":54,"total":100,"activity":"completed","elapsedS":1089}
+{"ts":"2026-10-19T04:48:51.223Z","test":"M1-3 beads claim race","scenario":"round 55","completed":54,"total":100,"activity":"begin","elapsedS":1089}
+{"ts":"2026-10-19T04:48:53.255Z","test":"M1-3 beads claim race","scenario":"round 55","completed":54,"total":100,"activity":"round 55 released to 20 workers","elapsedS":1091}
+{"ts":"2026-10-19T04:49:23.143Z","test":"M1-3 beads claim race","scenario":"round 55","completed":55,"total":100,"activity":"completed","elapsedS":1121}
+{"ts":"2026-10-19T04:49:23.143Z","test":"M1-3 beads claim race","scenario":"round 56","completed":55,"total":100,"activity":"begin","elapsedS":1121}
+{"ts":"2026-10-19T04:49:25.424Z","test":"M1-3 beads claim race","scenario":"round 56","completed":55,"total":100,"activity":"round 56 released to 20 workers","elapsedS":1123}
+{"ts":"2026-10-19T04:49:39.335Z","test":"M1-3 beads claim race","scenario":"round 56","completed":56,"total":100,"activity":"completed","elapsedS":1137}
+{"ts":"2026-10-19T04:49:39.335Z","test":"M1-3 beads claim race","scenario":"round 57","completed":56,"total":100,"activity":"begin","elapsedS":1137}
+{"ts":"2026-10-19T04:49:41.735Z","test":"M1-3 beads claim race","scenario":"round 57","completed":56,"total":100,"activity":"round 57 released to 20 workers","elapsedS":1139}
+{"ts":"2026-10-19T04:49:58.280Z","test":"M1-3 beads claim race","scenario":"round 57","completed":57,"total":100,"activity":"completed","elapsedS":1156}
+{"ts":"2026-10-19T04:49:58.280Z","test":"M1-3 beads claim race","scenario":"round 58","completed":57,"total":100,"activity":"begin","elapsedS":1156}
+{"ts":"2026-10-19T04:50:00.492Z","test":"M1-3 beads claim race","scenario":"round 58","completed":57,"total":100,"activity":"round 58 released to 20 workers","elapsedS":1158}
+{"ts":"2026-10-19T04:50:14.854Z","test":"M1-3 beads claim race","scenario":"round 58","completed":58,"total":100,"activity":"completed","elapsedS":1172}
+{"ts":"2026-10-19T04:50:14.854Z","test":"M1-3 beads claim race","scenario":"round 59","completed":58,"total":100,"activity":"begin","elapsedS":1172}
+{"ts":"2026-10-19T04:50:17.052Z","test":"M1-3 beads claim race","scenario":"round 59","completed":58,"total":100,"activity":"round 59 released to 20 workers","elapsedS":1174}
+{"ts":"2026-10-19T04:50:42.172Z","test":"M1-3 beads claim race","scenario":"round 59","completed":59,"total":100,"activity":"completed","elapsedS":1200}
+{"ts":"2026-10-19T04:50:42.172Z","test":"M1-3 beads claim race","scenario":"round 60","completed":59,"total":100,"activity":"begin","elapsedS":1200}
+{"ts":"2026-10-19T04:50:44.704Z","test":"M1-3 beads claim race","scenario":"round 60","completed":59,"total":100,"activity":"round 60 released to 20 workers","elapsedS":1202}
+{"ts":"2026-10-19T04:51:02.988Z","test":"M1-3 beads claim race","scenario":"round 60","completed":60,"total":100,"activity":"completed","elapsedS":1220}
+{"ts":"2026-10-19T04:51:02.988Z","test":"M1-3 beads claim race","scenario":"round 61","completed":60,"total":100,"activity":"begin","elapsedS":1220}
+{"ts":"2026-10-19T04:51:05.274Z","test":"M1-3 beads claim race","scenario":"round 61","completed":60,"total":100,"activity":"round 61 released to 20 workers","elapsedS":1223}
+{"ts":"2026-10-19T04:51:30.152Z","test":"M1-3 beads claim race","scenario":"round 61","completed":61,"total":100,"activity":"completed","elapsedS":1248}
+{"ts":"2026-10-19T04:51:30.152Z","test":"M1-3 beads claim race","scenario":"round 62","completed":61,"total":100,"activity":"begin","elapsedS":1248}
+{"ts":"2026-10-19T04:51:32.581Z","test":"M1-3 beads claim race","scenario":"round 62","completed":61,"total":100,"activity":"round 62 released to 20 workers","elapsedS":1250}
+{"ts":"2026-10-19T04:51:52.720Z","test":"M1-3 beads claim race","scenario":"round 62","completed":62,"total":100,"activity":"completed","elapsedS":1270}
+{"ts":"2026-10-19T04:51:52.720Z","test":"M1-3 beads claim race","scenario":"round 63","completed":62,"total":100,"activity":"begin","elapsedS":1270}
+{"ts":"2026-10-19T04:51:54.905Z","test":"M1-3 beads claim race","scenario":"round 63","completed":62,"total":100,"activity":"round 63 released to 20 workers","elapsedS":1272}
+{"ts":"2026-10-19T04:52:11.622Z","test":"M1-3 beads claim race","scenario":"round 63","completed":63,"total":100,"activity":"completed","elapsedS":1289}
+{"ts":"2026-10-19T04:52:11.622Z","test":"M1-3 beads claim race","scenario":"round 64","completed":63,"total":100,"activity":"begin","elapsedS":1289}
+{"ts":"2026-10-19T04:52:14.010Z","test":"M1-3 beads claim race","scenario":"round 64","completed":63,"total":100,"activity":"round 64 released to 20 workers","elapsedS":1291}
+{"ts":"2026-10-19T04:52:37.973Z","test":"M1-3 beads claim race","scenario":"round 64","completed":64,"total":100,"activity":"completed","elapsedS":1315}
+{"ts":"2026-10-19T04:52:37.973Z","test":"M1-3 beads claim race","scenario":"round 65","completed":64,"total":100,"activity":"begin","elapsedS":1315}
+{"ts":"2026-10-19T04:52:40.277Z","test":"M1-3 beads claim race","scenario":"round 65","completed":64,"total":100,"activity":"round 65 released to 20 workers","elapsedS":1318}
+{"ts":"2026-10-19T04:53:06.637Z","test":"M1-3 beads claim race","scenario":"round 65","completed":65,"total":100,"activity":"completed","elapsedS":1344}
+{"ts":"2026-10-19T04:53:06.637Z","test":"M1-3 beads claim race","scenario":"round 66","completed":65,"total":100,"activity":"begin","elapsedS":1344}
+{"ts":"2026-10-19T04:53:09.101Z","test":"M1-3 beads claim race","scenario":"round 66","completed":65,"total":100,"activity":"round 66 released to 20 workers","elapsedS":1347}
+{"ts":"2026-10-19T04:53:30.952Z","test":"M1-3 beads claim race","scenario":"round 66","completed":66,"total":100,"activity":"completed","elapsedS":1368}
+{"ts":"2026-10-19T04:53:30.952Z","test":"M1-3 beads claim race","scenario":"round 67","completed":66,"total":100,"activity":"begin","elapsedS":1368}
+{"ts":"2026-10-19T04:53:33.463Z","test":"M1-3 beads claim race","scenario":"round 67","completed":66,"total":100,"activity":"round 67 released to 20 workers","elapsedS":1371}
+{"ts":"2026-10-19T04:54:01.588Z","test":"M1-3 beads claim race","scenario":"round 67","completed":67,"total":100,"activity":"completed","elapsedS":1399}
+{"ts":"2026-10-19T04:54:01.588Z","test":"M1-3 beads claim race","scenario":"round 68","completed":67,"total":100,"activity":"begin","elapsedS":1399}
+{"ts":"2026-10-19T04:54:04.194Z","test":"M1-3 beads claim race","scenario":"round 68","completed":67,"total":100,"activity":"round 68 released to 20 workers","elapsedS":1402}
+{"ts":"2026-10-19T04:54:24.074Z","test":"M1-3 beads claim race","scenario":"round 68","completed":68,"total":100,"activity":"completed","elapsedS":1422}
+{"ts":"2026-10-19T04:54:24.075Z","test":"M1-3 beads claim race","scenario":"round 69","completed":68,"total":100,"activity":"begin","elapsedS":1422}
+{"ts":"2026-10-19T04:54:26.308Z","test":"M1-3 beads claim race","scenario":"round 69","completed":68,"total":100,"activity":"round 69 released to 20 workers","elapsedS":1424}
+{"ts":"2026-10-19T04:54:54.913Z","test":"M1-3 beads claim race","scenario":"round 69","completed":69,"total":100,"activity":"completed","elapsedS":1452}
+{"ts":"2026-10-19T04:54:54.913Z","test":"M1-3 beads claim race","scenario":"round 70","completed":69,"total":100,"activity":"begin","elapsedS":1452}
+{"ts":"2026-10-19T04:54:57.166Z","test":"M1-3 beads claim race","scenario":"round 70","completed":69,"total":100,"activity":"round 70 released to 20 workers","elapsedS":1455}
+{"ts":"2026-10-19T04:55:26.171Z","test":"M1-3 beads claim race","scenario":"round 70","completed":70,"total":100,"activity":"completed","elapsedS":1484}
+{"ts":"2026-10-19T04:55:26.172Z","test":"M1-3 beads claim race","scenario":"round 71","completed":70,"total":100,"activity":"begin","elapsedS":1484}
+{"ts":"2026-10-19T04:55:28.618Z","test":"M1-3 beads claim race","scenario":"round 71","completed":70,"total":100,"activity":"round 71 released to 20 workers","elapsedS":1486}
+{"ts":"2026-10-19T04:55:49.602Z","test":"M1-3 beads claim race","scenario":"round 71","completed":71,"total":100,"activity":"completed","elapsedS":1507}
+{"ts":"2026-10-19T04:55:49.602Z","test":"M1-3 beads claim race","scenario":"round 72","completed":71,"total":100,"activity":"begin","elapsedS":1507}
+{"ts":"2026-10-19T04:55:52.045Z","test":"M1-3 beads claim race","scenario":"round 72","completed":71,"total":100,"activity":"round 72 released to 20 workers","elapsedS":1509}
+{"ts":"2026-10-19T04:56:09.835Z","test":"M1-3 beads claim race","scenario":"round 72","completed":72,"total":100,"activity":"completed","elapsedS":1527}
+{"ts":"2026-10-19T04:56:09.836Z","test":"M1-3 beads claim race","scenario":"round 73","completed":72,"total":100,"activity":"begin","elapsedS":1527}
+{"ts":"2026-10-19T04:56:12.321Z","test":"M1-3 beads claim race","scenario":"round 73","completed":72,"total":100,"activity":"round 73 released to 20 workers","elapsedS":1530}
+{"ts":"2026-10-19T04:56:33.047Z","test":"M1-3 beads claim race","scenario":"round 73","completed":73,"total":100,"activity":"completed","elapsedS":1550}
+{"ts":"2026-10-19T04:56:33.047Z","test":"M1-3 beads claim race","scenario":"round 74","completed":73,"total":100,"activity":"begin","elapsedS":1550}
+{"ts":"2026-10-19T04:56:35.580Z","test":"M1-3 beads claim race","scenario":"round 74","completed":73,"total":100,"activity":"round 74 released to 20 workers","elapsedS":1553}
+{"ts":"2026-10-19T04:57:05.682Z","test":"M1-3 beads claim race","scenario":"round 74","completed":74,"total":100,"activity":"completed","elapsedS":1583}
+{"ts":"2026-10-19T04:57:05.683Z","test":"M1-3 beads claim race","scenario":"round 75","completed":74,"total":100,"activity":"begin","elapsedS":1583}
+{"ts":"2026-10-19T04:57:08.168Z","test":"M1-3 beads claim race","scenario":"round 75","completed":74,"total":100,"activity":"round 75 released to 20 workers","elapsedS":1586}
+{"ts":"2026-10-19T04:57:31.953Z","test":"M1-3 beads claim race","scenario":"round 75","completed":75,"total":100,"activity":"completed","elapsedS":1609}
+{"ts":"2026-10-19T04:57:31.953Z","test":"M1-3 beads claim race","scenario":"round 76","completed":75,"total":100,"activity":"begin","elapsedS":1609}
+{"ts":"2026-10-19T04:57:34.272Z","test":"M1-3 beads claim race","scenario":"round 76","completed":75,"total":100,"activity":"round 76 released to 20 workers","elapsedS":1612}
+{"ts":"2026-10-19T04:57:56.772Z","test":"M1-3 beads claim race","scenario":"round 76","completed":76,"total":100,"activity":"completed","elapsedS":1634}
+{"ts":"2026-10-19T04:57:56.773Z","test":"M1-3 beads claim race","scenario":"round 77","completed":76,"total":100,"activity":"begin","elapsedS":1634}
+{"ts":"2026-10-19T04:57:59.379Z","test":"M1-3 beads claim race","scenario":"round 77","completed":76,"total":100,"activity":"round 77 released to 20 workers","elapsedS":1637}
+{"ts":"2026-10-19T04:58:26.272Z","test":"M1-3 beads claim race","scenario":"round 77","completed":77,"total":100,"activity":"completed","elapsedS":1664}
+{"ts":"2026-10-19T04:58:26.272Z","test":"M1-3 beads claim race","scenario":"round 78","completed":77,"total":100,"activity":"begin","elapsedS":1664}
+{"ts":"2026-10-19T04:58:28.839Z","test":"M1-3 beads claim race","scenario":"round 78","completed":77,"total":100,"activity":"round 78 released to 20 workers","elapsedS":1666}
+{"ts":"2026-10-19T04:58:48.577Z","test":"M1-3 beads claim race","scenario":"round 78","completed":78,"total":100,"activity":"completed","elapsedS":1686}
+{"ts":"2026-10-19T04:58:48.577Z","test":"M1-3 beads claim race","scenario":"round 79","completed":78,"total":100,"activity":"begin","elapsedS":1686}
+{"ts":"2026-10-19T04:58:51.079Z","test":"M1-3 beads claim race","scenario":"round 79","completed":78,"total":100,"activity":"round 79 released to 20 workers","elapsedS":1689}
+{"ts":"2026-10-19T04:59:16.227Z","test":"M1-3 beads claim race","scenario":"round 79","completed":79,"total":100,"activity":"completed","elapsedS":1714}
+{"ts":"2026-10-19T04:59:16.227Z","test":"M1-3 beads claim race","scenario":"round 80","completed":79,"total":100,"activity":"begin","elapsedS":1714}
+{"ts":"2026-10-19T04:59:18.777Z","test":"M1-3 beads claim race","scenario":"round 80","completed":79,"total":100,"activity":"round 80 released to 20 workers","elapsedS":1716}
+{"ts":"2026-10-19T04:59:47.128Z","test":"M1-3 beads claim race","scenario":"round 80","completed":80,"total":100,"activity":"completed","elapsedS":1745}
+{"ts":"2026-10-19T04:59:47.129Z","test":"M1-3 beads claim race","scenario":"round 81","completed":80,"total":100,"activity":"begin","elapsedS":1745}
+{"ts":"2026-10-19T04:59:49.754Z","test":"M1-3 beads claim race","scenario":"round 81","completed":80,"total":100,"activity":"round 81 released to 20 workers","elapsedS":1747}
+{"ts":"2026-10-19T05:00:11.486Z","test":"M1-3 beads claim race","scenario":"round 81","completed":81,"total":100,"activity":"completed","elapsedS":1769}
+{"ts":"2026-10-19T05:00:11.486Z","test":"M1-3 beads claim race","scenario":"round 82","completed":81,"total":100,"activity":"begin","elapsedS":1769}
+{"ts":"2026-10-19T05:00:14.199Z","test":"M1-3 beads claim race","scenario":"round 82","completed":81,"total":100,"activity":"round 82 released to 20 workers","elapsedS":1772}
+{"ts":"2026-10-19T05:00:45.060Z","test":"M1-3 beads claim race","scenario":"round 82","completed":82,"total":100,"activity":"completed","elapsedS":1802}
+{"ts":"2026-10-19T05:00:45.060Z","test":"M1-3 beads claim race","scenario":"round 83","completed":82,"total":100,"activity":"begin","elapsedS":1802}
+{"ts":"2026-10-19T05:00:47.589Z","test":"M1-3 beads claim race","scenario":"round 83","completed":82,"total":100,"activity":"round 83 released to 20 workers","elapsedS":1805}
+{"ts":"2026-10-19T05:01:07.765Z","test":"M1-3 beads claim race","scenario":"round 83","completed":83,"total":100,"activity":"completed","elapsedS":1825}
+{"ts":"2026-10-19T05:01:07.765Z","test":"M1-3 beads claim race","scenario":"round 84","completed":83,"total":100,"activity":"begin","elapsedS":1825}
+{"ts":"2026-10-19T05:01:10.206Z","test":"M1-3 beads claim race","scenario":"round 84","completed":83,"total":100,"activity":"round 84 released to 20 workers","elapsedS":1828}
+{"ts":"2026-10-19T05:01:33.306Z","test":"M1-3 beads claim race","scenario":"round 84","completed":84,"total":100,"activity":"completed","elapsedS":1851}
+{"ts":"2026-10-19T05:01:33.306Z","test":"M1-3 beads claim race","scenario":"round 85","completed":84,"total":100,"activity":"begin","elapsedS":1851}
+{"ts":"2026-10-19T05:01:35.927Z","test":"M1-3 beads claim race","scenario":"round 85","completed":84,"total":100,"activity":"round 85 released to 20 workers","elapsedS":1853}
+{"ts":"2026-10-19T05:02:01.931Z","test":"M1-3 beads claim race","scenario":"round 85","completed":85,"total":100,"activity":"completed","elapsedS":1879}
+{"ts":"2026-10-19T05:02:01.931Z","test":"M1-3 beads claim race","scenario":"round 86","completed":85,"total":100,"activity":"begin","elapsedS":1879}
+{"ts":"2026-10-19T05:02:04.363Z","test":"M1-3 beads claim race","scenario":"round 86","completed":85,"total":100,"activity":"round 86 released to 20 workers","elapsedS":1882}
+{"ts":"2026-10-19T05:02:29.840Z","test":"M1-3 beads claim race","scenario":"round 86","completed":86,"total":100,"activity":"completed","elapsedS":1907}
+{"ts":"2026-10-19T05:02:29.840Z","test":"M1-3 beads claim race","scenario":"round 87","completed":86,"total":100,"activity":"begin","elapsedS":1907}
+{"ts":"2026-10-19T05:02:32.561Z","test":"M1-3 beads claim race","scenario":"round 87","completed":86,"total":100,"activity":"round 87 released to 20 workers","elapsedS":1910}
+{"ts":"2026-10-19T05:02:55.833Z","test":"M1-3 beads claim race","scenario":"round 87","completed":87,"total":100,"activity":"completed","elapsedS":1933}
+{"ts":"2026-10-19T05:02:55.834Z","test":"M1-3 beads claim race","scenario":"round 88","completed":87,"total":100,"activity":"begin","elapsedS":1933}
+{"ts":"2026-10-19T05:02:58.088Z","test":"M1-3 beads claim race","scenario":"round 88","completed":87,"total":100,"activity":"round 88 released to 20 workers","elapsedS":1936}
+{"ts":"2026-10-19T05:03:20.789Z","test":"M1-3 beads claim race","scenario":"round 88","completed":88,"total":100,"activity":"completed","elapsedS":1958}
+{"ts":"2026-10-19T05:03:20.789Z","test":"M1-3 beads claim race","scenario":"round 89","completed":88,"total":100,"activity":"begin","elapsedS":1958}
+{"ts":"2026-10-19T05:03:22.829Z","test":"M1-3 beads claim race","scenario":"round 89","completed":88,"total":100,"activity":"round 89 released to 20 workers","elapsedS":1960}
+{"ts":"2026-10-19T05:03:48.012Z","test":"M1-3 beads claim race","scenario":"round 89","completed":89,"total":100,"activity":"completed","elapsedS":1985}
+{"ts":"2026-10-19T05:03:48.013Z","test":"M1-3 beads claim race","scenario":"round 90","completed":89,"total":100,"activity":"begin","elapsedS":1985}
+{"ts":"2026-10-19T05:03:49.929Z","test":"M1-3 beads claim race","scenario":"round 90","completed":89,"total":100,"activity":"round 90 released to 20 workers","elapsedS":1987}
+{"ts":"2026-10-19T05:04:12.291Z","test":"M1-3 beads claim race","scenario":"round 90","completed":90,"total":100,"activity":"completed","elapsedS":2010}
+{"ts":"2026-10-19T05:04:12.292Z","test":"M1-3 beads claim race","scenario":"round 91","completed":90,"total":100,"activity":"begin","elapsedS":2010}
+{"ts":"2026-10-19T05:04:14.328Z","test":"M1-3 beads claim race","scenario":"round 91","completed":90,"total":100,"activity":"round 91 released to 20 workers","elapsedS":2012}
+{"ts":"2026-10-19T05:04:34.996Z","test":"M1-3 beads claim race","scenario":"round 91","completed":91,"total":100,"activity":"completed","elapsedS":2032}
+{"ts":"2026-10-19T05:04:34.996Z","test":"M1-3 beads claim race","scenario":"round 92","completed":91,"total":100,"activity":"begin","elapsedS":2032}
+{"ts":"2026-10-19T05:04:37.153Z","test":"M1-3 beads claim race","scenario":"round 92","completed":91,"total":100,"activity":"round 92 released to 20 workers","elapsedS":2035}
+{"ts":"2026-10-19T05:04:59.189Z","test":"M1-3 beads claim race","scenario":"round 92","completed":92,"total":100,"activity":"completed","elapsedS":2057}
+{"ts":"2026-10-19T05:04:59.189Z","test":"M1-3 beads claim race","scenario":"round 93","completed":92,"total":100,"activity":"begin","elapsedS":2057}
+{"ts":"2026-10-19T05:05:01.256Z","test":"M1-3 beads claim race","scenario":"round 93","completed":92,"total":100,"activity":"round 93 released to 20 workers","elapsedS":2059}
+{"ts":"2026-10-19T05:05:21.696Z","test":"M1-3 beads claim race","scenario":"round 93","completed":93,"total":100,"activity":"completed","elapsedS":2079}
+{"ts":"2026-10-19T05:05:21.696Z","test":"M1-3 beads claim race","scenario":"round 94","completed":93,"total":100,"activity":"begin","elapsedS":2079}
+{"ts":"2026-10-19T05:05:23.610Z","test":"M1-3 beads claim race","scenario":"round 94","completed":93,"total":100,"activity":"round 94 released to 20 workers","elapsedS":2081}
+{"ts":"2026-10-19T05:05:43.271Z","test":"M1-3 beads claim race","scenario":"round 94","completed":94,"total":100,"activity":"completed","elapsedS":2101}
+{"ts":"2026-10-19T05:05:43.271Z","test":"M1-3 beads claim race","scenario":"round 95","completed":94,"total":100,"activity":"begin","elapsedS":2101}
+{"ts":"2026-10-19T05:05:45.370Z","test":"M1-3 beads claim race","scenario":"round 95","completed":94,"total":100,"activity":"round 95 released to 20 workers","elapsedS":2103}
+{"ts":"2026-10-19T05:06:08.473Z","test":"M1-3 beads claim race","scenario":"round 95","completed":95,"total":100,"activity":"completed","elapsedS":2126}
+{"ts":"2026-10-19T05:06:08.474Z","test":"M1-3 beads claim race","scenario":"round 96","completed":95,"total":100,"activity":"begin","elapsedS":2126}
+{"ts":"2026-10-19T05:06:10.518Z","test":"M1-3 beads claim race","scenario":"round 96","completed":95,"total":100,"activity":"round 96 released to 20 workers","elapsedS":2128}
+{"ts":"2026-10-19T05:06:25.125Z","test":"M1-3 beads claim race","scenario":"round 96","completed":96,"total":100,"activity":"completed","elapsedS":2143}
+{"ts":"2026-10-19T05:06:25.125Z","test":"M1-3 beads claim race","scenario":"round 97","completed":96,"total":100,"activity":"begin","elapsedS":2143}
+{"ts":"2026-10-19T05:06:27.193Z","test":"M1-3 beads claim race","scenario":"round 97","completed":96,"total":100,"activity":"round 97 released to 20 workers","elapsedS":2145}
+{"ts":"2026-10-19T05:06:45.243Z","test":"M1-3 beads claim race","scenario":"round 97","completed":97,"total":100,"activity":"completed","elapsedS":2163}
+{"ts":"2026-10-19T05:06:45.243Z","test":"M1-3 beads claim race","scenario":"round 98","completed":97,"total":100,"activity":"begin","elapsedS":2163}
+{"ts":"2026-10-19T05:06:47.285Z","test":"M1-3 beads claim race","scenario":"round 98","completed":97,"total":100,"activity":"round 98 released to 20 workers","elapsedS":2165}
+{"ts":"2026-10-19T05:07:05.796Z","test":"M1-3 beads claim race","scenario":"round 98","completed":98,"total":100,"activity":"completed","elapsedS":2183}
+{"ts":"2026-10-19T05:07:05.796Z","test":"M1-3 beads claim race","scenario":"round 99","completed":98,"total":100,"activity":"begin","elapsedS":2183}
+{"ts":"2026-10-19T05:07:07.856Z","test":"M1-3 beads claim race","scenario":"round 99","completed":98,"total":100,"activity":"round 99 released to 20 workers","elapsedS":2185}
+{"ts":"2026-10-19T05:07:24.010Z","test":"M1-3 beads claim race","scenario":"round 99","completed":99,"total":100,"activity":"completed","elapsedS":2201}
+{"ts":"2026-10-19T05:07:24.010Z","test":"M1-3 beads claim race","scenario":"round 100","completed":99,"total":100,"activity":"begin","elapsedS":2201}
+{"ts":"2026-10-19T05:07:26.112Z","test":"M1-3 beads claim race","scenario":"round 100","completed":99,"total":100,"activity":"round 100 released to 20 workers","elapsedS":2204}
+{"ts":"2026-10-19T05:07:45.392Z","test":"M1-3 beads claim race","scenario":"round 100","completed":100,"total":100,"activity":"completed","elapsedS":2223}

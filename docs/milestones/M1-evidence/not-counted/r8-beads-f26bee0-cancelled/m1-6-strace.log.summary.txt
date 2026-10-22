@@ -1,0 +1,8 @@
+# Summary of not-counted/r8-beads-f26bee0-cancelled/m1-6-strace.log
+# The full log (2324986 bytes, SHA-256 a5c79a2abbf6512860dccbcfa2ae182a01643d66569579f860b511885d19bde7) is archived at commit 605decf6128942da4706b0ece0a5d97a329ed50c:
+# https://github.com/Rockhelljumper/Engineering-Orchestrator/blob/605decf6128942da4706b0ece0a5d97a329ed50c/docs/milestones/M1-evidence/not-counted/r8-beads-f26bee0-cancelled/m1-6-strace.log
+lines: 28103
+first line: 22184 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=22184, si_uid=0} ---
+connect/sendto/sendmsg lines: 0; of them to AF_INET/AF_INET6: 0
+syscall lines by name: none
+other lines (signals, exits): 28103

@@ -1,0 +1,9 @@
+# Summary of bd-build/module-download.log
+# The full log (350545 bytes, SHA-256 807372ba317749fc03a59a0fc60b135e2f61c0544ef627d5da47dc30bdb27303) is archived at commit 605decf6128942da4706b0ece0a5d97a329ed50c:
+# https://github.com/Rockhelljumper/Engineering-Orchestrator/blob/605decf6128942da4706b0ece0a5d97a329ed50c/docs/milestones/M1-evidence/bd-build/module-download.log
+lines: 3838
+first lines:
+  # get https://proxy.golang.org/charm.land/bubbles/v2/@v/v2.0.0.mod
+  # get https://proxy.golang.org/cel.dev/expr/@v/v0.25.2.mod
+  # get https://proxy.golang.org/charm.land/glamour/v2/@v/v2.0.1.mod
+"# get" requests: 3838

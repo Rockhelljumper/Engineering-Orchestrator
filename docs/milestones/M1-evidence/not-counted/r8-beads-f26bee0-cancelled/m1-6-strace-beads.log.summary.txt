@@ -1,0 +1,8 @@
+# Summary of not-counted/r8-beads-f26bee0-cancelled/m1-6-strace-beads.log
+# The full log (2640775 bytes, SHA-256 065e00a827d0a00a9da7d8b29cb374ac263a7a16f3ebfd1535dfdb57ffe014d7) is archived at commit 605decf6128942da4706b0ece0a5d97a329ed50c:
+# https://github.com/Rockhelljumper/Engineering-Orchestrator/blob/605decf6128942da4706b0ece0a5d97a329ed50c/docs/milestones/M1-evidence/not-counted/r8-beads-f26bee0-cancelled/m1-6-strace-beads.log
+lines: 32215
+first line: bd processes traced: 258
+connect/sendto/sendmsg lines: 0; of them to AF_INET/AF_INET6: 0
+syscall lines by name: none
+other lines (signals, exits): 32215

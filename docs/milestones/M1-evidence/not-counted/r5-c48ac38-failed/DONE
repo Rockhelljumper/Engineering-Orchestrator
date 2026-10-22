@@ -1,0 +1,7 @@
+integration start 2026-10-19T03:11:52Z commit c48ac3877ff093a4298a68aec7c46821389b2896 dirty=0
+integration exit=1 2026-10-19T03:29:30Z
+controller-unit start 2026-10-19T03:29:30Z commit c48ac3877ff093a4298a68aec7c46821389b2896 dirty=0
+controller-unit exit=1 2026-10-19T03:39:39Z
+m1-3-claims-race start 2026-10-19T03:39:39Z commit c48ac3877ff093a4298a68aec7c46821389b2896 dirty=0
+m1-3-claims-race exit=1 2026-10-19T03:51:19Z
+behavioral not started: superseded by r6 (c48ac38 failed the beads suites; see integration.tap)

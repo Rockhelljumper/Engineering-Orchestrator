@@ -92,3 +92,20 @@ What eo enforces itself:
 3. Token caps as well as dollar caps, using the reported usage fields.
 4. Unattended tiers use a dedicated API key whose workspace has a Console spend limit set at or below the epic cap. M8 cannot start without the user confirming that setting.
 5. The ledger is reconciled against the Console usage report after each live milestone. This is a manual check by the user, recorded as informational, not as a pass/fail criterion.
+
+### 5.1 Reservation semantics (implemented in M1, `src/budget.ts`)
+
+For each launch the governor computes one reservation **R** (USD and tokens, each by the rule in item 1; tokens use `cap + maxTurnTokens`, or `max(10 × cap, cap + 100k)` until measured). With `spent(S)` = settled charges and `reserved(S)` = open reservations for scope S ∈ {task, epic}:
+
+| Decision | Condition (either dimension, any scope) | Effect |
+|---|---|---|
+| **reject** | `spent(S) + R > cap(S)` | Can never fit, because `spent` only grows. The task goes to `blocked` with a `budget` escalation. Nothing is reserved or launched. |
+| **defer** | otherwise, `spent(S) + reserved(S) + R > cap(S)` | May fit once running work settles. The task stays `ready` and is skipped this pass. |
+| **admit** | otherwise | R is journaled (`budget.reserve`) **before** the attempt-start record; only then is the worker launched. |
+
+Landing exactly on the cap admits. Settlement releases R and charges:
+- the reported cost, when there is one, even above R; the excess is journaled as an overshoot and later admissions see it;
+- the full R, when the cost is unknown (crash, kill, timeout, interruption);
+- zero, only when the journal shows the reservation was never followed by an attempt start (the controller died between the two records).
+
+Because an unknown cost charges the full R, the budget can stop a task before its infra-retry limit. Every figure is derived from journal records, so budget state survives crashes exactly as the journal does. A policy whose single reservation exceeds the task cap is refused at load time, since it would reject every task. Default caps: invocation $0.50 / 200k tokens, so R = $5 / 2M until measured; task $10 / 4M; epic $25 / 20M.

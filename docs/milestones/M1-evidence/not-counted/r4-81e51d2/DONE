@@ -1,0 +1,8 @@
+behavioral start 2026-10-19T01:51:43Z commit 81e51d29b02e4f9f451d2c938388878d43c67101 dirty=0
+integration start 2026-10-19T01:51:43Z commit 81e51d29b02e4f9f451d2c938388878d43c67101 dirty=0
+integration exit=0 2026-10-19T02:11:32Z
+controller-unit start 2026-10-19T02:11:32Z commit 81e51d29b02e4f9f451d2c938388878d43c67101 dirty=0
+controller-unit exit=0 2026-10-19T02:25:14Z
+m1-3-claims-race start 2026-10-19T02:25:14Z commit 81e51d29b02e4f9f451d2c938388878d43c67101 dirty=0
+m1-3-claims-race exit=0 2026-10-19T03:05:02Z
+behavioral exit=0 2026-10-19T04:34:39Z

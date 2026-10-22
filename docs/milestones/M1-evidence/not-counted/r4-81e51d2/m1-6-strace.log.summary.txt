@@ -1,0 +1,8 @@
+# Summary of not-counted/r4-81e51d2/m1-6-strace.log
+# The full log (1705691 bytes, SHA-256 2fbadd0fb34e78e6058368fcbcaab51eae11bc38158ce2380a2f0c90123c9ce9) is archived at commit 605decf6128942da4706b0ece0a5d97a329ed50c:
+# https://github.com/Rockhelljumper/Engineering-Orchestrator/blob/605decf6128942da4706b0ece0a5d97a329ed50c/docs/milestones/M1-evidence/not-counted/r4-81e51d2/m1-6-strace.log
+lines: 20704
+first line: 29725 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=29725, si_uid=0} ---
+connect/sendto/sendmsg lines: 0; of them to AF_INET/AF_INET6: 0
+syscall lines by name: none
+other lines (signals, exits): 20704

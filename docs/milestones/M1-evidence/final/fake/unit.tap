@@ -1,0 +1,593 @@
+TAP version 13
+# Subtest: unmeasured reservation is max(10 x cap, cap + extra) per dimension
+ok 1 - unmeasured reservation is max(10 x cap, cap + extra) per dimension
+  ---
+  duration_ms: 6.385927
+  type: 'test'
+  ...
+# Subtest: measured reservation is cap + largest measured turn
+ok 2 - measured reservation is cap + largest measured turn
+  ---
+  duration_ms: 0.27127
+  type: 'test'
+  ...
+# Subtest: affordable work is admitted and its reservation is journaled before reserve() returns
+ok 3 - affordable work is admitted and its reservation is journaled before reserve() returns
+  ---
+  duration_ms: 4.845948
+  type: 'test'
+  ...
+# Subtest: unaffordable work is rejected and nothing is reserved
+ok 4 - unaffordable work is rejected and nothing is reserved
+  ---
+  duration_ms: 21.738434
+  type: 'test'
+  ...
+# Subtest: a reservation that lands exactly on the cap is admitted; one cent more is rejected
+ok 5 - a reservation that lands exactly on the cap is admitted; one cent more is rejected
+  ---
+  duration_ms: 8.082112
+  type: 'test'
+  ...
+# Subtest: work that fits once running work settles is deferred, not rejected, and later admitted
+ok 6 - work that fits once running work settles is deferred, not rejected, and later admitted
+  ---
+  duration_ms: 17.989222
+  type: 'test'
+  ...
+# Subtest: the epic cap rejects a task whose own cap would still allow it
+ok 7 - the epic cap rejects a task whose own cap would still allow it
+  ---
+  duration_ms: 6.230635
+  type: 'test'
+  ...
+# Subtest: tokens are checked independently of USD
+ok 8 - tokens are checked independently of USD
+  ---
+  duration_ms: 4.13366
+  type: 'test'
+  ...
+# Subtest: settling with a reported cost charges it and releases the reservation
+ok 9 - settling with a reported cost charges it and releases the reservation
+  ---
+  duration_ms: 9.389957
+  type: 'test'
+  ...
+# Subtest: an unknown cost (crash, kill) charges the full reservation
+ok 10 - an unknown cost (crash, kill) charges the full reservation
+  ---
+  duration_ms: 8.363905
+  type: 'test'
+  ...
+# Subtest: a reservation proven never launched charges nothing
+ok 11 - a reservation proven never launched charges nothing
+  ---
+  duration_ms: 19.900449
+  type: 'test'
+  ...
+# Subtest: an overshoot beyond the reservation is journaled and counts against later admissions
+ok 12 - an overshoot beyond the reservation is journaled and counts against later admissions
+  ---
+  duration_ms: 8.901481
+  type: 'test'
+  ...
+# Subtest: negative reported costs are refused
+ok 13 - negative reported costs are refused
+  ---
+  duration_ms: 3.76063
+  type: 'test'
+  ...
+# Subtest: budget state is rebuilt identically from the journal after reopening
+ok 14 - budget state is rebuilt identically from the journal after reopening
+  ---
+  duration_ms: 5.355905
+  type: 'test'
+  ...
+# Subtest: the ledger refuses duplicate reservations and settlement of unknown ids
+ok 15 - the ledger refuses duplicate reservations and settlement of unknown ids
+  ---
+  duration_ms: 0.332126
+  type: 'test'
+  ...
+# Subtest: a policy whose single reservation exceeds the task cap is invalid
+ok 16 - a policy whose single reservation exceeds the task cap is invalid
+  ---
+  duration_ms: 1.782957
+  type: 'test'
+  ...
+# Subtest: property: over random caps and spend, every decision matches the reservation rule
+ok 17 - property: over random caps and spend, every decision matches the reservation rule
+  ---
+  duration_ms: 3080.472851
+  type: 'test'
+  ...
+# Subtest: decide() is pure: evaluating does not reserve
+ok 18 - decide() is pure: evaluating does not reserve
+  ---
+  duration_ms: 0.702464
+  type: 'test'
+  ...
+# Subtest: happy path: every task reaches done in dependency order with verified evidence
+ok 19 - happy path: every task reaches done in dependency order with verified evidence
+  ---
+  duration_ms: 425.690767
+  type: 'test'
+  ...
+# Subtest: a task never starts before its dependencies are done
+ok 20 - a task never starts before its dependencies are done
+  ---
+  duration_ms: 374.373353
+  type: 'test'
+  ...
+# Subtest: the same plan and script produce the same journal sequence (determinism)
+ok 21 - the same plan and script produce the same journal sequence (determinism)
+  ---
+  duration_ms: 632.817481
+  type: 'test'
+  ...
+# Subtest: failed verification returns the task to implementation and it then completes
+ok 22 - failed verification returns the task to implementation and it then completes
+  ---
+  duration_ms: 186.534838
+  type: 'test'
+  ...
+# Subtest: review changes-requested returns the task to implementation
+ok 23 - review changes-requested returns the task to implementation
+  ---
+  duration_ms: 137.37001
+  type: 'test'
+  ...
+# Subtest: correction attempts are bounded: the third distinct failure blocks with an escalation
+ok 24 - correction attempts are bounded: the third distinct failure blocks with an escalation
+  ---
+  duration_ms: 316.143484
+  type: 'test'
+  ...
+# Subtest: the same failure twice in a row escalates early
+ok 25 - the same failure twice in a row escalates early
+  ---
+  duration_ms: 194.408239
+  type: 'test'
+  ...
+# Subtest: infra failures are retried separately and then block
+ok 26 - infra failures are retried separately and then block
+  ---
+  duration_ms: 216.893335
+  type: 'test'
+  ...
+# Subtest: a hanging worker is aborted at the timeout and retried as an infra failure
+ok 27 - a hanging worker is aborted at the timeout and retried as an infra failure
+  ---
+  duration_ms: 363.793804
+  type: 'test'
+  ...
+# Subtest: a lease that cannot be renewed ends the attempt as an infra failure instead of crashing the controller
+ok 28 - a lease that cannot be renewed ends the attempt as an infra failure instead of crashing the controller
+  ---
+  duration_ms: 681.978153
+  type: 'test'
+  ...
+# Subtest: budget: affordable work starts while unaffordable work is rejected before launch
+ok 29 - budget: affordable work starts while unaffordable work is rejected before launch
+  ---
+  duration_ms: 154.093703
+  type: 'test'
+  ...
+# Subtest: budget: unknown costs charge the full reservation, so the budget can stop retries first
+ok 30 - budget: unknown costs charge the full reservation, so the budget can stop retries first
+  ---
+  duration_ms: 133.831556
+  type: 'test'
+  ...
+# Subtest: budget: the epic cap stops new tasks once the epic is spent
+ok 31 - budget: the epic cap stops new tasks once the epic is spent
+  ---
+  duration_ms: 231.290657
+  type: 'test'
+  ...
+# Subtest: M1-10: run and plan import refuse a repository that is not approved
+ok 32 - M1-10: run and plan import refuse a repository that is not approved
+  ---
+  duration_ms: 33.541102
+  type: 'test'
+  ...
+# Subtest: blocked requires an escalation record, and only unblock leaves it
+ok 33 - blocked requires an escalation record, and only unblock leaves it
+  ---
+  duration_ms: 265.635386
+  type: 'test'
+  ...
+# Subtest: a transition to blocked without an escalation id is refused
+ok 34 - a transition to blocked without an escalation id is refused
+  ---
+  duration_ms: 38.511031
+  type: 'test'
+  ...
+# Subtest: a second controller on the same state root is refused in the same process
+ok 35 - a second controller on the same state root is refused in the same process
+  ---
+  duration_ms: 11.475314
+  type: 'test'
+  ...
+# Subtest: a policy edited outside the controller is refused until accepted
+ok 36 - a policy edited outside the controller is refused until accepted
+  ---
+  duration_ms: 24.792327
+  type: 'test'
+  ...
+# Subtest: importing the same task twice is refused
+ok 37 - importing the same task twice is refused
+  ---
+  duration_ms: 28.591242
+  type: 'test'
+  ...
+# Subtest: a task id from a journaled plan cannot be imported again, even if a crash kept it out of the store
+ok 38 - a task id from a journaled plan cannot be imported again, even if a crash kept it out of the store
+  ---
+  duration_ms: 25.380638
+  type: 'test'
+  ...
+# Subtest: restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record
+ok 39 - restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record
+  ---
+  duration_ms: 1399.975496
+  type: 'test'
+  ...
+# earlier journals tried: 69; refused 68; accepted 1 (cuts after the last transition)
+# Subtest: a journal cut back past a repeated block cannot undo the block by passing for a crash
+ok 40 - a journal cut back past a repeated block cannot undo the block by passing for a crash
+  ---
+  duration_ms: 265.163704
+  type: 'test'
+  ...
+# Subtest: evidence or escalation files the journal never recorded make recovery refuse
+ok 41 - evidence or escalation files the journal never recorded make recovery refuse
+  ---
+  duration_ms: 205.280689
+  type: 'test'
+  ...
+# Subtest: no command can act on a state root that recovery refuses: the controller refuses on open
+ok 42 - no command can act on a state root that recovery refuses: the controller refuses on open
+  ---
+  duration_ms: 271.88215
+  type: 'test'
+  ...
+# Subtest: counters changed in the store behind the controller are refused, even ones the journal never set
+ok 43 - counters changed in the store behind the controller are refused, even ones the journal never set
+  ---
+  duration_ms: 52.369076
+  type: 'test'
+  ...
+# Subtest: two tasks behind the journal at once are refused: a crash leaves at most the last transition unapplied
+ok 44 - two tasks behind the journal at once are refused: a crash leaves at most the last transition unapplied
+  ---
+  duration_ms: 50.920019
+  type: 'test'
+  ...
+# Subtest: a refusal is reported with its problems even when the forensic record cannot be written
+ok 45 - a refusal is reported with its problems even when the forensic record cannot be written
+  ---
+  duration_ms: 38.623817
+  type: 'test'
+  ...
+# Subtest: a torn journal tail is preserved in a forensic record before the repair drops it
+ok 46 - a torn journal tail is preserved in a forensic record before the repair drops it
+  ---
+  duration_ms: 88.92846
+  type: 'test'
+  ...
+# Subtest: a refused state root with a torn journal tail is left exactly as found
+ok 47 - a refused state root with a torn journal tail is left exactly as found
+  ---
+  duration_ms: 35.624602
+  type: 'test'
+  ...
+# Subtest: forensic records are never written through a link out of the state root
+ok 48 - forensic records are never written through a link out of the state root
+  ---
+  duration_ms: 31.762565
+  type: 'test'
+  ...
+# Subtest: a legitimate crash followed by eo unblock of another task still recovers
+ok 49 - a legitimate crash followed by eo unblock of another task still recovers
+  ---
+  duration_ms: 401.806643
+  type: 'test'
+  ...
+# Subtest: a state root written before journal positions is refused with a clear message
+ok 50 - a state root written before journal positions is refused with a clear message
+  ---
+  duration_ms: 41.150651
+  type: 'test'
+  ...
+# Subtest: other refusals to open also leave a forensic record
+ok 51 - other refusals to open also leave a forensic record
+  ---
+  duration_ms: 31.432536
+  type: 'test'
+  ...
+# Subtest: an open that fails its policy check finishes no interrupted transition; the accepting open does
+ok 52 - an open that fails its policy check finishes no interrupted transition; the accepting open does
+  ---
+  duration_ms: 56.131353
+  type: 'test'
+  ...
+# Subtest: a journal position that is not a number is refused as invalid, not as an older eo
+ok 53 - a journal position that is not a number is refused as invalid, not as an older eo
+  ---
+  duration_ms: 27.417843
+  type: 'test'
+  ...
+# Subtest: a legitimate crash between the journal append and the store update is recovered
+ok 54 - a legitimate crash between the journal append and the store update is recovered
+  ---
+  duration_ms: 45.383451
+  type: 'test'
+  ...
+# Subtest: known limit (M2-0b): restoring the journal and the store together to an older consistent snapshot is not detected
+ok 55 - known limit (M2-0b): restoring the journal and the store together to an older consistent snapshot is not detected
+  ---
+  duration_ms: 241.997246
+  type: 'test'
+  ...
+# Subtest: the run summary reports tasks stalled behind a blocked dependency
+ok 56 - the run summary reports tasks stalled behind a blocked dependency
+  ---
+  duration_ms: 142.497623
+  type: 'test'
+  ...
+# Subtest: a task injected into the store behind the controller is refused, not run
+ok 57 - a task injected into the store behind the controller is refused, not run
+  ---
+  duration_ms: 32.590968
+  type: 'test'
+  ...
+# Subtest: a task whose epic or dependencies were edited in the store is refused
+ok 58 - a task whose epic or dependencies were edited in the store is refused
+  ---
+  duration_ms: 78.960882
+  type: 'test'
+  ...
+# Subtest: tasks run only against the repository their plan was approved for
+ok 59 - tasks run only against the repository their plan was approved for
+  ---
+  duration_ms: 130.05702
+  type: 'test'
+  ...
+# Subtest: a hand-edited policy can be accepted by a human, after which the controller opens
+ok 60 - a hand-edited policy can be accepted by a human, after which the controller opens
+  ---
+  duration_ms: 18.740799
+  type: 'test'
+  ...
+# Subtest: a crash between journaling a policy change and committing it does not wedge the state root
+ok 61 - a crash between journaling a policy change and committing it does not wedge the state root
+  ---
+  duration_ms: 17.450852
+  type: 'test'
+  ...
+# Subtest: a malformed reported cost is charged as unknown instead of wedging the journal
+ok 62 - a malformed reported cost is charged as unknown instead of wedging the journal
+  ---
+  duration_ms: 151.093807
+  type: 'test'
+  ...
+# Subtest: sealed evidence verifies
+ok 63 - sealed evidence verifies
+  ---
+  duration_ms: 38.977534
+  type: 'test'
+  ...
+# Subtest: M1-5: changing an artefact, the manifest or its identity is detected
+ok 64 - M1-5: changing an artefact, the manifest or its identity is detected
+  ---
+  duration_ms: 17.344404
+  type: 'test'
+  ...
+# Subtest: M1-5: a manifest copied from another attempt is detected
+ok 65 - M1-5: a manifest copied from another attempt is detected
+  ---
+  duration_ms: 6.753547
+  type: 'test'
+  ...
+# Subtest: M1-5: a forged manifest without the key is detected
+ok 66 - M1-5: a forged manifest without the key is detected
+  ---
+  duration_ms: 8.062347
+  type: 'test'
+  ...
+# Subtest: evidence paths cannot escape the ledger
+ok 67 - evidence paths cannot escape the ledger
+  ---
+  duration_ms: 2.728852
+  type: 'test'
+  ...
+# Subtest: the default policy is valid and round-trips
+ok 68 - the default policy is valid and round-trips
+  ---
+  duration_ms: 4.442815
+  type: 'test'
+  ...
+# Subtest: invalid policies are refused
+ok 69 - invalid policies are refused
+  ---
+  duration_ms: 1.379502
+  type: 'test'
+  ...
+# Subtest: M1-10: repository approval is by canonical path
+ok 70 - M1-10: repository approval is by canonical path
+  ---
+  duration_ms: 1.131761
+  type: 'test'
+  ...
+# Subtest: the sample plan is valid and orders dependencies first
+ok 71 - the sample plan is valid and orders dependencies first
+  ---
+  duration_ms: 1.383258
+  type: 'test'
+  ...
+# Subtest: invalid plans are refused
+ok 72 - invalid plans are refused
+  ---
+  duration_ms: 1.520143
+  type: 'test'
+  ...
+# Subtest: plan hash is independent of key order
+ok 73 - plan hash is independent of key order
+  ---
+  duration_ms: 0.582333
+  type: 'test'
+  ...
+# Subtest: a corrupt or malformed manifest is reported, not thrown
+ok 74 - a corrupt or malformed manifest is reported, not thrown
+  ---
+  duration_ms: 4.829122
+  type: 'test'
+  ...
+# Subtest: a repository that contains the state root, or lies inside it, cannot be approved
+ok 75 - a repository that contains the state root, or lies inside it, cannot be approved
+  ---
+  duration_ms: 1.297092
+  type: 'test'
+  ...
+# Subtest: M1-10: replacing an approved directory with a symlink does not move the approval
+ok 76 - M1-10: replacing an approved directory with a symlink does not move the approval
+  ---
+  duration_ms: 0.603894
+  type: 'test'
+  ...
+# Subtest: appends are chained, sequential and verify
+ok 77 - appends are chained, sequential and verify
+  ---
+  duration_ms: 13.027434
+  type: 'test'
+  ...
+# Subtest: reopening continues the chain
+ok 78 - reopening continues the chain
+  ---
+  duration_ms: 5.217785
+  type: 'test'
+  ...
+# Subtest: M1-5: editing a record is detected
+ok 79 - M1-5: editing a record is detected
+  ---
+  duration_ms: 5.316601
+  type: 'test'
+  ...
+# Subtest: M1-5: deleting a record is detected
+ok 80 - M1-5: deleting a record is detected
+  ---
+  duration_ms: 3.710056
+  type: 'test'
+  ...
+# Subtest: M1-5: deleting the final record is not detectable from the file alone (documented limit)
+ok 81 - M1-5: deleting the final record is not detectable from the file alone (documented limit)
+  ---
+  duration_ms: 3.679074
+  type: 'test'
+  ...
+# Subtest: M1-5: reordering records is detected
+ok 82 - M1-5: reordering records is detected
+  ---
+  duration_ms: 3.692549
+  type: 'test'
+  ...
+# Subtest: M1-5: a record re-MACed with a different key is detected
+ok 83 - M1-5: a record re-MACed with a different key is detected
+  ---
+  duration_ms: 8.962118
+  type: 'test'
+  ...
+# Subtest: the wrong key fails every record
+ok 84 - the wrong key fails every record
+  ---
+  duration_ms: 11.145625
+  type: 'test'
+  ...
+# Subtest: a torn final line is reported, refused without repair, and removed with repair
+ok 85 - a torn final line is reported, refused without repair, and removed with repair
+  ---
+  duration_ms: 39.209008
+  type: 'test'
+  ...
+# Subtest: garbage in the middle of the journal is tampering, not a torn tail
+ok 86 - garbage in the middle of the journal is tampering, not a torn tail
+  ---
+  duration_ms: 19.227393
+  type: 'test'
+  ...
+# Subtest: a complete final record without its newline is accepted (its MAC proves it whole)
+ok 87 - a complete final record without its newline is accepted (its MAC proves it whole)
+  ---
+  duration_ms: 13.271886
+  type: 'test'
+  ...
+# Subtest: ofType filters and records() reflects appends
+ok 88 - ofType filters and records() reflects appends
+  ---
+  duration_ms: 3.139053
+  type: 'test'
+  ...
+# Subtest: appending after a final record that lost its newline keeps the journal valid
+ok 89 - appending after a final record that lost its newline keeps the journal valid
+  ---
+  duration_ms: 3.968527
+  type: 'test'
+  ...
+# Subtest: M1-5: a record spliced in from a diverged copy (same key) with its prev rewritten is detected
+ok 90 - M1-5: a record spliced in from a diverged copy (same key) with its prev rewritten is detected
+  ---
+  duration_ms: 6.030479
+  type: 'test'
+  ...
+# Subtest: accepts a valid value
+ok 91 - accepts a valid value
+  ---
+  duration_ms: 3.583844
+  type: 'test'
+  ...
+# Subtest: reports each kind of violation
+ok 92 - reports each kind of violation
+  ---
+  duration_ms: 1.036396
+  type: 'test'
+  ...
+# Subtest: rejects non-finite numbers
+ok 93 - rejects non-finite numbers
+  ---
+  duration_ms: 0.516067
+  type: 'test'
+  ...
+# Subtest: M1-1: every ordered pair of states is allowed exactly when the spec allows it
+ok 94 - M1-1: every ordered pair of states is allowed exactly when the spec allows it
+  ---
+  duration_ms: 3.754461
+  type: 'test'
+  ...
+# Subtest: M1-1: the spec table matches the architecture diagram edge for edge
+ok 95 - M1-1: the spec table matches the architecture diagram edge for edge
+  ---
+  duration_ms: 9.950613
+  type: 'test'
+  ...
+# Subtest: no self-transitions and done is terminal
+ok 96 - no self-transitions and done is terminal
+  ---
+  duration_ms: 0.408071
+  type: 'test'
+  ...
+# Subtest: only "blocked -> ready" leaves blocked
+ok 97 - only "blocked -> ready" leaves blocked
+  ---
+  duration_ms: 0.658607
+  type: 'test'
+  ...
+1..97
+# tests 97
+# suites 0
+# pass 97
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16344.855182

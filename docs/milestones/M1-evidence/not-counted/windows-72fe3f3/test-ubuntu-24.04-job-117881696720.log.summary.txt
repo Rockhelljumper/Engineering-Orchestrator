@@ -1,0 +1,27 @@
+# Summary of not-counted/windows-72fe3f3/test-ubuntu-24.04-job-117881696720.log
+# The full log (258279 bytes, SHA-256 3d72216bd7b394550b57985ee83e20bcf594877275a55b7e26c60ccd147eafed) is archived at commit 605decf6128942da4706b0ece0a5d97a329ed50c:
+# https://github.com/Rockhelljumper/Engineering-Orchestrator/blob/605decf6128942da4706b0ece0a5d97a329ed50c/docs/milestones/M1-evidence/not-counted/windows-72fe3f3/test-ubuntu-24.04-job-117881696720.log
+lines: 2009
+key lines (timestamps and ANSI codes removed):
+  HEAD is now at 335a06a Merge 72fe3f3944d1f151efc1a37f84c1098778933311 into 90ceb6cbe9bb0774f477351f6eb78d71ffb24cd0
+  # tests 77
+  # suites 0
+  # pass 77
+  # fail 0
+  # cancelled 0
+  # skipped 0
+  # todo 0
+  # tests 63
+  # suites 2
+  # pass 47
+  # fail 0
+  # cancelled 0
+  # skipped 16
+  # todo 0
+  # tests 3
+  # suites 0
+  # pass 3
+  # fail 0
+  # cancelled 0
+  # skipped 0
+  # todo 0

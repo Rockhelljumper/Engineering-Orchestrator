@@ -102,6 +102,7 @@ stateDiagram-v2
   planned --> ready: deps done
   planned --> blocked: open question
   ready --> implementing: atomic claim (lease)
+  ready --> blocked: budget can never fit / policy refusal before launch
   implementing --> verifying: worker exits with commit
   implementing --> ready: interrupted (infra retry left)
   implementing --> blocked: infra retries exhausted / budget / timeout / policy violation / invalid output twice
@@ -136,7 +137,7 @@ Every loop in the diagram has a counter and a transition to `blocked`:
 
 `blocked` always carries an escalation record. Only a human command moves a task out of `blocked`.
 
-beads statuses are coarse, so the fine-grained state lives in a controller-managed label/field on the beads issue plus the journal; the journal is authoritative when they disagree, and `eo doctor` reports any disagreement.
+beads statuses are coarse, so the fine-grained state lives in a controller-managed label/field on the beads issue plus the journal. Every task also records `journalSeq`, the position of the journal record of the last transition applied to it. The journal is authoritative only in one direction: a store **behind** the journal by exactly the journal's last transition is a crash between the append and the store update, and the next controller open finishes it. Any other disagreement (a task ahead of or diverged from the journal, two tasks behind, a task the journal never planned, evidence or escalation files the journal never recorded) is refused on open, before any command writes, with a forensic record under `<state root>/forensics/`; `eo doctor` reports the same problems. Restoring the journal and the store together to an older consistent snapshot is not detectable from inside the state root and is tracked as M2-0b (see the threat model, T10).
 
 ## 6. Quality gates and Definition of Done
 
@@ -188,7 +189,7 @@ A task is `done` only when the controller finds, for the merged commit: verifica
 
 - beads holds the task graph, claims and leases. The journal holds the step-by-step intent/outcome log. Evidence is on disk in the state root. Chat context holds nothing that matters.
 - Each step writes an *intent* record before acting and an *outcome* record after. On `eo resume` (also run automatically at the start of `eo run`, and in read-only form by the plugin's `SessionStart` hook):
-  1. Replay the journal; verify its HMAC chain.
+  1. Replay the journal; verify its HMAC chain. Compare every task's state, counters and `journalSeq` with the state the journal implies, and refuse (changing nothing, writing a forensic record) unless the only difference is the journal's last transition left unapplied by a crash. A torn final journal line is copied byte for byte into a forensic record before it is dropped.
   2. For intents without outcomes: if the worker process is gone or its lease expired, mark the attempt `interrupted`, preserve its clone for audit, call `bd reclaim`, and return the task to `ready` (counts against infra retries; exhausted → `blocked`).
   3. Verification steps are simply re-run (they are deterministic and run in a fresh clone).
   4. Integration steps are checked against git state in the mirror (is the merge commit present?) and completed or rolled back.

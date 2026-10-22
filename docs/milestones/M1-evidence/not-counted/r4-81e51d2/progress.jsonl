@@ -1,0 +1,926 @@
+{"ts":"2026-10-19T01:53:10.362Z","test":"M1-4 every boundary","scenario":"","completed":0,"total":70,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T01:53:10.362Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T01:53:29.395Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"crashed after journal append 1","elapsedS":19}
+{"ts":"2026-10-19T01:53:33.685Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"resume finished","elapsedS":23}
+{"ts":"2026-10-19T01:54:44.164Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":0,"total":70,"activity":"run after resume finished","elapsedS":94}
+{"ts":"2026-10-19T01:54:45.728Z","test":"M1-4 every boundary","scenario":"boundary 1","completed":1,"total":70,"activity":"completed","elapsedS":95}
+{"ts":"2026-10-19T01:54:45.728Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"begin","elapsedS":95}
+{"ts":"2026-10-19T01:55:04.002Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"crashed after journal append 2","elapsedS":114}
+{"ts":"2026-10-19T01:55:08.191Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"resume finished","elapsedS":118}
+{"ts":"2026-10-19T01:56:14.883Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":1,"total":70,"activity":"run after resume finished","elapsedS":185}
+{"ts":"2026-10-19T01:56:16.424Z","test":"M1-4 every boundary","scenario":"boundary 2","completed":2,"total":70,"activity":"completed","elapsedS":186}
+{"ts":"2026-10-19T01:56:16.424Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"begin","elapsedS":186}
+{"ts":"2026-10-19T01:56:35.113Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"crashed after journal append 3","elapsedS":205}
+{"ts":"2026-10-19T01:56:42.804Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":212}
+{"ts":"2026-10-19T01:56:53.940Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"resume finished","elapsedS":224}
+{"ts":"2026-10-19T01:57:52.108Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":2,"total":70,"activity":"run after resume finished","elapsedS":282}
+{"ts":"2026-10-19T01:57:53.544Z","test":"M1-4 every boundary","scenario":"boundary 3","completed":3,"total":70,"activity":"completed","elapsedS":283}
+{"ts":"2026-10-19T01:57:53.544Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"begin","elapsedS":283}
+{"ts":"2026-10-19T01:58:15.040Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"crashed after journal append 4","elapsedS":305}
+{"ts":"2026-10-19T01:58:21.198Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"resume finished","elapsedS":311}
+{"ts":"2026-10-19T01:59:29.214Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":3,"total":70,"activity":"run after resume finished","elapsedS":379}
+{"ts":"2026-10-19T01:59:30.818Z","test":"M1-4 every boundary","scenario":"boundary 4","completed":4,"total":70,"activity":"completed","elapsedS":380}
+{"ts":"2026-10-19T01:59:30.818Z","test":"M1-4 every boundary","scenario":"boundary 5","completed":4,"total":70,"activity":"begin","elapsedS":380}
+{"ts":"2026-10-19T01:59:52.870Z","test":"M1-4 every boundary","scenario":"boundary 5","completed":4,"total":70,"activity":"crashed after journal append 5","elapsedS":403}
+{"ts":"2026-10-19T01:59:59.857Z","test":"M1-4 every boundary","scenario":"boundary 5","completed":4,"total":70,"activity":"resume finished","elapsedS":409}
+{"ts":"2026-10-19T02:01:09.135Z","test":"M1-4 every boundary","scenario":"boundary 5","completed":4,"total":70,"activity":"run after resume finished","elapsedS":479}
+{"ts":"2026-10-19T02:01:10.779Z","test":"M1-4 every boundary","scenario":"boundary 5","completed":5,"total":70,"activity":"completed","elapsedS":480}
+{"ts":"2026-10-19T02:01:10.779Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":5,"total":70,"activity":"begin","elapsedS":480}
+{"ts":"2026-10-19T02:01:32.473Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":5,"total":70,"activity":"crashed after journal append 6","elapsedS":502}
+{"ts":"2026-10-19T02:01:48.303Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":5,"total":70,"activity":"second crash during recovery at append 13 (exit 137)","elapsedS":518}
+{"ts":"2026-10-19T02:01:55.641Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":5,"total":70,"activity":"resume finished","elapsedS":525}
+{"ts":"2026-10-19T02:02:47.078Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":5,"total":70,"activity":"run after resume finished","elapsedS":577}
+{"ts":"2026-10-19T02:02:48.639Z","test":"M1-4 every boundary","scenario":"boundary 6","completed":6,"total":70,"activity":"completed","elapsedS":578}
+{"ts":"2026-10-19T02:02:48.639Z","test":"M1-4 every boundary","scenario":"boundary 7","completed":6,"total":70,"activity":"begin","elapsedS":578}
+{"ts":"2026-10-19T02:03:10.729Z","test":"M1-4 every boundary","scenario":"boundary 7","completed":6,"total":70,"activity":"crashed after journal append 7","elapsedS":600}
+{"ts":"2026-10-19T02:03:21.701Z","test":"M1-4 every boundary","scenario":"boundary 7","completed":6,"total":70,"activity":"resume finished","elapsedS":611}
+{"ts":"2026-10-19T02:04:23.218Z","test":"M1-4 every boundary","scenario":"boundary 7","completed":6,"total":70,"activity":"run after resume finished","elapsedS":673}
+{"ts":"2026-10-19T02:04:24.699Z","test":"M1-4 every boundary","scenario":"boundary 7","completed":7,"total":70,"activity":"completed","elapsedS":674}
+{"ts":"2026-10-19T02:04:24.699Z","test":"M1-4 every boundary","scenario":"boundary 8","completed":7,"total":70,"activity":"begin","elapsedS":674}
+{"ts":"2026-10-19T02:04:46.989Z","test":"M1-4 every boundary","scenario":"boundary 8","completed":7,"total":70,"activity":"crashed after journal append 8","elapsedS":697}
+{"ts":"2026-10-19T02:04:57.499Z","test":"M1-4 every boundary","scenario":"boundary 8","completed":7,"total":70,"activity":"resume finished","elapsedS":707}
+{"ts":"2026-10-19T02:05:55.845Z","test":"M1-4 every boundary","scenario":"boundary 8","completed":7,"total":70,"activity":"run after resume finished","elapsedS":765}
+{"ts":"2026-10-19T02:05:57.258Z","test":"M1-4 every boundary","scenario":"boundary 8","completed":8,"total":70,"activity":"completed","elapsedS":767}
+{"ts":"2026-10-19T02:05:57.258Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":8,"total":70,"activity":"begin","elapsedS":767}
+{"ts":"2026-10-19T02:06:20.672Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":8,"total":70,"activity":"crashed after journal append 9","elapsedS":790}
+{"ts":"2026-10-19T02:06:29.511Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":8,"total":70,"activity":"second crash during recovery at append 4 (exit 137)","elapsedS":799}
+{"ts":"2026-10-19T02:06:34.742Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":8,"total":70,"activity":"resume finished","elapsedS":804}
+{"ts":"2026-10-19T02:07:31.460Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":8,"total":70,"activity":"run after resume finished","elapsedS":861}
+{"ts":"2026-10-19T02:07:32.907Z","test":"M1-4 every boundary","scenario":"boundary 9","completed":9,"total":70,"activity":"completed","elapsedS":863}
+{"ts":"2026-10-19T02:07:32.907Z","test":"M1-4 every boundary","scenario":"boundary 10","completed":9,"total":70,"activity":"begin","elapsedS":863}
+{"ts":"2026-10-19T02:07:56.173Z","test":"M1-4 every boundary","scenario":"boundary 10","completed":9,"total":70,"activity":"crashed after journal append 10","elapsedS":886}
+{"ts":"2026-10-19T02:08:05.305Z","test":"M1-4 every boundary","scenario":"boundary 10","completed":9,"total":70,"activity":"resume finished","elapsedS":895}
+{"ts":"2026-10-19T02:09:01.180Z","test":"M1-4 every boundary","scenario":"boundary 10","completed":9,"total":70,"activity":"run after resume finished","elapsedS":951}
+{"ts":"2026-10-19T02:09:02.704Z","test":"M1-4 every boundary","scenario":"boundary 10","completed":10,"total":70,"activity":"completed","elapsedS":952}
+{"ts":"2026-10-19T02:09:02.705Z","test":"M1-4 every boundary","scenario":"boundary 11","completed":10,"total":70,"activity":"begin","elapsedS":952}
+{"ts":"2026-10-19T02:09:28.002Z","test":"M1-4 every boundary","scenario":"boundary 11","completed":10,"total":70,"activity":"crashed after journal append 11","elapsedS":978}
+{"ts":"2026-10-19T02:09:37.609Z","test":"M1-4 every boundary","scenario":"boundary 11","completed":10,"total":70,"activity":"resume finished","elapsedS":987}
+{"ts":"2026-10-19T02:10:38.862Z","test":"M1-4 every boundary","scenario":"boundary 11","completed":10,"total":70,"activity":"run after resume finished","elapsedS":1049}
+{"ts":"2026-10-19T02:10:40.439Z","test":"M1-4 every boundary","scenario":"boundary 11","completed":11,"total":70,"activity":"completed","elapsedS":1050}
+{"ts":"2026-10-19T02:10:40.440Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":11,"total":70,"activity":"begin","elapsedS":1050}
+{"ts":"2026-10-19T02:11:07.468Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":11,"total":70,"activity":"crashed after journal append 12","elapsedS":1077}
+{"ts":"2026-10-19T02:11:20.922Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":11,"total":70,"activity":"second crash during recovery at append 10 (exit 137)","elapsedS":1091}
+{"ts":"2026-10-19T02:11:29.459Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":11,"total":70,"activity":"resume finished","elapsedS":1099}
+{"ts":"2026-10-19T02:12:22.020Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":11,"total":70,"activity":"run after resume finished","elapsedS":1152}
+{"ts":"2026-10-19T02:12:23.456Z","test":"M1-4 every boundary","scenario":"boundary 12","completed":12,"total":70,"activity":"completed","elapsedS":1153}
+{"ts":"2026-10-19T02:12:23.456Z","test":"M1-4 every boundary","scenario":"boundary 13","completed":12,"total":70,"activity":"begin","elapsedS":1153}
+{"ts":"2026-10-19T02:12:51.709Z","test":"M1-4 every boundary","scenario":"boundary 13","completed":12,"total":70,"activity":"crashed after journal append 13","elapsedS":1181}
+{"ts":"2026-10-19T02:12:57.610Z","test":"M1-4 every boundary","scenario":"boundary 13","completed":12,"total":70,"activity":"resume finished","elapsedS":1187}
+{"ts":"2026-10-19T02:13:53.698Z","test":"M1-4 every boundary","scenario":"boundary 13","completed":12,"total":70,"activity":"run after resume finished","elapsedS":1243}
+{"ts":"2026-10-19T02:13:55.162Z","test":"M1-4 every boundary","scenario":"boundary 13","completed":13,"total":70,"activity":"completed","elapsedS":1245}
+{"ts":"2026-10-19T02:13:55.163Z","test":"M1-4 every boundary","scenario":"boundary 14","completed":13,"total":70,"activity":"begin","elapsedS":1245}
+{"ts":"2026-10-19T02:14:23.223Z","test":"M1-4 every boundary","scenario":"boundary 14","completed":13,"total":70,"activity":"crashed after journal append 14","elapsedS":1273}
+{"ts":"2026-10-19T02:14:27.993Z","test":"M1-4 every boundary","scenario":"boundary 14","completed":13,"total":70,"activity":"resume finished","elapsedS":1278}
+{"ts":"2026-10-19T02:15:22.363Z","test":"M1-4 every boundary","scenario":"boundary 14","completed":13,"total":70,"activity":"run after resume finished","elapsedS":1332}
+{"ts":"2026-10-19T02:15:23.770Z","test":"M1-4 every boundary","scenario":"boundary 14","completed":14,"total":70,"activity":"completed","elapsedS":1333}
+{"ts":"2026-10-19T02:15:23.770Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":14,"total":70,"activity":"begin","elapsedS":1333}
+{"ts":"2026-10-19T02:15:52.985Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":14,"total":70,"activity":"crashed after journal append 15","elapsedS":1363}
+{"ts":"2026-10-19T02:15:57.840Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":14,"total":70,"activity":"second crash during recovery at append 1 (exit 137)","elapsedS":1367}
+{"ts":"2026-10-19T02:16:01.907Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":14,"total":70,"activity":"resume finished","elapsedS":1372}
+{"ts":"2026-10-19T02:16:54.174Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":14,"total":70,"activity":"run after resume finished","elapsedS":1424}
+{"ts":"2026-10-19T02:16:55.646Z","test":"M1-4 every boundary","scenario":"boundary 15","completed":15,"total":70,"activity":"completed","elapsedS":1425}
+{"ts":"2026-10-19T02:16:55.646Z","test":"M1-4 every boundary","scenario":"boundary 16","completed":15,"total":70,"activity":"begin","elapsedS":1425}
+{"ts":"2026-10-19T02:17:26.810Z","test":"M1-4 every boundary","scenario":"boundary 16","completed":15,"total":70,"activity":"crashed after journal append 16","elapsedS":1456}
+{"ts":"2026-10-19T02:17:31.618Z","test":"M1-4 every boundary","scenario":"boundary 16","completed":15,"total":70,"activity":"resume finished","elapsedS":1461}
+{"ts":"2026-10-19T02:18:24.784Z","test":"M1-4 every boundary","scenario":"boundary 16","completed":15,"total":70,"activity":"run after resume finished","elapsedS":1514}
+{"ts":"2026-10-19T02:18:26.380Z","test":"M1-4 every boundary","scenario":"boundary 16","completed":16,"total":70,"activity":"completed","elapsedS":1516}
+{"ts":"2026-10-19T02:18:26.380Z","test":"M1-4 every boundary","scenario":"boundary 17","completed":16,"total":70,"activity":"begin","elapsedS":1516}
+{"ts":"2026-10-19T02:18:58.156Z","test":"M1-4 every boundary","scenario":"boundary 17","completed":16,"total":70,"activity":"crashed after journal append 17","elapsedS":1548}
+{"ts":"2026-10-19T02:19:05.421Z","test":"M1-4 every boundary","scenario":"boundary 17","completed":16,"total":70,"activity":"resume finished","elapsedS":1555}
+{"ts":"2026-10-19T02:19:55.433Z","test":"M1-4 every boundary","scenario":"boundary 17","completed":16,"total":70,"activity":"run after resume finished","elapsedS":1605}
+{"ts":"2026-10-19T02:19:56.863Z","test":"M1-4 every boundary","scenario":"boundary 17","completed":17,"total":70,"activity":"completed","elapsedS":1607}
+{"ts":"2026-10-19T02:19:56.863Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":17,"total":70,"activity":"begin","elapsedS":1607}
+{"ts":"2026-10-19T02:20:31.149Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":17,"total":70,"activity":"crashed after journal append 18","elapsedS":1641}
+{"ts":"2026-10-19T02:20:40.344Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":17,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":1650}
+{"ts":"2026-10-19T02:20:46.458Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":17,"total":70,"activity":"resume finished","elapsedS":1656}
+{"ts":"2026-10-19T02:21:36.527Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":17,"total":70,"activity":"run after resume finished","elapsedS":1706}
+{"ts":"2026-10-19T02:21:38.096Z","test":"M1-4 every boundary","scenario":"boundary 18","completed":18,"total":70,"activity":"completed","elapsedS":1708}
+{"ts":"2026-10-19T02:21:38.096Z","test":"M1-4 every boundary","scenario":"boundary 19","completed":18,"total":70,"activity":"begin","elapsedS":1708}
+{"ts":"2026-10-19T02:22:13.821Z","test":"M1-4 every boundary","scenario":"boundary 19","completed":18,"total":70,"activity":"crashed after journal append 19","elapsedS":1743}
+{"ts":"2026-10-19T02:22:21.367Z","test":"M1-4 every boundary","scenario":"boundary 19","completed":18,"total":70,"activity":"resume finished","elapsedS":1751}
+{"ts":"2026-10-19T02:23:11.825Z","test":"M1-4 every boundary","scenario":"boundary 19","completed":18,"total":70,"activity":"run after resume finished","elapsedS":1801}
+{"ts":"2026-10-19T02:23:13.360Z","test":"M1-4 every boundary","scenario":"boundary 19","completed":19,"total":70,"activity":"completed","elapsedS":1803}
+{"ts":"2026-10-19T02:23:13.360Z","test":"M1-4 every boundary","scenario":"boundary 20","completed":19,"total":70,"activity":"begin","elapsedS":1803}
+{"ts":"2026-10-19T02:23:47.722Z","test":"M1-4 every boundary","scenario":"boundary 20","completed":19,"total":70,"activity":"crashed after journal append 20","elapsedS":1837}
+{"ts":"2026-10-19T02:23:54.962Z","test":"M1-4 every boundary","scenario":"boundary 20","completed":19,"total":70,"activity":"resume finished","elapsedS":1845}
+{"ts":"2026-10-19T02:24:47.019Z","test":"M1-4 every boundary","scenario":"boundary 20","completed":19,"total":70,"activity":"run after resume finished","elapsedS":1897}
+{"ts":"2026-10-19T02:24:48.532Z","test":"M1-4 every boundary","scenario":"boundary 20","completed":20,"total":70,"activity":"completed","elapsedS":1898}
+{"ts":"2026-10-19T02:24:48.532Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":20,"total":70,"activity":"begin","elapsedS":1898}
+{"ts":"2026-10-19T02:25:29.992Z","test":"M1-3 beads claim race","scenario":"","completed":0,"total":100,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T02:25:29.993Z","test":"M1-3 beads claim race","scenario":"round 1","completed":0,"total":100,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T02:25:31.764Z","test":"M1-3 beads claim race","scenario":"round 1","completed":0,"total":100,"activity":"round 1 released to 20 workers","elapsedS":2}
+{"ts":"2026-10-19T02:25:33.535Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":20,"total":70,"activity":"crashed after journal append 21","elapsedS":1943}
+{"ts":"2026-10-19T02:25:48.387Z","test":"M1-3 beads claim race","scenario":"round 1","completed":1,"total":100,"activity":"completed","elapsedS":18}
+{"ts":"2026-10-19T02:25:48.387Z","test":"M1-3 beads claim race","scenario":"round 2","completed":1,"total":100,"activity":"begin","elapsedS":18}
+{"ts":"2026-10-19T02:25:49.692Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":20,"total":70,"activity":"second crash during recovery at append 13 (exit 137)","elapsedS":1959}
+{"ts":"2026-10-19T02:25:50.003Z","test":"M1-3 beads claim race","scenario":"round 2","completed":1,"total":100,"activity":"round 2 released to 20 workers","elapsedS":20}
+{"ts":"2026-10-19T02:25:56.085Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":20,"total":70,"activity":"resume finished","elapsedS":1966}
+{"ts":"2026-10-19T02:26:08.079Z","test":"M1-3 beads claim race","scenario":"round 2","completed":2,"total":100,"activity":"completed","elapsedS":38}
+{"ts":"2026-10-19T02:26:08.079Z","test":"M1-3 beads claim race","scenario":"round 3","completed":2,"total":100,"activity":"begin","elapsedS":38}
+{"ts":"2026-10-19T02:26:10.028Z","test":"M1-3 beads claim race","scenario":"round 3","completed":2,"total":100,"activity":"round 3 released to 20 workers","elapsedS":40}
+{"ts":"2026-10-19T02:26:34.317Z","test":"M1-3 beads claim race","scenario":"round 3","completed":3,"total":100,"activity":"completed","elapsedS":64}
+{"ts":"2026-10-19T02:26:34.317Z","test":"M1-3 beads claim race","scenario":"round 4","completed":3,"total":100,"activity":"begin","elapsedS":64}
+{"ts":"2026-10-19T02:26:36.062Z","test":"M1-3 beads claim race","scenario":"round 4","completed":3,"total":100,"activity":"round 4 released to 20 workers","elapsedS":66}
+{"ts":"2026-10-19T02:26:38.163Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":20,"total":70,"activity":"run after resume finished","elapsedS":2008}
+{"ts":"2026-10-19T02:26:39.731Z","test":"M1-4 every boundary","scenario":"boundary 21","completed":21,"total":70,"activity":"completed","elapsedS":2009}
+{"ts":"2026-10-19T02:26:39.731Z","test":"M1-4 every boundary","scenario":"boundary 22","completed":21,"total":70,"activity":"begin","elapsedS":2009}
+{"ts":"2026-10-19T02:26:53.310Z","test":"M1-3 beads claim race","scenario":"round 4","completed":4,"total":100,"activity":"completed","elapsedS":83}
+{"ts":"2026-10-19T02:26:53.310Z","test":"M1-3 beads claim race","scenario":"round 5","completed":4,"total":100,"activity":"begin","elapsedS":83}
+{"ts":"2026-10-19T02:26:55.022Z","test":"M1-3 beads claim race","scenario":"round 5","completed":4,"total":100,"activity":"round 5 released to 20 workers","elapsedS":85}
+{"ts":"2026-10-19T02:27:19.951Z","test":"M1-3 beads claim race","scenario":"round 5","completed":5,"total":100,"activity":"completed","elapsedS":110}
+{"ts":"2026-10-19T02:27:19.951Z","test":"M1-3 beads claim race","scenario":"round 6","completed":5,"total":100,"activity":"begin","elapsedS":110}
+{"ts":"2026-10-19T02:27:21.006Z","test":"M1-4 every boundary","scenario":"boundary 22","completed":21,"total":70,"activity":"crashed after journal append 22","elapsedS":2051}
+{"ts":"2026-10-19T02:27:21.814Z","test":"M1-3 beads claim race","scenario":"round 6","completed":5,"total":100,"activity":"round 6 released to 20 workers","elapsedS":112}
+{"ts":"2026-10-19T02:27:27.125Z","test":"M1-4 every boundary","scenario":"boundary 22","completed":21,"total":70,"activity":"resume finished","elapsedS":2057}
+{"ts":"2026-10-19T02:27:36.139Z","test":"M1-3 beads claim race","scenario":"round 6","completed":6,"total":100,"activity":"completed","elapsedS":126}
+{"ts":"2026-10-19T02:27:36.139Z","test":"M1-3 beads claim race","scenario":"round 7","completed":6,"total":100,"activity":"begin","elapsedS":126}
+{"ts":"2026-10-19T02:27:37.806Z","test":"M1-3 beads claim race","scenario":"round 7","completed":6,"total":100,"activity":"round 7 released to 20 workers","elapsedS":128}
+{"ts":"2026-10-19T02:27:50.804Z","test":"M1-3 beads claim race","scenario":"round 7","completed":7,"total":100,"activity":"completed","elapsedS":141}
+{"ts":"2026-10-19T02:27:50.804Z","test":"M1-3 beads claim race","scenario":"round 8","completed":7,"total":100,"activity":"begin","elapsedS":141}
+{"ts":"2026-10-19T02:27:52.485Z","test":"M1-3 beads claim race","scenario":"round 8","completed":7,"total":100,"activity":"round 8 released to 20 workers","elapsedS":142}
+{"ts":"2026-10-19T02:28:07.518Z","test":"M1-3 beads claim race","scenario":"round 8","completed":8,"total":100,"activity":"completed","elapsedS":158}
+{"ts":"2026-10-19T02:28:07.518Z","test":"M1-3 beads claim race","scenario":"round 9","completed":8,"total":100,"activity":"begin","elapsedS":158}
+{"ts":"2026-10-19T02:28:09.176Z","test":"M1-3 beads claim race","scenario":"round 9","completed":8,"total":100,"activity":"round 9 released to 20 workers","elapsedS":159}
+{"ts":"2026-10-19T02:28:19.876Z","test":"M1-4 every boundary","scenario":"boundary 22","completed":21,"total":70,"activity":"run after resume finished","elapsedS":2110}
+{"ts":"2026-10-19T02:28:21.549Z","test":"M1-4 every boundary","scenario":"boundary 22","completed":22,"total":70,"activity":"completed","elapsedS":2111}
+{"ts":"2026-10-19T02:28:21.549Z","test":"M1-4 every boundary","scenario":"boundary 23","completed":22,"total":70,"activity":"begin","elapsedS":2111}
+{"ts":"2026-10-19T02:28:23.892Z","test":"M1-3 beads claim race","scenario":"round 9","completed":9,"total":100,"activity":"completed","elapsedS":174}
+{"ts":"2026-10-19T02:28:23.893Z","test":"M1-3 beads claim race","scenario":"round 10","completed":9,"total":100,"activity":"begin","elapsedS":174}
+{"ts":"2026-10-19T02:28:25.735Z","test":"M1-3 beads claim race","scenario":"round 10","completed":9,"total":100,"activity":"round 10 released to 20 workers","elapsedS":176}
+{"ts":"2026-10-19T02:28:54.083Z","test":"M1-3 beads claim race","scenario":"round 10","completed":10,"total":100,"activity":"completed","elapsedS":204}
+{"ts":"2026-10-19T02:28:54.083Z","test":"M1-3 beads claim race","scenario":"round 11","completed":10,"total":100,"activity":"begin","elapsedS":204}
+{"ts":"2026-10-19T02:28:55.866Z","test":"M1-3 beads claim race","scenario":"round 11","completed":10,"total":100,"activity":"round 11 released to 20 workers","elapsedS":206}
+{"ts":"2026-10-19T02:29:10.201Z","test":"M1-4 every boundary","scenario":"boundary 23","completed":22,"total":70,"activity":"crashed after journal append 23","elapsedS":2160}
+{"ts":"2026-10-19T02:29:14.070Z","test":"M1-3 beads claim race","scenario":"round 11","completed":11,"total":100,"activity":"completed","elapsedS":224}
+{"ts":"2026-10-19T02:29:14.070Z","test":"M1-3 beads claim race","scenario":"round 12","completed":11,"total":100,"activity":"begin","elapsedS":224}
+{"ts":"2026-10-19T02:29:16.116Z","test":"M1-3 beads claim race","scenario":"round 12","completed":11,"total":100,"activity":"round 12 released to 20 workers","elapsedS":226}
+{"ts":"2026-10-19T02:29:16.384Z","test":"M1-4 every boundary","scenario":"boundary 23","completed":22,"total":70,"activity":"resume finished","elapsedS":2166}
+{"ts":"2026-10-19T02:29:29.003Z","test":"M1-3 beads claim race","scenario":"round 12","completed":12,"total":100,"activity":"completed","elapsedS":239}
+{"ts":"2026-10-19T02:29:29.003Z","test":"M1-3 beads claim race","scenario":"round 13","completed":12,"total":100,"activity":"begin","elapsedS":239}
+{"ts":"2026-10-19T02:29:30.780Z","test":"M1-3 beads claim race","scenario":"round 13","completed":12,"total":100,"activity":"round 13 released to 20 workers","elapsedS":241}
+{"ts":"2026-10-19T02:29:47.796Z","test":"M1-3 beads claim race","scenario":"round 13","completed":13,"total":100,"activity":"completed","elapsedS":258}
+{"ts":"2026-10-19T02:29:47.796Z","test":"M1-3 beads claim race","scenario":"round 14","completed":13,"total":100,"activity":"begin","elapsedS":258}
+{"ts":"2026-10-19T02:29:49.556Z","test":"M1-3 beads claim race","scenario":"round 14","completed":13,"total":100,"activity":"round 14 released to 20 workers","elapsedS":260}
+{"ts":"2026-10-19T02:30:06.232Z","test":"M1-3 beads claim race","scenario":"round 14","completed":14,"total":100,"activity":"completed","elapsedS":276}
+{"ts":"2026-10-19T02:30:06.232Z","test":"M1-3 beads claim race","scenario":"round 15","completed":14,"total":100,"activity":"begin","elapsedS":276}
+{"ts":"2026-10-19T02:30:08.023Z","test":"M1-3 beads claim race","scenario":"round 15","completed":14,"total":100,"activity":"round 15 released to 20 workers","elapsedS":278}
+{"ts":"2026-10-19T02:30:10.508Z","test":"M1-4 every boundary","scenario":"boundary 23","completed":22,"total":70,"activity":"run after resume finished","elapsedS":2220}
+{"ts":"2026-10-19T02:30:12.095Z","test":"M1-4 every boundary","scenario":"boundary 23","completed":23,"total":70,"activity":"completed","elapsedS":2222}
+{"ts":"2026-10-19T02:30:12.095Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":23,"total":70,"activity":"begin","elapsedS":2222}
+{"ts":"2026-10-19T02:30:27.284Z","test":"M1-3 beads claim race","scenario":"round 15","completed":15,"total":100,"activity":"completed","elapsedS":297}
+{"ts":"2026-10-19T02:30:27.284Z","test":"M1-3 beads claim race","scenario":"round 16","completed":15,"total":100,"activity":"begin","elapsedS":297}
+{"ts":"2026-10-19T02:30:29.175Z","test":"M1-3 beads claim race","scenario":"round 16","completed":15,"total":100,"activity":"round 16 released to 20 workers","elapsedS":299}
+{"ts":"2026-10-19T02:30:45.321Z","test":"M1-3 beads claim race","scenario":"round 16","completed":16,"total":100,"activity":"completed","elapsedS":315}
+{"ts":"2026-10-19T02:30:45.321Z","test":"M1-3 beads claim race","scenario":"round 17","completed":16,"total":100,"activity":"begin","elapsedS":315}
+{"ts":"2026-10-19T02:30:47.164Z","test":"M1-3 beads claim race","scenario":"round 17","completed":16,"total":100,"activity":"round 17 released to 20 workers","elapsedS":317}
+{"ts":"2026-10-19T02:30:53.664Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":23,"total":70,"activity":"crashed after journal append 24","elapsedS":2263}
+{"ts":"2026-10-19T02:31:00.913Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":23,"total":70,"activity":"second crash during recovery at append 4 (exit 137)","elapsedS":2271}
+{"ts":"2026-10-19T02:31:01.878Z","test":"M1-3 beads claim race","scenario":"round 17","completed":17,"total":100,"activity":"completed","elapsedS":332}
+{"ts":"2026-10-19T02:31:01.879Z","test":"M1-3 beads claim race","scenario":"round 18","completed":17,"total":100,"activity":"begin","elapsedS":332}
+{"ts":"2026-10-19T02:31:03.757Z","test":"M1-3 beads claim race","scenario":"round 18","completed":17,"total":100,"activity":"round 18 released to 20 workers","elapsedS":334}
+{"ts":"2026-10-19T02:31:05.854Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":23,"total":70,"activity":"resume finished","elapsedS":2275}
+{"ts":"2026-10-19T02:31:18.796Z","test":"M1-3 beads claim race","scenario":"round 18","completed":18,"total":100,"activity":"completed","elapsedS":349}
+{"ts":"2026-10-19T02:31:18.796Z","test":"M1-3 beads claim race","scenario":"round 19","completed":18,"total":100,"activity":"begin","elapsedS":349}
+{"ts":"2026-10-19T02:31:20.636Z","test":"M1-3 beads claim race","scenario":"round 19","completed":18,"total":100,"activity":"round 19 released to 20 workers","elapsedS":351}
+{"ts":"2026-10-19T02:31:35.502Z","test":"M1-3 beads claim race","scenario":"round 19","completed":19,"total":100,"activity":"completed","elapsedS":366}
+{"ts":"2026-10-19T02:31:35.502Z","test":"M1-3 beads claim race","scenario":"round 20","completed":19,"total":100,"activity":"begin","elapsedS":366}
+{"ts":"2026-10-19T02:31:37.339Z","test":"M1-3 beads claim race","scenario":"round 20","completed":19,"total":100,"activity":"round 20 released to 20 workers","elapsedS":367}
+{"ts":"2026-10-19T02:31:57.775Z","test":"M1-3 beads claim race","scenario":"round 20","completed":20,"total":100,"activity":"completed","elapsedS":388}
+{"ts":"2026-10-19T02:31:57.775Z","test":"M1-3 beads claim race","scenario":"round 21","completed":20,"total":100,"activity":"begin","elapsedS":388}
+{"ts":"2026-10-19T02:31:59.639Z","test":"M1-3 beads claim race","scenario":"round 21","completed":20,"total":100,"activity":"round 21 released to 20 workers","elapsedS":390}
+{"ts":"2026-10-19T02:32:00.415Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":23,"total":70,"activity":"run after resume finished","elapsedS":2330}
+{"ts":"2026-10-19T02:32:01.922Z","test":"M1-4 every boundary","scenario":"boundary 24","completed":24,"total":70,"activity":"completed","elapsedS":2332}
+{"ts":"2026-10-19T02:32:01.922Z","test":"M1-4 every boundary","scenario":"boundary 25","completed":24,"total":70,"activity":"begin","elapsedS":2332}
+{"ts":"2026-10-19T02:32:18.840Z","test":"M1-3 beads claim race","scenario":"round 21","completed":21,"total":100,"activity":"completed","elapsedS":409}
+{"ts":"2026-10-19T02:32:18.840Z","test":"M1-3 beads claim race","scenario":"round 22","completed":21,"total":100,"activity":"begin","elapsedS":409}
+{"ts":"2026-10-19T02:32:20.759Z","test":"M1-3 beads claim race","scenario":"round 22","completed":21,"total":100,"activity":"round 22 released to 20 workers","elapsedS":411}
+{"ts":"2026-10-19T02:32:37.050Z","test":"M1-3 beads claim race","scenario":"round 22","completed":22,"total":100,"activity":"completed","elapsedS":427}
+{"ts":"2026-10-19T02:32:37.051Z","test":"M1-3 beads claim race","scenario":"round 23","completed":22,"total":100,"activity":"begin","elapsedS":427}
+{"ts":"2026-10-19T02:32:38.924Z","test":"M1-3 beads claim race","scenario":"round 23","completed":22,"total":100,"activity":"round 23 released to 20 workers","elapsedS":429}
+{"ts":"2026-10-19T02:32:44.042Z","test":"M1-4 every boundary","scenario":"boundary 25","completed":24,"total":70,"activity":"crashed after journal append 25","elapsedS":2374}
+{"ts":"2026-10-19T02:32:55.558Z","test":"M1-3 beads claim race","scenario":"round 23","completed":23,"total":100,"activity":"completed","elapsedS":446}
+{"ts":"2026-10-19T02:32:55.558Z","test":"M1-3 beads claim race","scenario":"round 24","completed":23,"total":100,"activity":"begin","elapsedS":446}
+{"ts":"2026-10-19T02:32:56.852Z","test":"M1-4 every boundary","scenario":"boundary 25","completed":24,"total":70,"activity":"resume finished","elapsedS":2386}
+{"ts":"2026-10-19T02:32:57.403Z","test":"M1-3 beads claim race","scenario":"round 24","completed":23,"total":100,"activity":"round 24 released to 20 workers","elapsedS":447}
+{"ts":"2026-10-19T02:33:13.696Z","test":"M1-3 beads claim race","scenario":"round 24","completed":24,"total":100,"activity":"completed","elapsedS":464}
+{"ts":"2026-10-19T02:33:13.696Z","test":"M1-3 beads claim race","scenario":"round 25","completed":24,"total":100,"activity":"begin","elapsedS":464}
+{"ts":"2026-10-19T02:33:15.509Z","test":"M1-3 beads claim race","scenario":"round 25","completed":24,"total":100,"activity":"round 25 released to 20 workers","elapsedS":466}
+{"ts":"2026-10-19T02:33:36.515Z","test":"M1-3 beads claim race","scenario":"round 25","completed":25,"total":100,"activity":"completed","elapsedS":487}
+{"ts":"2026-10-19T02:33:36.515Z","test":"M1-3 beads claim race","scenario":"round 26","completed":25,"total":100,"activity":"begin","elapsedS":487}
+{"ts":"2026-10-19T02:33:38.377Z","test":"M1-3 beads claim race","scenario":"round 26","completed":25,"total":100,"activity":"round 26 released to 20 workers","elapsedS":488}
+{"ts":"2026-10-19T02:33:39.124Z","test":"M1-4 every boundary","scenario":"boundary 25","completed":24,"total":70,"activity":"run after resume finished","elapsedS":2429}
+{"ts":"2026-10-19T02:33:40.677Z","test":"M1-4 every boundary","scenario":"boundary 25","completed":25,"total":70,"activity":"completed","elapsedS":2430}
+{"ts":"2026-10-19T02:33:40.678Z","test":"M1-4 every boundary","scenario":"boundary 26","completed":25,"total":70,"activity":"begin","elapsedS":2430}
+{"ts":"2026-10-19T02:34:02.348Z","test":"M1-3 beads claim race","scenario":"round 26","completed":26,"total":100,"activity":"completed","elapsedS":512}
+{"ts":"2026-10-19T02:34:02.349Z","test":"M1-3 beads claim race","scenario":"round 27","completed":26,"total":100,"activity":"begin","elapsedS":512}
+{"ts":"2026-10-19T02:34:04.316Z","test":"M1-3 beads claim race","scenario":"round 27","completed":26,"total":100,"activity":"round 27 released to 20 workers","elapsedS":514}
+{"ts":"2026-10-19T02:34:20.232Z","test":"M1-3 beads claim race","scenario":"round 27","completed":27,"total":100,"activity":"completed","elapsedS":530}
+{"ts":"2026-10-19T02:34:20.232Z","test":"M1-3 beads claim race","scenario":"round 28","completed":27,"total":100,"activity":"begin","elapsedS":530}
+{"ts":"2026-10-19T02:34:21.829Z","test":"M1-4 every boundary","scenario":"boundary 26","completed":25,"total":70,"activity":"crashed after journal append 26","elapsedS":2471}
+{"ts":"2026-10-19T02:34:22.025Z","test":"M1-3 beads claim race","scenario":"round 28","completed":27,"total":100,"activity":"round 28 released to 20 workers","elapsedS":532}
+{"ts":"2026-10-19T02:34:33.771Z","test":"M1-4 every boundary","scenario":"boundary 26","completed":25,"total":70,"activity":"resume finished","elapsedS":2483}
+{"ts":"2026-10-19T02:34:43.828Z","test":"M1-3 beads claim race","scenario":"round 28","completed":28,"total":100,"activity":"completed","elapsedS":554}
+{"ts":"2026-10-19T02:34:43.828Z","test":"M1-3 beads claim race","scenario":"round 29","completed":28,"total":100,"activity":"begin","elapsedS":554}
+{"ts":"2026-10-19T02:34:45.719Z","test":"M1-3 beads claim race","scenario":"round 29","completed":28,"total":100,"activity":"round 29 released to 20 workers","elapsedS":556}
+{"ts":"2026-10-19T02:35:00.537Z","test":"M1-3 beads claim race","scenario":"round 29","completed":29,"total":100,"activity":"completed","elapsedS":571}
+{"ts":"2026-10-19T02:35:00.538Z","test":"M1-3 beads claim race","scenario":"round 30","completed":29,"total":100,"activity":"begin","elapsedS":571}
+{"ts":"2026-10-19T02:35:02.405Z","test":"M1-3 beads claim race","scenario":"round 30","completed":29,"total":100,"activity":"round 30 released to 20 workers","elapsedS":572}
+{"ts":"2026-10-19T02:35:16.237Z","test":"M1-4 every boundary","scenario":"boundary 26","completed":25,"total":70,"activity":"run after resume finished","elapsedS":2526}
+{"ts":"2026-10-19T02:35:18.008Z","test":"M1-4 every boundary","scenario":"boundary 26","completed":26,"total":70,"activity":"completed","elapsedS":2528}
+{"ts":"2026-10-19T02:35:18.008Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":26,"total":70,"activity":"begin","elapsedS":2528}
+{"ts":"2026-10-19T02:35:19.014Z","test":"M1-3 beads claim race","scenario":"round 30","completed":30,"total":100,"activity":"completed","elapsedS":589}
+{"ts":"2026-10-19T02:35:19.014Z","test":"M1-3 beads claim race","scenario":"round 31","completed":30,"total":100,"activity":"begin","elapsedS":589}
+{"ts":"2026-10-19T02:35:21.432Z","test":"M1-3 beads claim race","scenario":"round 31","completed":30,"total":100,"activity":"round 31 released to 20 workers","elapsedS":591}
+{"ts":"2026-10-19T02:35:40.291Z","test":"M1-3 beads claim race","scenario":"round 31","completed":31,"total":100,"activity":"completed","elapsedS":610}
+{"ts":"2026-10-19T02:35:40.291Z","test":"M1-3 beads claim race","scenario":"round 32","completed":31,"total":100,"activity":"begin","elapsedS":610}
+{"ts":"2026-10-19T02:35:42.469Z","test":"M1-3 beads claim race","scenario":"round 32","completed":31,"total":100,"activity":"round 32 released to 20 workers","elapsedS":612}
+{"ts":"2026-10-19T02:36:00.342Z","test":"M1-3 beads claim race","scenario":"round 32","completed":32,"total":100,"activity":"completed","elapsedS":630}
+{"ts":"2026-10-19T02:36:00.342Z","test":"M1-3 beads claim race","scenario":"round 33","completed":32,"total":100,"activity":"begin","elapsedS":630}
+{"ts":"2026-10-19T02:36:02.309Z","test":"M1-3 beads claim race","scenario":"round 33","completed":32,"total":100,"activity":"round 33 released to 20 workers","elapsedS":632}
+{"ts":"2026-10-19T02:36:04.135Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":26,"total":70,"activity":"crashed after journal append 27","elapsedS":2574}
+{"ts":"2026-10-19T02:36:17.595Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":26,"total":70,"activity":"second crash during recovery at append 10 (exit 137)","elapsedS":2587}
+{"ts":"2026-10-19T02:36:24.833Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":26,"total":70,"activity":"resume finished","elapsedS":2594}
+{"ts":"2026-10-19T02:36:25.465Z","test":"M1-3 beads claim race","scenario":"round 33","completed":33,"total":100,"activity":"completed","elapsedS":655}
+{"ts":"2026-10-19T02:36:25.465Z","test":"M1-3 beads claim race","scenario":"round 34","completed":33,"total":100,"activity":"begin","elapsedS":655}
+{"ts":"2026-10-19T02:36:27.452Z","test":"M1-3 beads claim race","scenario":"round 34","completed":33,"total":100,"activity":"round 34 released to 20 workers","elapsedS":657}
+{"ts":"2026-10-19T02:36:43.062Z","test":"M1-3 beads claim race","scenario":"round 34","completed":34,"total":100,"activity":"completed","elapsedS":673}
+{"ts":"2026-10-19T02:36:43.062Z","test":"M1-3 beads claim race","scenario":"round 35","completed":34,"total":100,"activity":"begin","elapsedS":673}
+{"ts":"2026-10-19T02:36:45.012Z","test":"M1-3 beads claim race","scenario":"round 35","completed":34,"total":100,"activity":"round 35 released to 20 workers","elapsedS":675}
+{"ts":"2026-10-19T02:36:59.641Z","test":"M1-3 beads claim race","scenario":"round 35","completed":35,"total":100,"activity":"completed","elapsedS":690}
+{"ts":"2026-10-19T02:36:59.641Z","test":"M1-3 beads claim race","scenario":"round 36","completed":35,"total":100,"activity":"begin","elapsedS":690}
+{"ts":"2026-10-19T02:37:01.585Z","test":"M1-3 beads claim race","scenario":"round 36","completed":35,"total":100,"activity":"round 36 released to 20 workers","elapsedS":692}
+{"ts":"2026-10-19T02:37:03.034Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":26,"total":70,"activity":"run after resume finished","elapsedS":2633}
+{"ts":"2026-10-19T02:37:04.587Z","test":"M1-4 every boundary","scenario":"boundary 27","completed":27,"total":70,"activity":"completed","elapsedS":2634}
+{"ts":"2026-10-19T02:37:04.587Z","test":"M1-4 every boundary","scenario":"boundary 28","completed":27,"total":70,"activity":"begin","elapsedS":2634}
+{"ts":"2026-10-19T02:37:21.325Z","test":"M1-3 beads claim race","scenario":"round 36","completed":36,"total":100,"activity":"completed","elapsedS":711}
+{"ts":"2026-10-19T02:37:21.325Z","test":"M1-3 beads claim race","scenario":"round 37","completed":36,"total":100,"activity":"begin","elapsedS":711}
+{"ts":"2026-10-19T02:37:23.325Z","test":"M1-3 beads claim race","scenario":"round 37","completed":36,"total":100,"activity":"round 37 released to 20 workers","elapsedS":713}
+{"ts":"2026-10-19T02:37:40.963Z","test":"M1-3 beads claim race","scenario":"round 37","completed":37,"total":100,"activity":"completed","elapsedS":731}
+{"ts":"2026-10-19T02:37:40.963Z","test":"M1-3 beads claim race","scenario":"round 38","completed":37,"total":100,"activity":"begin","elapsedS":731}
+{"ts":"2026-10-19T02:37:43.006Z","test":"M1-3 beads claim race","scenario":"round 38","completed":37,"total":100,"activity":"round 38 released to 20 workers","elapsedS":733}
+{"ts":"2026-10-19T02:37:50.041Z","test":"M1-4 every boundary","scenario":"boundary 28","completed":27,"total":70,"activity":"crashed after journal append 28","elapsedS":2680}
+{"ts":"2026-10-19T02:37:58.399Z","test":"M1-3 beads claim race","scenario":"round 38","completed":38,"total":100,"activity":"completed","elapsedS":748}
+{"ts":"2026-10-19T02:37:58.399Z","test":"M1-3 beads claim race","scenario":"round 39","completed":38,"total":100,"activity":"begin","elapsedS":748}
+{"ts":"2026-10-19T02:38:00.264Z","test":"M1-3 beads claim race","scenario":"round 39","completed":38,"total":100,"activity":"round 39 released to 20 workers","elapsedS":750}
+{"ts":"2026-10-19T02:38:00.545Z","test":"M1-4 every boundary","scenario":"boundary 28","completed":27,"total":70,"activity":"resume finished","elapsedS":2690}
+{"ts":"2026-10-19T02:38:14.777Z","test":"M1-3 beads claim race","scenario":"round 39","completed":39,"total":100,"activity":"completed","elapsedS":765}
+{"ts":"2026-10-19T02:38:14.778Z","test":"M1-3 beads claim race","scenario":"round 40","completed":39,"total":100,"activity":"begin","elapsedS":765}
+{"ts":"2026-10-19T02:38:16.997Z","test":"M1-3 beads claim race","scenario":"round 40","completed":39,"total":100,"activity":"round 40 released to 20 workers","elapsedS":767}
+{"ts":"2026-10-19T02:38:43.865Z","test":"M1-4 every boundary","scenario":"boundary 28","completed":27,"total":70,"activity":"run after resume finished","elapsedS":2734}
+{"ts":"2026-10-19T02:38:43.908Z","test":"M1-3 beads claim race","scenario":"round 40","completed":40,"total":100,"activity":"completed","elapsedS":794}
+{"ts":"2026-10-19T02:38:43.908Z","test":"M1-3 beads claim race","scenario":"round 41","completed":40,"total":100,"activity":"begin","elapsedS":794}
+{"ts":"2026-10-19T02:38:45.440Z","test":"M1-4 every boundary","scenario":"boundary 28","completed":28,"total":70,"activity":"completed","elapsedS":2735}
+{"ts":"2026-10-19T02:38:45.440Z","test":"M1-4 every boundary","scenario":"boundary 29","completed":28,"total":70,"activity":"begin","elapsedS":2735}
+{"ts":"2026-10-19T02:38:46.104Z","test":"M1-3 beads claim race","scenario":"round 41","completed":40,"total":100,"activity":"round 41 released to 20 workers","elapsedS":796}
+{"ts":"2026-10-19T02:39:10.287Z","test":"M1-3 beads claim race","scenario":"round 41","completed":41,"total":100,"activity":"completed","elapsedS":820}
+{"ts":"2026-10-19T02:39:10.287Z","test":"M1-3 beads claim race","scenario":"round 42","completed":41,"total":100,"activity":"begin","elapsedS":820}
+{"ts":"2026-10-19T02:39:12.602Z","test":"M1-3 beads claim race","scenario":"round 42","completed":41,"total":100,"activity":"round 42 released to 20 workers","elapsedS":823}
+{"ts":"2026-10-19T02:39:28.942Z","test":"M1-3 beads claim race","scenario":"round 42","completed":42,"total":100,"activity":"completed","elapsedS":839}
+{"ts":"2026-10-19T02:39:28.942Z","test":"M1-3 beads claim race","scenario":"round 43","completed":42,"total":100,"activity":"begin","elapsedS":839}
+{"ts":"2026-10-19T02:39:30.515Z","test":"M1-4 every boundary","scenario":"boundary 29","completed":28,"total":70,"activity":"crashed after journal append 29","elapsedS":2780}
+{"ts":"2026-10-19T02:39:31.173Z","test":"M1-3 beads claim race","scenario":"round 43","completed":42,"total":100,"activity":"round 43 released to 20 workers","elapsedS":841}
+{"ts":"2026-10-19T02:39:40.972Z","test":"M1-4 every boundary","scenario":"boundary 29","completed":28,"total":70,"activity":"resume finished","elapsedS":2791}
+{"ts":"2026-10-19T02:39:56.582Z","test":"M1-3 beads claim race","scenario":"round 43","completed":43,"total":100,"activity":"completed","elapsedS":867}
+{"ts":"2026-10-19T02:39:56.582Z","test":"M1-3 beads claim race","scenario":"round 44","completed":43,"total":100,"activity":"begin","elapsedS":867}
+{"ts":"2026-10-19T02:39:58.624Z","test":"M1-3 beads claim race","scenario":"round 44","completed":43,"total":100,"activity":"round 44 released to 20 workers","elapsedS":869}
+{"ts":"2026-10-19T02:40:19.086Z","test":"M1-3 beads claim race","scenario":"round 44","completed":44,"total":100,"activity":"completed","elapsedS":889}
+{"ts":"2026-10-19T02:40:19.086Z","test":"M1-3 beads claim race","scenario":"round 45","completed":44,"total":100,"activity":"begin","elapsedS":889}
+{"ts":"2026-10-19T02:40:21.175Z","test":"M1-3 beads claim race","scenario":"round 45","completed":44,"total":100,"activity":"round 45 released to 20 workers","elapsedS":891}
+{"ts":"2026-10-19T02:40:23.185Z","test":"M1-4 every boundary","scenario":"boundary 29","completed":28,"total":70,"activity":"run after resume finished","elapsedS":2833}
+{"ts":"2026-10-19T02:40:24.846Z","test":"M1-4 every boundary","scenario":"boundary 29","completed":29,"total":70,"activity":"completed","elapsedS":2834}
+{"ts":"2026-10-19T02:40:24.846Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":29,"total":70,"activity":"begin","elapsedS":2834}
+{"ts":"2026-10-19T02:40:34.340Z","test":"M1-3 beads claim race","scenario":"round 45","completed":45,"total":100,"activity":"completed","elapsedS":904}
+{"ts":"2026-10-19T02:40:34.340Z","test":"M1-3 beads claim race","scenario":"round 46","completed":45,"total":100,"activity":"begin","elapsedS":904}
+{"ts":"2026-10-19T02:40:36.253Z","test":"M1-3 beads claim race","scenario":"round 46","completed":45,"total":100,"activity":"round 46 released to 20 workers","elapsedS":906}
+{"ts":"2026-10-19T02:40:59.649Z","test":"M1-3 beads claim race","scenario":"round 46","completed":46,"total":100,"activity":"completed","elapsedS":930}
+{"ts":"2026-10-19T02:40:59.649Z","test":"M1-3 beads claim race","scenario":"round 47","completed":46,"total":100,"activity":"begin","elapsedS":930}
+{"ts":"2026-10-19T02:41:01.792Z","test":"M1-3 beads claim race","scenario":"round 47","completed":46,"total":100,"activity":"round 47 released to 20 workers","elapsedS":932}
+{"ts":"2026-10-19T02:41:12.214Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":29,"total":70,"activity":"crashed after journal append 30","elapsedS":2882}
+{"ts":"2026-10-19T02:41:18.213Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":29,"total":70,"activity":"second crash during recovery at append 1 (exit 137)","elapsedS":2888}
+{"ts":"2026-10-19T02:41:22.411Z","test":"M1-3 beads claim race","scenario":"round 47","completed":47,"total":100,"activity":"completed","elapsedS":952}
+{"ts":"2026-10-19T02:41:22.411Z","test":"M1-3 beads claim race","scenario":"round 48","completed":47,"total":100,"activity":"begin","elapsedS":952}
+{"ts":"2026-10-19T02:41:24.479Z","test":"M1-3 beads claim race","scenario":"round 48","completed":47,"total":100,"activity":"round 48 released to 20 workers","elapsedS":954}
+{"ts":"2026-10-19T02:41:24.943Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":29,"total":70,"activity":"resume finished","elapsedS":2895}
+{"ts":"2026-10-19T02:41:49.130Z","test":"M1-3 beads claim race","scenario":"round 48","completed":48,"total":100,"activity":"completed","elapsedS":979}
+{"ts":"2026-10-19T02:41:49.130Z","test":"M1-3 beads claim race","scenario":"round 49","completed":48,"total":100,"activity":"begin","elapsedS":979}
+{"ts":"2026-10-19T02:41:51.183Z","test":"M1-3 beads claim race","scenario":"round 49","completed":48,"total":100,"activity":"round 49 released to 20 workers","elapsedS":981}
+{"ts":"2026-10-19T02:42:06.288Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":29,"total":70,"activity":"run after resume finished","elapsedS":2936}
+{"ts":"2026-10-19T02:42:07.948Z","test":"M1-4 every boundary","scenario":"boundary 30","completed":30,"total":70,"activity":"completed","elapsedS":2938}
+{"ts":"2026-10-19T02:42:07.948Z","test":"M1-4 every boundary","scenario":"boundary 31","completed":30,"total":70,"activity":"begin","elapsedS":2938}
+{"ts":"2026-10-19T02:42:12.842Z","test":"M1-3 beads claim race","scenario":"round 49","completed":49,"total":100,"activity":"completed","elapsedS":1003}
+{"ts":"2026-10-19T02:42:12.842Z","test":"M1-3 beads claim race","scenario":"round 50","completed":49,"total":100,"activity":"begin","elapsedS":1003}
+{"ts":"2026-10-19T02:42:14.826Z","test":"M1-3 beads claim race","scenario":"round 50","completed":49,"total":100,"activity":"round 50 released to 20 workers","elapsedS":1005}
+{"ts":"2026-10-19T02:42:38.967Z","test":"M1-3 beads claim race","scenario":"round 50","completed":50,"total":100,"activity":"completed","elapsedS":1029}
+{"ts":"2026-10-19T02:42:38.967Z","test":"M1-3 beads claim race","scenario":"round 51","completed":50,"total":100,"activity":"begin","elapsedS":1029}
+{"ts":"2026-10-19T02:42:41.174Z","test":"M1-3 beads claim race","scenario":"round 51","completed":50,"total":100,"activity":"round 51 released to 20 workers","elapsedS":1031}
+{"ts":"2026-10-19T02:42:55.105Z","test":"M1-4 every boundary","scenario":"boundary 31","completed":30,"total":70,"activity":"crashed after journal append 31","elapsedS":2985}
+{"ts":"2026-10-19T02:43:00.981Z","test":"M1-3 beads claim race","scenario":"round 51","completed":51,"total":100,"activity":"completed","elapsedS":1051}
+{"ts":"2026-10-19T02:43:00.981Z","test":"M1-3 beads claim race","scenario":"round 52","completed":51,"total":100,"activity":"begin","elapsedS":1051}
+{"ts":"2026-10-19T02:43:01.939Z","test":"M1-4 every boundary","scenario":"boundary 31","completed":30,"total":70,"activity":"resume finished","elapsedS":2992}
+{"ts":"2026-10-19T02:43:02.998Z","test":"M1-3 beads claim race","scenario":"round 52","completed":51,"total":100,"activity":"round 52 released to 20 workers","elapsedS":1053}
+{"ts":"2026-10-19T02:43:31.265Z","test":"M1-3 beads claim race","scenario":"round 52","completed":52,"total":100,"activity":"completed","elapsedS":1081}
+{"ts":"2026-10-19T02:43:31.265Z","test":"M1-3 beads claim race","scenario":"round 53","completed":52,"total":100,"activity":"begin","elapsedS":1081}
+{"ts":"2026-10-19T02:43:34.169Z","test":"M1-3 beads claim race","scenario":"round 53","completed":52,"total":100,"activity":"round 53 released to 20 workers","elapsedS":1084}
+{"ts":"2026-10-19T02:43:48.955Z","test":"M1-4 every boundary","scenario":"boundary 31","completed":30,"total":70,"activity":"run after resume finished","elapsedS":3039}
+{"ts":"2026-10-19T02:43:50.739Z","test":"M1-4 every boundary","scenario":"boundary 31","completed":31,"total":70,"activity":"completed","elapsedS":3040}
+{"ts":"2026-10-19T02:43:50.740Z","test":"M1-4 every boundary","scenario":"boundary 32","completed":31,"total":70,"activity":"begin","elapsedS":3040}
+{"ts":"2026-10-19T02:44:02.153Z","test":"M1-3 beads claim race","scenario":"round 53","completed":53,"total":100,"activity":"completed","elapsedS":1112}
+{"ts":"2026-10-19T02:44:02.153Z","test":"M1-3 beads claim race","scenario":"round 54","completed":53,"total":100,"activity":"begin","elapsedS":1112}
+{"ts":"2026-10-19T02:44:04.012Z","test":"M1-3 beads claim race","scenario":"round 54","completed":53,"total":100,"activity":"round 54 released to 20 workers","elapsedS":1114}
+{"ts":"2026-10-19T02:44:26.734Z","test":"M1-3 beads claim race","scenario":"round 54","completed":54,"total":100,"activity":"completed","elapsedS":1137}
+{"ts":"2026-10-19T02:44:26.734Z","test":"M1-3 beads claim race","scenario":"round 55","completed":54,"total":100,"activity":"begin","elapsedS":1137}
+{"ts":"2026-10-19T02:44:28.978Z","test":"M1-3 beads claim race","scenario":"round 55","completed":54,"total":100,"activity":"round 55 released to 20 workers","elapsedS":1139}
+{"ts":"2026-10-19T02:44:38.743Z","test":"M1-4 every boundary","scenario":"boundary 32","completed":31,"total":70,"activity":"crashed after journal append 32","elapsedS":3088}
+{"ts":"2026-10-19T02:44:45.185Z","test":"M1-4 every boundary","scenario":"boundary 32","completed":31,"total":70,"activity":"resume finished","elapsedS":3095}
+{"ts":"2026-10-19T02:44:49.903Z","test":"M1-3 beads claim race","scenario":"round 55","completed":55,"total":100,"activity":"completed","elapsedS":1160}
+{"ts":"2026-10-19T02:44:49.903Z","test":"M1-3 beads claim race","scenario":"round 56","completed":55,"total":100,"activity":"begin","elapsedS":1160}
+{"ts":"2026-10-19T02:44:51.953Z","test":"M1-3 beads claim race","scenario":"round 56","completed":55,"total":100,"activity":"round 56 released to 20 workers","elapsedS":1162}
+{"ts":"2026-10-19T02:45:16.922Z","test":"M1-3 beads claim race","scenario":"round 56","completed":56,"total":100,"activity":"completed","elapsedS":1187}
+{"ts":"2026-10-19T02:45:16.922Z","test":"M1-3 beads claim race","scenario":"round 57","completed":56,"total":100,"activity":"begin","elapsedS":1187}
+{"ts":"2026-10-19T02:45:19.123Z","test":"M1-3 beads claim race","scenario":"round 57","completed":56,"total":100,"activity":"round 57 released to 20 workers","elapsedS":1189}
+{"ts":"2026-10-19T02:45:27.193Z","test":"M1-4 every boundary","scenario":"boundary 32","completed":31,"total":70,"activity":"run after resume finished","elapsedS":3137}
+{"ts":"2026-10-19T02:45:28.653Z","test":"M1-4 every boundary","scenario":"boundary 32","completed":32,"total":70,"activity":"completed","elapsedS":3138}
+{"ts":"2026-10-19T02:45:28.653Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":32,"total":70,"activity":"begin","elapsedS":3138}
+{"ts":"2026-10-19T02:45:38.105Z","test":"M1-3 beads claim race","scenario":"round 57","completed":57,"total":100,"activity":"completed","elapsedS":1208}
+{"ts":"2026-10-19T02:45:38.105Z","test":"M1-3 beads claim race","scenario":"round 58","completed":57,"total":100,"activity":"begin","elapsedS":1208}
+{"ts":"2026-10-19T02:45:40.278Z","test":"M1-3 beads claim race","scenario":"round 58","completed":57,"total":100,"activity":"round 58 released to 20 workers","elapsedS":1210}
+{"ts":"2026-10-19T02:46:00.750Z","test":"M1-3 beads claim race","scenario":"round 58","completed":58,"total":100,"activity":"completed","elapsedS":1231}
+{"ts":"2026-10-19T02:46:00.750Z","test":"M1-3 beads claim race","scenario":"round 59","completed":58,"total":100,"activity":"begin","elapsedS":1231}
+{"ts":"2026-10-19T02:46:02.906Z","test":"M1-3 beads claim race","scenario":"round 59","completed":58,"total":100,"activity":"round 59 released to 20 workers","elapsedS":1233}
+{"ts":"2026-10-19T02:46:18.751Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":32,"total":70,"activity":"crashed after journal append 33","elapsedS":3188}
+{"ts":"2026-10-19T02:46:21.391Z","test":"M1-3 beads claim race","scenario":"round 59","completed":59,"total":100,"activity":"completed","elapsedS":1251}
+{"ts":"2026-10-19T02:46:21.392Z","test":"M1-3 beads claim race","scenario":"round 60","completed":59,"total":100,"activity":"begin","elapsedS":1251}
+{"ts":"2026-10-19T02:46:23.747Z","test":"M1-3 beads claim race","scenario":"round 60","completed":59,"total":100,"activity":"round 60 released to 20 workers","elapsedS":1254}
+{"ts":"2026-10-19T02:46:26.974Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":32,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":3197}
+{"ts":"2026-10-19T02:46:33.194Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":32,"total":70,"activity":"resume finished","elapsedS":3203}
+{"ts":"2026-10-19T02:46:52.489Z","test":"M1-3 beads claim race","scenario":"round 60","completed":60,"total":100,"activity":"completed","elapsedS":1282}
+{"ts":"2026-10-19T02:46:52.489Z","test":"M1-3 beads claim race","scenario":"round 61","completed":60,"total":100,"activity":"begin","elapsedS":1282}
+{"ts":"2026-10-19T02:46:54.805Z","test":"M1-3 beads claim race","scenario":"round 61","completed":60,"total":100,"activity":"round 61 released to 20 workers","elapsedS":1285}
+{"ts":"2026-10-19T02:47:11.794Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":32,"total":70,"activity":"run after resume finished","elapsedS":3241}
+{"ts":"2026-10-19T02:47:13.425Z","test":"M1-4 every boundary","scenario":"boundary 33","completed":33,"total":70,"activity":"completed","elapsedS":3243}
+{"ts":"2026-10-19T02:47:13.425Z","test":"M1-4 every boundary","scenario":"boundary 34","completed":33,"total":70,"activity":"begin","elapsedS":3243}
+{"ts":"2026-10-19T02:47:27.012Z","test":"M1-3 beads claim race","scenario":"round 61","completed":61,"total":100,"activity":"completed","elapsedS":1317}
+{"ts":"2026-10-19T02:47:27.012Z","test":"M1-3 beads claim race","scenario":"round 62","completed":61,"total":100,"activity":"begin","elapsedS":1317}
+{"ts":"2026-10-19T02:47:29.426Z","test":"M1-3 beads claim race","scenario":"round 62","completed":61,"total":100,"activity":"round 62 released to 20 workers","elapsedS":1319}
+{"ts":"2026-10-19T02:47:49.319Z","test":"M1-3 beads claim race","scenario":"round 62","completed":62,"total":100,"activity":"completed","elapsedS":1339}
+{"ts":"2026-10-19T02:47:49.319Z","test":"M1-3 beads claim race","scenario":"round 63","completed":62,"total":100,"activity":"begin","elapsedS":1339}
+{"ts":"2026-10-19T02:47:51.626Z","test":"M1-3 beads claim race","scenario":"round 63","completed":62,"total":100,"activity":"round 63 released to 20 workers","elapsedS":1342}
+{"ts":"2026-10-19T02:48:05.061Z","test":"M1-4 every boundary","scenario":"boundary 34","completed":33,"total":70,"activity":"crashed after journal append 34","elapsedS":3295}
+{"ts":"2026-10-19T02:48:12.591Z","test":"M1-4 every boundary","scenario":"boundary 34","completed":33,"total":70,"activity":"resume finished","elapsedS":3302}
+{"ts":"2026-10-19T02:48:16.767Z","test":"M1-3 beads claim race","scenario":"round 63","completed":63,"total":100,"activity":"completed","elapsedS":1367}
+{"ts":"2026-10-19T02:48:16.767Z","test":"M1-3 beads claim race","scenario":"round 64","completed":63,"total":100,"activity":"begin","elapsedS":1367}
+{"ts":"2026-10-19T02:48:19.063Z","test":"M1-3 beads claim race","scenario":"round 64","completed":63,"total":100,"activity":"round 64 released to 20 workers","elapsedS":1369}
+{"ts":"2026-10-19T02:48:37.479Z","test":"M1-3 beads claim race","scenario":"round 64","completed":64,"total":100,"activity":"completed","elapsedS":1387}
+{"ts":"2026-10-19T02:48:37.479Z","test":"M1-3 beads claim race","scenario":"round 65","completed":64,"total":100,"activity":"begin","elapsedS":1387}
+{"ts":"2026-10-19T02:48:39.810Z","test":"M1-3 beads claim race","scenario":"round 65","completed":64,"total":100,"activity":"round 65 released to 20 workers","elapsedS":1390}
+{"ts":"2026-10-19T02:48:50.860Z","test":"M1-4 every boundary","scenario":"boundary 34","completed":33,"total":70,"activity":"run after resume finished","elapsedS":3340}
+{"ts":"2026-10-19T02:48:52.478Z","test":"M1-4 every boundary","scenario":"boundary 34","completed":34,"total":70,"activity":"completed","elapsedS":3342}
+{"ts":"2026-10-19T02:48:52.479Z","test":"M1-4 every boundary","scenario":"boundary 35","completed":34,"total":70,"activity":"begin","elapsedS":3342}
+{"ts":"2026-10-19T02:49:01.132Z","test":"M1-3 beads claim race","scenario":"round 65","completed":65,"total":100,"activity":"completed","elapsedS":1411}
+{"ts":"2026-10-19T02:49:01.132Z","test":"M1-3 beads claim race","scenario":"round 66","completed":65,"total":100,"activity":"begin","elapsedS":1411}
+{"ts":"2026-10-19T02:49:03.314Z","test":"M1-3 beads claim race","scenario":"round 66","completed":65,"total":100,"activity":"round 66 released to 20 workers","elapsedS":1413}
+{"ts":"2026-10-19T02:49:28.221Z","test":"M1-3 beads claim race","scenario":"round 66","completed":66,"total":100,"activity":"completed","elapsedS":1438}
+{"ts":"2026-10-19T02:49:28.222Z","test":"M1-3 beads claim race","scenario":"round 67","completed":66,"total":100,"activity":"begin","elapsedS":1438}
+{"ts":"2026-10-19T02:49:30.591Z","test":"M1-3 beads claim race","scenario":"round 67","completed":66,"total":100,"activity":"round 67 released to 20 workers","elapsedS":1441}
+{"ts":"2026-10-19T02:49:43.617Z","test":"M1-4 every boundary","scenario":"boundary 35","completed":34,"total":70,"activity":"crashed after journal append 35","elapsedS":3393}
+{"ts":"2026-10-19T02:49:51.498Z","test":"M1-4 every boundary","scenario":"boundary 35","completed":34,"total":70,"activity":"resume finished","elapsedS":3401}
+{"ts":"2026-10-19T02:49:52.300Z","test":"M1-3 beads claim race","scenario":"round 67","completed":67,"total":100,"activity":"completed","elapsedS":1462}
+{"ts":"2026-10-19T02:49:52.300Z","test":"M1-3 beads claim race","scenario":"round 68","completed":67,"total":100,"activity":"begin","elapsedS":1462}
+{"ts":"2026-10-19T02:49:54.853Z","test":"M1-3 beads claim race","scenario":"round 68","completed":67,"total":100,"activity":"round 68 released to 20 workers","elapsedS":1465}
+{"ts":"2026-10-19T02:50:27.214Z","test":"M1-3 beads claim race","scenario":"round 68","completed":68,"total":100,"activity":"completed","elapsedS":1497}
+{"ts":"2026-10-19T02:50:27.215Z","test":"M1-3 beads claim race","scenario":"round 69","completed":68,"total":100,"activity":"begin","elapsedS":1497}
+{"ts":"2026-10-19T02:50:29.550Z","test":"M1-3 beads claim race","scenario":"round 69","completed":68,"total":100,"activity":"round 69 released to 20 workers","elapsedS":1500}
+{"ts":"2026-10-19T02:50:32.355Z","test":"M1-4 every boundary","scenario":"boundary 35","completed":34,"total":70,"activity":"run after resume finished","elapsedS":3442}
+{"ts":"2026-10-19T02:50:33.856Z","test":"M1-4 every boundary","scenario":"boundary 35","completed":35,"total":70,"activity":"completed","elapsedS":3443}
+{"ts":"2026-10-19T02:50:33.856Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":35,"total":70,"activity":"begin","elapsedS":3443}
+{"ts":"2026-10-19T02:50:55.675Z","test":"M1-3 beads claim race","scenario":"round 69","completed":69,"total":100,"activity":"completed","elapsedS":1526}
+{"ts":"2026-10-19T02:50:55.676Z","test":"M1-3 beads claim race","scenario":"round 70","completed":69,"total":100,"activity":"begin","elapsedS":1526}
+{"ts":"2026-10-19T02:50:58.092Z","test":"M1-3 beads claim race","scenario":"round 70","completed":69,"total":100,"activity":"round 70 released to 20 workers","elapsedS":1528}
+{"ts":"2026-10-19T02:51:25.796Z","test":"M1-3 beads claim race","scenario":"round 70","completed":70,"total":100,"activity":"completed","elapsedS":1556}
+{"ts":"2026-10-19T02:51:25.796Z","test":"M1-3 beads claim race","scenario":"round 71","completed":70,"total":100,"activity":"begin","elapsedS":1556}
+{"ts":"2026-10-19T02:51:27.298Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":35,"total":70,"activity":"crashed after journal append 36","elapsedS":3497}
+{"ts":"2026-10-19T02:51:27.979Z","test":"M1-3 beads claim race","scenario":"round 71","completed":70,"total":100,"activity":"round 71 released to 20 workers","elapsedS":1558}
+{"ts":"2026-10-19T02:51:42.744Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":35,"total":70,"activity":"second crash during recovery at append 13 (exit 137)","elapsedS":3512}
+{"ts":"2026-10-19T02:51:49.514Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":35,"total":70,"activity":"resume finished","elapsedS":3519}
+{"ts":"2026-10-19T02:51:52.410Z","test":"M1-3 beads claim race","scenario":"round 71","completed":71,"total":100,"activity":"completed","elapsedS":1582}
+{"ts":"2026-10-19T02:51:52.410Z","test":"M1-3 beads claim race","scenario":"round 72","completed":71,"total":100,"activity":"begin","elapsedS":1582}
+{"ts":"2026-10-19T02:51:54.800Z","test":"M1-3 beads claim race","scenario":"round 72","completed":71,"total":100,"activity":"round 72 released to 20 workers","elapsedS":1585}
+{"ts":"2026-10-19T02:52:19.710Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":35,"total":70,"activity":"run after resume finished","elapsedS":3549}
+{"ts":"2026-10-19T02:52:21.521Z","test":"M1-4 every boundary","scenario":"boundary 36","completed":36,"total":70,"activity":"completed","elapsedS":3551}
+{"ts":"2026-10-19T02:52:21.521Z","test":"M1-4 every boundary","scenario":"boundary 37","completed":36,"total":70,"activity":"begin","elapsedS":3551}
+{"ts":"2026-10-19T02:52:26.704Z","test":"M1-3 beads claim race","scenario":"round 72","completed":72,"total":100,"activity":"completed","elapsedS":1617}
+{"ts":"2026-10-19T02:52:26.704Z","test":"M1-3 beads claim race","scenario":"round 73","completed":72,"total":100,"activity":"begin","elapsedS":1617}
+{"ts":"2026-10-19T02:52:29.218Z","test":"M1-3 beads claim race","scenario":"round 73","completed":72,"total":100,"activity":"round 73 released to 20 workers","elapsedS":1619}
+{"ts":"2026-10-19T02:53:01.027Z","test":"M1-3 beads claim race","scenario":"round 73","completed":73,"total":100,"activity":"completed","elapsedS":1651}
+{"ts":"2026-10-19T02:53:01.027Z","test":"M1-3 beads claim race","scenario":"round 74","completed":73,"total":100,"activity":"begin","elapsedS":1651}
+{"ts":"2026-10-19T02:53:03.900Z","test":"M1-3 beads claim race","scenario":"round 74","completed":73,"total":100,"activity":"round 74 released to 20 workers","elapsedS":1654}
+{"ts":"2026-10-19T02:53:16.107Z","test":"M1-4 every boundary","scenario":"boundary 37","completed":36,"total":70,"activity":"crashed after journal append 37","elapsedS":3606}
+{"ts":"2026-10-19T02:53:21.759Z","test":"M1-4 every boundary","scenario":"boundary 37","completed":36,"total":70,"activity":"resume finished","elapsedS":3611}
+{"ts":"2026-10-19T02:53:24.918Z","test":"M1-3 beads claim race","scenario":"round 74","completed":74,"total":100,"activity":"completed","elapsedS":1675}
+{"ts":"2026-10-19T02:53:24.918Z","test":"M1-3 beads claim race","scenario":"round 75","completed":74,"total":100,"activity":"begin","elapsedS":1675}
+{"ts":"2026-10-19T02:53:27.172Z","test":"M1-3 beads claim race","scenario":"round 75","completed":74,"total":100,"activity":"round 75 released to 20 workers","elapsedS":1677}
+{"ts":"2026-10-19T02:53:52.446Z","test":"M1-3 beads claim race","scenario":"round 75","completed":75,"total":100,"activity":"completed","elapsedS":1702}
+{"ts":"2026-10-19T02:53:52.446Z","test":"M1-3 beads claim race","scenario":"round 76","completed":75,"total":100,"activity":"begin","elapsedS":1702}
+{"ts":"2026-10-19T02:53:54.837Z","test":"M1-3 beads claim race","scenario":"round 76","completed":75,"total":100,"activity":"round 76 released to 20 workers","elapsedS":1705}
+{"ts":"2026-10-19T02:54:00.277Z","test":"M1-4 every boundary","scenario":"boundary 37","completed":36,"total":70,"activity":"run after resume finished","elapsedS":3650}
+{"ts":"2026-10-19T02:54:01.989Z","test":"M1-4 every boundary","scenario":"boundary 37","completed":37,"total":70,"activity":"completed","elapsedS":3652}
+{"ts":"2026-10-19T02:54:01.989Z","test":"M1-4 every boundary","scenario":"boundary 38","completed":37,"total":70,"activity":"begin","elapsedS":3652}
+{"ts":"2026-10-19T02:54:16.163Z","test":"M1-3 beads claim race","scenario":"round 76","completed":76,"total":100,"activity":"completed","elapsedS":1726}
+{"ts":"2026-10-19T02:54:16.163Z","test":"M1-3 beads claim race","scenario":"round 77","completed":76,"total":100,"activity":"begin","elapsedS":1726}
+{"ts":"2026-10-19T02:54:18.460Z","test":"M1-3 beads claim race","scenario":"round 77","completed":76,"total":100,"activity":"round 77 released to 20 workers","elapsedS":1728}
+{"ts":"2026-10-19T02:54:51.219Z","test":"M1-3 beads claim race","scenario":"round 77","completed":77,"total":100,"activity":"completed","elapsedS":1761}
+{"ts":"2026-10-19T02:54:51.220Z","test":"M1-3 beads claim race","scenario":"round 78","completed":77,"total":100,"activity":"begin","elapsedS":1761}
+{"ts":"2026-10-19T02:54:54.079Z","test":"M1-3 beads claim race","scenario":"round 78","completed":77,"total":100,"activity":"round 78 released to 20 workers","elapsedS":1764}
+{"ts":"2026-10-19T02:55:01.734Z","test":"M1-4 every boundary","scenario":"boundary 38","completed":37,"total":70,"activity":"crashed after journal append 38","elapsedS":3711}
+{"ts":"2026-10-19T02:55:07.561Z","test":"M1-4 every boundary","scenario":"boundary 38","completed":37,"total":70,"activity":"resume finished","elapsedS":3717}
+{"ts":"2026-10-19T02:55:17.212Z","test":"M1-3 beads claim race","scenario":"round 78","completed":78,"total":100,"activity":"completed","elapsedS":1787}
+{"ts":"2026-10-19T02:55:17.212Z","test":"M1-3 beads claim race","scenario":"round 79","completed":78,"total":100,"activity":"begin","elapsedS":1787}
+{"ts":"2026-10-19T02:55:19.985Z","test":"M1-3 beads claim race","scenario":"round 79","completed":78,"total":100,"activity":"round 79 released to 20 workers","elapsedS":1790}
+{"ts":"2026-10-19T02:55:40.222Z","test":"M1-3 beads claim race","scenario":"round 79","completed":79,"total":100,"activity":"completed","elapsedS":1810}
+{"ts":"2026-10-19T02:55:40.222Z","test":"M1-3 beads claim race","scenario":"round 80","completed":79,"total":100,"activity":"begin","elapsedS":1810}
+{"ts":"2026-10-19T02:55:43.206Z","test":"M1-3 beads claim race","scenario":"round 80","completed":79,"total":100,"activity":"round 80 released to 20 workers","elapsedS":1813}
+{"ts":"2026-10-19T02:55:47.739Z","test":"M1-4 every boundary","scenario":"boundary 38","completed":37,"total":70,"activity":"run after resume finished","elapsedS":3757}
+{"ts":"2026-10-19T02:55:49.485Z","test":"M1-4 every boundary","scenario":"boundary 38","completed":38,"total":70,"activity":"completed","elapsedS":3759}
+{"ts":"2026-10-19T02:55:49.486Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":38,"total":70,"activity":"begin","elapsedS":3759}
+{"ts":"2026-10-19T02:56:15.523Z","test":"M1-3 beads claim race","scenario":"round 80","completed":80,"total":100,"activity":"completed","elapsedS":1846}
+{"ts":"2026-10-19T02:56:15.523Z","test":"M1-3 beads claim race","scenario":"round 81","completed":80,"total":100,"activity":"begin","elapsedS":1846}
+{"ts":"2026-10-19T02:56:22.824Z","test":"M1-3 beads claim race","scenario":"round 81","completed":80,"total":100,"activity":"round 81 released to 20 workers","elapsedS":1853}
+{"ts":"2026-10-19T02:57:16.384Z","test":"M1-3 beads claim race","scenario":"round 81","completed":81,"total":100,"activity":"completed","elapsedS":1906}
+{"ts":"2026-10-19T02:57:16.384Z","test":"M1-3 beads claim race","scenario":"round 82","completed":81,"total":100,"activity":"begin","elapsedS":1906}
+{"ts":"2026-10-19T02:57:18.573Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":38,"total":70,"activity":"crashed after journal append 39","elapsedS":3848}
+{"ts":"2026-10-19T02:57:18.922Z","test":"M1-3 beads claim race","scenario":"round 82","completed":81,"total":100,"activity":"round 82 released to 20 workers","elapsedS":1909}
+{"ts":"2026-10-19T02:57:26.448Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":38,"total":70,"activity":"second crash during recovery at append 4 (exit 137)","elapsedS":3856}
+{"ts":"2026-10-19T02:57:30.775Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":38,"total":70,"activity":"resume finished","elapsedS":3860}
+{"ts":"2026-10-19T02:57:42.108Z","test":"M1-3 beads claim race","scenario":"round 82","completed":82,"total":100,"activity":"completed","elapsedS":1932}
+{"ts":"2026-10-19T02:57:42.109Z","test":"M1-3 beads claim race","scenario":"round 83","completed":82,"total":100,"activity":"begin","elapsedS":1932}
+{"ts":"2026-10-19T02:57:44.520Z","test":"M1-3 beads claim race","scenario":"round 83","completed":82,"total":100,"activity":"round 83 released to 20 workers","elapsedS":1935}
+{"ts":"2026-10-19T02:58:08.144Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":38,"total":70,"activity":"run after resume finished","elapsedS":3898}
+{"ts":"2026-10-19T02:58:10.017Z","test":"M1-4 every boundary","scenario":"boundary 39","completed":39,"total":70,"activity":"completed","elapsedS":3900}
+{"ts":"2026-10-19T02:58:10.017Z","test":"M1-4 every boundary","scenario":"boundary 40","completed":39,"total":70,"activity":"begin","elapsedS":3900}
+{"ts":"2026-10-19T02:58:11.328Z","test":"M1-3 beads claim race","scenario":"round 83","completed":83,"total":100,"activity":"completed","elapsedS":1961}
+{"ts":"2026-10-19T02:58:11.328Z","test":"M1-3 beads claim race","scenario":"round 84","completed":83,"total":100,"activity":"begin","elapsedS":1961}
+{"ts":"2026-10-19T02:58:13.547Z","test":"M1-3 beads claim race","scenario":"round 84","completed":83,"total":100,"activity":"round 84 released to 20 workers","elapsedS":1964}
+{"ts":"2026-10-19T02:58:45.408Z","test":"M1-3 beads claim race","scenario":"round 84","completed":84,"total":100,"activity":"completed","elapsedS":1995}
+{"ts":"2026-10-19T02:58:45.408Z","test":"M1-3 beads claim race","scenario":"round 85","completed":84,"total":100,"activity":"begin","elapsedS":1995}
+{"ts":"2026-10-19T02:58:47.822Z","test":"M1-3 beads claim race","scenario":"round 85","completed":84,"total":100,"activity":"round 85 released to 20 workers","elapsedS":1998}
+{"ts":"2026-10-19T02:59:05.655Z","test":"M1-4 every boundary","scenario":"boundary 40","completed":39,"total":70,"activity":"crashed after journal append 40","elapsedS":3955}
+{"ts":"2026-10-19T02:59:10.990Z","test":"M1-3 beads claim race","scenario":"round 85","completed":85,"total":100,"activity":"completed","elapsedS":2021}
+{"ts":"2026-10-19T02:59:10.990Z","test":"M1-3 beads claim race","scenario":"round 86","completed":85,"total":100,"activity":"begin","elapsedS":2021}
+{"ts":"2026-10-19T02:59:13.736Z","test":"M1-3 beads claim race","scenario":"round 86","completed":85,"total":100,"activity":"round 86 released to 20 workers","elapsedS":2024}
+{"ts":"2026-10-19T02:59:18.712Z","test":"M1-4 every boundary","scenario":"boundary 40","completed":39,"total":70,"activity":"resume finished","elapsedS":3968}
+{"ts":"2026-10-19T02:59:38.572Z","test":"M1-3 beads claim race","scenario":"round 86","completed":86,"total":100,"activity":"completed","elapsedS":2049}
+{"ts":"2026-10-19T02:59:38.572Z","test":"M1-3 beads claim race","scenario":"round 87","completed":86,"total":100,"activity":"begin","elapsedS":2049}
+{"ts":"2026-10-19T02:59:41.687Z","test":"M1-3 beads claim race","scenario":"round 87","completed":86,"total":100,"activity":"round 87 released to 20 workers","elapsedS":2052}
+{"ts":"2026-10-19T02:59:52.554Z","test":"M1-4 every boundary","scenario":"boundary 40","completed":39,"total":70,"activity":"run after resume finished","elapsedS":4002}
+{"ts":"2026-10-19T02:59:54.349Z","test":"M1-4 every boundary","scenario":"boundary 40","completed":40,"total":70,"activity":"completed","elapsedS":4004}
+{"ts":"2026-10-19T02:59:54.349Z","test":"M1-4 every boundary","scenario":"boundary 41","completed":40,"total":70,"activity":"begin","elapsedS":4004}
+{"ts":"2026-10-19T03:00:08.745Z","test":"M1-3 beads claim race","scenario":"round 87","completed":87,"total":100,"activity":"completed","elapsedS":2079}
+{"ts":"2026-10-19T03:00:08.745Z","test":"M1-3 beads claim race","scenario":"round 88","completed":87,"total":100,"activity":"begin","elapsedS":2079}
+{"ts":"2026-10-19T03:00:11.392Z","test":"M1-3 beads claim race","scenario":"round 88","completed":87,"total":100,"activity":"round 88 released to 20 workers","elapsedS":2081}
+{"ts":"2026-10-19T03:00:23.025Z","test":"M1-3 beads claim race","scenario":"round 88","completed":88,"total":100,"activity":"completed","elapsedS":2093}
+{"ts":"2026-10-19T03:00:23.025Z","test":"M1-3 beads claim race","scenario":"round 89","completed":88,"total":100,"activity":"begin","elapsedS":2093}
+{"ts":"2026-10-19T03:00:25.309Z","test":"M1-3 beads claim race","scenario":"round 89","completed":88,"total":100,"activity":"round 89 released to 20 workers","elapsedS":2095}
+{"ts":"2026-10-19T03:00:51.951Z","test":"M1-3 beads claim race","scenario":"round 89","completed":89,"total":100,"activity":"completed","elapsedS":2122}
+{"ts":"2026-10-19T03:00:51.952Z","test":"M1-3 beads claim race","scenario":"round 90","completed":89,"total":100,"activity":"begin","elapsedS":2122}
+{"ts":"2026-10-19T03:00:53.811Z","test":"M1-3 beads claim race","scenario":"round 90","completed":89,"total":100,"activity":"round 90 released to 20 workers","elapsedS":2124}
+{"ts":"2026-10-19T03:00:54.078Z","test":"M1-4 every boundary","scenario":"boundary 41","completed":40,"total":70,"activity":"crashed after journal append 41","elapsedS":4064}
+{"ts":"2026-10-19T03:01:06.656Z","test":"M1-4 every boundary","scenario":"boundary 41","completed":40,"total":70,"activity":"resume finished","elapsedS":4076}
+{"ts":"2026-10-19T03:01:17.697Z","test":"M1-3 beads claim race","scenario":"round 90","completed":90,"total":100,"activity":"completed","elapsedS":2148}
+{"ts":"2026-10-19T03:01:17.697Z","test":"M1-3 beads claim race","scenario":"round 91","completed":90,"total":100,"activity":"begin","elapsedS":2148}
+{"ts":"2026-10-19T03:01:19.445Z","test":"M1-3 beads claim race","scenario":"round 91","completed":90,"total":100,"activity":"round 91 released to 20 workers","elapsedS":2149}
+{"ts":"2026-10-19T03:01:35.373Z","test":"M1-4 every boundary","scenario":"boundary 41","completed":40,"total":70,"activity":"run after resume finished","elapsedS":4105}
+{"ts":"2026-10-19T03:01:37.105Z","test":"M1-4 every boundary","scenario":"boundary 41","completed":41,"total":70,"activity":"completed","elapsedS":4107}
+{"ts":"2026-10-19T03:01:37.105Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":41,"total":70,"activity":"begin","elapsedS":4107}
+{"ts":"2026-10-19T03:01:48.276Z","test":"M1-3 beads claim race","scenario":"round 91","completed":91,"total":100,"activity":"completed","elapsedS":2178}
+{"ts":"2026-10-19T03:01:48.276Z","test":"M1-3 beads claim race","scenario":"round 92","completed":91,"total":100,"activity":"begin","elapsedS":2178}
+{"ts":"2026-10-19T03:01:50.815Z","test":"M1-3 beads claim race","scenario":"round 92","completed":91,"total":100,"activity":"round 92 released to 20 workers","elapsedS":2181}
+{"ts":"2026-10-19T03:02:16.117Z","test":"M1-3 beads claim race","scenario":"round 92","completed":92,"total":100,"activity":"completed","elapsedS":2206}
+{"ts":"2026-10-19T03:02:16.117Z","test":"M1-3 beads claim race","scenario":"round 93","completed":92,"total":100,"activity":"begin","elapsedS":2206}
+{"ts":"2026-10-19T03:02:17.920Z","test":"M1-3 beads claim race","scenario":"round 93","completed":92,"total":100,"activity":"round 93 released to 20 workers","elapsedS":2208}
+{"ts":"2026-10-19T03:02:35.851Z","test":"M1-3 beads claim race","scenario":"round 93","completed":93,"total":100,"activity":"completed","elapsedS":2226}
+{"ts":"2026-10-19T03:02:35.852Z","test":"M1-3 beads claim race","scenario":"round 94","completed":93,"total":100,"activity":"begin","elapsedS":2226}
+{"ts":"2026-10-19T03:02:37.949Z","test":"M1-3 beads claim race","scenario":"round 94","completed":93,"total":100,"activity":"round 94 released to 20 workers","elapsedS":2228}
+{"ts":"2026-10-19T03:02:42.379Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":41,"total":70,"activity":"crashed after journal append 42","elapsedS":4172}
+{"ts":"2026-10-19T03:02:55.376Z","test":"M1-3 beads claim race","scenario":"round 94","completed":94,"total":100,"activity":"completed","elapsedS":2245}
+{"ts":"2026-10-19T03:02:55.376Z","test":"M1-3 beads claim race","scenario":"round 95","completed":94,"total":100,"activity":"begin","elapsedS":2245}
+{"ts":"2026-10-19T03:02:57.063Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":41,"total":70,"activity":"second crash during recovery at append 10 (exit 137)","elapsedS":4187}
+{"ts":"2026-10-19T03:02:57.189Z","test":"M1-3 beads claim race","scenario":"round 95","completed":94,"total":100,"activity":"round 95 released to 20 workers","elapsedS":2247}
+{"ts":"2026-10-19T03:03:05.079Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":41,"total":70,"activity":"resume finished","elapsedS":4195}
+{"ts":"2026-10-19T03:03:13.393Z","test":"M1-3 beads claim race","scenario":"round 95","completed":95,"total":100,"activity":"completed","elapsedS":2263}
+{"ts":"2026-10-19T03:03:13.393Z","test":"M1-3 beads claim race","scenario":"round 96","completed":95,"total":100,"activity":"begin","elapsedS":2263}
+{"ts":"2026-10-19T03:03:15.403Z","test":"M1-3 beads claim race","scenario":"round 96","completed":95,"total":100,"activity":"round 96 released to 20 workers","elapsedS":2265}
+{"ts":"2026-10-19T03:03:30.657Z","test":"M1-3 beads claim race","scenario":"round 96","completed":96,"total":100,"activity":"completed","elapsedS":2281}
+{"ts":"2026-10-19T03:03:30.657Z","test":"M1-3 beads claim race","scenario":"round 97","completed":96,"total":100,"activity":"begin","elapsedS":2281}
+{"ts":"2026-10-19T03:03:32.687Z","test":"M1-3 beads claim race","scenario":"round 97","completed":96,"total":100,"activity":"round 97 released to 20 workers","elapsedS":2283}
+{"ts":"2026-10-19T03:03:34.750Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":41,"total":70,"activity":"run after resume finished","elapsedS":4224}
+{"ts":"2026-10-19T03:03:36.381Z","test":"M1-4 every boundary","scenario":"boundary 42","completed":42,"total":70,"activity":"completed","elapsedS":4226}
+{"ts":"2026-10-19T03:03:36.381Z","test":"M1-4 every boundary","scenario":"boundary 43","completed":42,"total":70,"activity":"begin","elapsedS":4226}
+{"ts":"2026-10-19T03:03:56.690Z","test":"M1-3 beads claim race","scenario":"round 97","completed":97,"total":100,"activity":"completed","elapsedS":2307}
+{"ts":"2026-10-19T03:03:56.690Z","test":"M1-3 beads claim race","scenario":"round 98","completed":97,"total":100,"activity":"begin","elapsedS":2307}
+{"ts":"2026-10-19T03:03:58.536Z","test":"M1-3 beads claim race","scenario":"round 98","completed":97,"total":100,"activity":"round 98 released to 20 workers","elapsedS":2309}
+{"ts":"2026-10-19T03:04:22.311Z","test":"M1-3 beads claim race","scenario":"round 98","completed":98,"total":100,"activity":"completed","elapsedS":2332}
+{"ts":"2026-10-19T03:04:22.311Z","test":"M1-3 beads claim race","scenario":"round 99","completed":98,"total":100,"activity":"begin","elapsedS":2332}
+{"ts":"2026-10-19T03:04:24.295Z","test":"M1-3 beads claim race","scenario":"round 99","completed":98,"total":100,"activity":"round 99 released to 20 workers","elapsedS":2334}
+{"ts":"2026-10-19T03:04:36.758Z","test":"M1-4 every boundary","scenario":"boundary 43","completed":42,"total":70,"activity":"crashed after journal append 43","elapsedS":4286}
+{"ts":"2026-10-19T03:04:44.564Z","test":"M1-3 beads claim race","scenario":"round 99","completed":99,"total":100,"activity":"completed","elapsedS":2355}
+{"ts":"2026-10-19T03:04:44.564Z","test":"M1-3 beads claim race","scenario":"round 100","completed":99,"total":100,"activity":"begin","elapsedS":2355}
+{"ts":"2026-10-19T03:04:46.691Z","test":"M1-3 beads claim race","scenario":"round 100","completed":99,"total":100,"activity":"round 100 released to 20 workers","elapsedS":2357}
+{"ts":"2026-10-19T03:04:48.601Z","test":"M1-4 every boundary","scenario":"boundary 43","completed":42,"total":70,"activity":"resume finished","elapsedS":4298}
+{"ts":"2026-10-19T03:05:02.328Z","test":"M1-3 beads claim race","scenario":"round 100","completed":100,"total":100,"activity":"completed","elapsedS":2372}
+{"ts":"2026-10-19T03:05:17.344Z","test":"M1-4 every boundary","scenario":"boundary 43","completed":42,"total":70,"activity":"run after resume finished","elapsedS":4327}
+{"ts":"2026-10-19T03:05:18.844Z","test":"M1-4 every boundary","scenario":"boundary 43","completed":43,"total":70,"activity":"completed","elapsedS":4328}
+{"ts":"2026-10-19T03:05:18.844Z","test":"M1-4 every boundary","scenario":"boundary 44","completed":43,"total":70,"activity":"begin","elapsedS":4328}
+{"ts":"2026-10-19T03:06:10.545Z","test":"M1-4 every boundary","scenario":"boundary 44","completed":43,"total":70,"activity":"crashed after journal append 44","elapsedS":4380}
+{"ts":"2026-10-19T03:06:20.343Z","test":"M1-4 every boundary","scenario":"boundary 44","completed":43,"total":70,"activity":"resume finished","elapsedS":4390}
+{"ts":"2026-10-19T03:06:46.360Z","test":"M1-4 every boundary","scenario":"boundary 44","completed":43,"total":70,"activity":"run after resume finished","elapsedS":4416}
+{"ts":"2026-10-19T03:06:47.815Z","test":"M1-4 every boundary","scenario":"boundary 44","completed":44,"total":70,"activity":"completed","elapsedS":4417}
+{"ts":"2026-10-19T03:06:47.816Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":44,"total":70,"activity":"begin","elapsedS":4417}
+{"ts":"2026-10-19T03:07:43.908Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":44,"total":70,"activity":"crashed after journal append 45","elapsedS":4474}
+{"ts":"2026-10-19T03:07:51.772Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":44,"total":70,"activity":"second crash during recovery at append 1 (exit 137)","elapsedS":4481}
+{"ts":"2026-10-19T03:07:57.811Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":44,"total":70,"activity":"resume finished","elapsedS":4487}
+{"ts":"2026-10-19T03:08:25.763Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":44,"total":70,"activity":"run after resume finished","elapsedS":4515}
+{"ts":"2026-10-19T03:08:27.342Z","test":"M1-4 every boundary","scenario":"boundary 45","completed":45,"total":70,"activity":"completed","elapsedS":4517}
+{"ts":"2026-10-19T03:08:27.342Z","test":"M1-4 every boundary","scenario":"boundary 46","completed":45,"total":70,"activity":"begin","elapsedS":4517}
+{"ts":"2026-10-19T03:09:22.357Z","test":"M1-4 every boundary","scenario":"boundary 46","completed":45,"total":70,"activity":"crashed after journal append 46","elapsedS":4572}
+{"ts":"2026-10-19T03:09:29.868Z","test":"M1-4 every boundary","scenario":"boundary 46","completed":45,"total":70,"activity":"resume finished","elapsedS":4580}
+{"ts":"2026-10-19T03:09:56.464Z","test":"M1-4 every boundary","scenario":"boundary 46","completed":45,"total":70,"activity":"run after resume finished","elapsedS":4606}
+{"ts":"2026-10-19T03:09:58.068Z","test":"M1-4 every boundary","scenario":"boundary 46","completed":46,"total":70,"activity":"completed","elapsedS":4608}
+{"ts":"2026-10-19T03:09:58.068Z","test":"M1-4 every boundary","scenario":"boundary 47","completed":46,"total":70,"activity":"begin","elapsedS":4608}
+{"ts":"2026-10-19T03:10:57.841Z","test":"M1-4 every boundary","scenario":"boundary 47","completed":46,"total":70,"activity":"crashed after journal append 47","elapsedS":4667}
+{"ts":"2026-10-19T03:11:04.171Z","test":"M1-4 every boundary","scenario":"boundary 47","completed":46,"total":70,"activity":"resume finished","elapsedS":4674}
+{"ts":"2026-10-19T03:11:31.270Z","test":"M1-4 every boundary","scenario":"boundary 47","completed":46,"total":70,"activity":"run after resume finished","elapsedS":4701}
+{"ts":"2026-10-19T03:11:32.690Z","test":"M1-4 every boundary","scenario":"boundary 47","completed":47,"total":70,"activity":"completed","elapsedS":4702}
+{"ts":"2026-10-19T03:11:32.690Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":47,"total":70,"activity":"begin","elapsedS":4702}
+{"ts":"2026-10-19T03:12:32.153Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":47,"total":70,"activity":"crashed after journal append 48","elapsedS":4762}
+{"ts":"2026-10-19T03:12:40.127Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":47,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":4770}
+{"ts":"2026-10-19T03:12:51.260Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":47,"total":70,"activity":"resume finished","elapsedS":4781}
+{"ts":"2026-10-19T03:13:06.892Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":47,"total":70,"activity":"run after resume finished","elapsedS":4797}
+{"ts":"2026-10-19T03:13:08.392Z","test":"M1-4 every boundary","scenario":"boundary 48","completed":48,"total":70,"activity":"completed","elapsedS":4798}
+{"ts":"2026-10-19T03:13:08.392Z","test":"M1-4 every boundary","scenario":"boundary 49","completed":48,"total":70,"activity":"begin","elapsedS":4798}
+{"ts":"2026-10-19T03:14:09.586Z","test":"M1-4 every boundary","scenario":"boundary 49","completed":48,"total":70,"activity":"crashed after journal append 49","elapsedS":4859}
+{"ts":"2026-10-19T03:14:14.466Z","test":"M1-4 every boundary","scenario":"boundary 49","completed":48,"total":70,"activity":"resume finished","elapsedS":4864}
+{"ts":"2026-10-19T03:14:39.193Z","test":"M1-4 every boundary","scenario":"boundary 49","completed":48,"total":70,"activity":"run after resume finished","elapsedS":4889}
+{"ts":"2026-10-19T03:14:40.722Z","test":"M1-4 every boundary","scenario":"boundary 49","completed":49,"total":70,"activity":"completed","elapsedS":4890}
+{"ts":"2026-10-19T03:14:40.722Z","test":"M1-4 every boundary","scenario":"boundary 50","completed":49,"total":70,"activity":"begin","elapsedS":4890}
+{"ts":"2026-10-19T03:15:40.920Z","test":"M1-4 every boundary","scenario":"boundary 50","completed":49,"total":70,"activity":"crashed after journal append 50","elapsedS":4951}
+{"ts":"2026-10-19T03:15:47.879Z","test":"M1-4 every boundary","scenario":"boundary 50","completed":49,"total":70,"activity":"resume finished","elapsedS":4958}
+{"ts":"2026-10-19T03:16:12.866Z","test":"M1-4 every boundary","scenario":"boundary 50","completed":49,"total":70,"activity":"run after resume finished","elapsedS":4983}
+{"ts":"2026-10-19T03:16:14.330Z","test":"M1-4 every boundary","scenario":"boundary 50","completed":50,"total":70,"activity":"completed","elapsedS":4984}
+{"ts":"2026-10-19T03:16:14.331Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":50,"total":70,"activity":"begin","elapsedS":4984}
+{"ts":"2026-10-19T03:17:17.398Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":50,"total":70,"activity":"crashed after journal append 51","elapsedS":5047}
+{"ts":"2026-10-19T03:17:33.795Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":50,"total":70,"activity":"second crash during recovery at append 13 (exit 137)","elapsedS":5063}
+{"ts":"2026-10-19T03:17:46.534Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":50,"total":70,"activity":"resume finished","elapsedS":5076}
+{"ts":"2026-10-19T03:17:51.763Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":50,"total":70,"activity":"run after resume finished","elapsedS":5081}
+{"ts":"2026-10-19T03:17:53.196Z","test":"M1-4 every boundary","scenario":"boundary 51","completed":51,"total":70,"activity":"completed","elapsedS":5083}
+{"ts":"2026-10-19T03:17:53.196Z","test":"M1-4 every boundary","scenario":"boundary 52","completed":51,"total":70,"activity":"begin","elapsedS":5083}
+{"ts":"2026-10-19T03:18:55.736Z","test":"M1-4 every boundary","scenario":"boundary 52","completed":51,"total":70,"activity":"crashed after journal append 52","elapsedS":5145}
+{"ts":"2026-10-19T03:19:07.093Z","test":"M1-4 every boundary","scenario":"boundary 52","completed":51,"total":70,"activity":"resume finished","elapsedS":5157}
+{"ts":"2026-10-19T03:19:22.704Z","test":"M1-4 every boundary","scenario":"boundary 52","completed":51,"total":70,"activity":"run after resume finished","elapsedS":5172}
+{"ts":"2026-10-19T03:19:24.149Z","test":"M1-4 every boundary","scenario":"boundary 52","completed":52,"total":70,"activity":"completed","elapsedS":5174}
+{"ts":"2026-10-19T03:19:24.149Z","test":"M1-4 every boundary","scenario":"boundary 53","completed":52,"total":70,"activity":"begin","elapsedS":5174}
+{"ts":"2026-10-19T03:20:26.012Z","test":"M1-4 every boundary","scenario":"boundary 53","completed":52,"total":70,"activity":"crashed after journal append 53","elapsedS":5236}
+{"ts":"2026-10-19T03:20:37.574Z","test":"M1-4 every boundary","scenario":"boundary 53","completed":52,"total":70,"activity":"resume finished","elapsedS":5247}
+{"ts":"2026-10-19T03:20:53.938Z","test":"M1-4 every boundary","scenario":"boundary 53","completed":52,"total":70,"activity":"run after resume finished","elapsedS":5264}
+{"ts":"2026-10-19T03:20:55.524Z","test":"M1-4 every boundary","scenario":"boundary 53","completed":53,"total":70,"activity":"completed","elapsedS":5265}
+{"ts":"2026-10-19T03:20:55.524Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":53,"total":70,"activity":"begin","elapsedS":5265}
+{"ts":"2026-10-19T03:21:59.464Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":53,"total":70,"activity":"crashed after journal append 54","elapsedS":5329}
+{"ts":"2026-10-19T03:22:09.094Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":53,"total":70,"activity":"second crash during recovery at append 4 (exit 137)","elapsedS":5339}
+{"ts":"2026-10-19T03:22:14.774Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":53,"total":70,"activity":"resume finished","elapsedS":5344}
+{"ts":"2026-10-19T03:22:31.005Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":53,"total":70,"activity":"run after resume finished","elapsedS":5361}
+{"ts":"2026-10-19T03:22:32.715Z","test":"M1-4 every boundary","scenario":"boundary 54","completed":54,"total":70,"activity":"completed","elapsedS":5362}
+{"ts":"2026-10-19T03:22:32.715Z","test":"M1-4 every boundary","scenario":"boundary 55","completed":54,"total":70,"activity":"begin","elapsedS":5362}
+{"ts":"2026-10-19T03:23:38.765Z","test":"M1-4 every boundary","scenario":"boundary 55","completed":54,"total":70,"activity":"crashed after journal append 55","elapsedS":5428}
+{"ts":"2026-10-19T03:23:48.778Z","test":"M1-4 every boundary","scenario":"boundary 55","completed":54,"total":70,"activity":"resume finished","elapsedS":5438}
+{"ts":"2026-10-19T03:24:04.062Z","test":"M1-4 every boundary","scenario":"boundary 55","completed":54,"total":70,"activity":"run after resume finished","elapsedS":5454}
+{"ts":"2026-10-19T03:24:05.640Z","test":"M1-4 every boundary","scenario":"boundary 55","completed":55,"total":70,"activity":"completed","elapsedS":5455}
+{"ts":"2026-10-19T03:24:05.640Z","test":"M1-4 every boundary","scenario":"boundary 56","completed":55,"total":70,"activity":"begin","elapsedS":5455}
+{"ts":"2026-10-19T03:25:10.209Z","test":"M1-4 every boundary","scenario":"boundary 56","completed":55,"total":70,"activity":"crashed after journal append 56","elapsedS":5520}
+{"ts":"2026-10-19T03:25:18.407Z","test":"M1-4 every boundary","scenario":"boundary 56","completed":55,"total":70,"activity":"resume finished","elapsedS":5528}
+{"ts":"2026-10-19T03:25:33.735Z","test":"M1-4 every boundary","scenario":"boundary 56","completed":55,"total":70,"activity":"run after resume finished","elapsedS":5543}
+{"ts":"2026-10-19T03:25:35.188Z","test":"M1-4 every boundary","scenario":"boundary 56","completed":56,"total":70,"activity":"completed","elapsedS":5545}
+{"ts":"2026-10-19T03:25:35.188Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":56,"total":70,"activity":"begin","elapsedS":5545}
+{"ts":"2026-10-19T03:26:41.146Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":56,"total":70,"activity":"crashed after journal append 57","elapsedS":5611}
+{"ts":"2026-10-19T03:26:52.539Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":56,"total":70,"activity":"second crash during recovery at append 10 (exit 137)","elapsedS":5622}
+{"ts":"2026-10-19T03:27:01.739Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":56,"total":70,"activity":"resume finished","elapsedS":5631}
+{"ts":"2026-10-19T03:27:06.975Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":56,"total":70,"activity":"run after resume finished","elapsedS":5637}
+{"ts":"2026-10-19T03:27:08.510Z","test":"M1-4 every boundary","scenario":"boundary 57","completed":57,"total":70,"activity":"completed","elapsedS":5638}
+{"ts":"2026-10-19T03:27:08.510Z","test":"M1-4 every boundary","scenario":"boundary 58","completed":57,"total":70,"activity":"begin","elapsedS":5638}
+{"ts":"2026-10-19T03:28:19.055Z","test":"M1-4 every boundary","scenario":"boundary 58","completed":57,"total":70,"activity":"crashed after journal append 58","elapsedS":5709}
+{"ts":"2026-10-19T03:28:25.863Z","test":"M1-4 every boundary","scenario":"boundary 58","completed":57,"total":70,"activity":"resume finished","elapsedS":5716}
+{"ts":"2026-10-19T03:28:44.227Z","test":"M1-4 every boundary","scenario":"boundary 58","completed":57,"total":70,"activity":"run after resume finished","elapsedS":5734}
+{"ts":"2026-10-19T03:28:45.722Z","test":"M1-4 every boundary","scenario":"boundary 58","completed":58,"total":70,"activity":"completed","elapsedS":5735}
+{"ts":"2026-10-19T03:28:45.722Z","test":"M1-4 every boundary","scenario":"boundary 59","completed":58,"total":70,"activity":"begin","elapsedS":5735}
+{"ts":"2026-10-19T03:29:58.105Z","test":"M1-4 every boundary","scenario":"boundary 59","completed":58,"total":70,"activity":"crashed after journal append 59","elapsedS":5808}
+{"ts":"2026-10-19T03:30:02.930Z","test":"M1-4 every boundary","scenario":"boundary 59","completed":58,"total":70,"activity":"resume finished","elapsedS":5813}
+{"ts":"2026-10-19T03:30:17.623Z","test":"M1-4 every boundary","scenario":"boundary 59","completed":58,"total":70,"activity":"run after resume finished","elapsedS":5827}
+{"ts":"2026-10-19T03:30:19.122Z","test":"M1-4 every boundary","scenario":"boundary 59","completed":59,"total":70,"activity":"completed","elapsedS":5829}
+{"ts":"2026-10-19T03:30:19.123Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":59,"total":70,"activity":"begin","elapsedS":5829}
+{"ts":"2026-10-19T03:31:29.724Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":59,"total":70,"activity":"crashed after journal append 60","elapsedS":5899}
+{"ts":"2026-10-19T03:31:34.352Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":59,"total":70,"activity":"second crash during recovery at append 1 (exit 137)","elapsedS":5904}
+{"ts":"2026-10-19T03:31:38.779Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":59,"total":70,"activity":"resume finished","elapsedS":5908}
+{"ts":"2026-10-19T03:31:52.757Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":59,"total":70,"activity":"run after resume finished","elapsedS":5922}
+{"ts":"2026-10-19T03:31:54.231Z","test":"M1-4 every boundary","scenario":"boundary 60","completed":60,"total":70,"activity":"completed","elapsedS":5924}
+{"ts":"2026-10-19T03:31:54.231Z","test":"M1-4 every boundary","scenario":"boundary 61","completed":60,"total":70,"activity":"begin","elapsedS":5924}
+{"ts":"2026-10-19T03:33:06.013Z","test":"M1-4 every boundary","scenario":"boundary 61","completed":60,"total":70,"activity":"crashed after journal append 61","elapsedS":5996}
+{"ts":"2026-10-19T03:33:13.720Z","test":"M1-4 every boundary","scenario":"boundary 61","completed":60,"total":70,"activity":"resume finished","elapsedS":6003}
+{"ts":"2026-10-19T03:33:28.316Z","test":"M1-4 every boundary","scenario":"boundary 61","completed":60,"total":70,"activity":"run after resume finished","elapsedS":6018}
+{"ts":"2026-10-19T03:33:29.813Z","test":"M1-4 every boundary","scenario":"boundary 61","completed":61,"total":70,"activity":"completed","elapsedS":6019}
+{"ts":"2026-10-19T03:33:29.813Z","test":"M1-4 every boundary","scenario":"boundary 62","completed":61,"total":70,"activity":"begin","elapsedS":6019}
+{"ts":"2026-10-19T03:34:44.262Z","test":"M1-4 every boundary","scenario":"boundary 62","completed":61,"total":70,"activity":"crashed after journal append 62","elapsedS":6094}
+{"ts":"2026-10-19T03:34:55.703Z","test":"M1-4 every boundary","scenario":"boundary 62","completed":61,"total":70,"activity":"resume finished","elapsedS":6105}
+{"ts":"2026-10-19T03:35:01.049Z","test":"M1-4 every boundary","scenario":"boundary 62","completed":61,"total":70,"activity":"run after resume finished","elapsedS":6111}
+{"ts":"2026-10-19T03:35:02.525Z","test":"M1-4 every boundary","scenario":"boundary 62","completed":62,"total":70,"activity":"completed","elapsedS":6112}
+{"ts":"2026-10-19T03:35:02.525Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":62,"total":70,"activity":"begin","elapsedS":6112}
+{"ts":"2026-10-19T03:36:15.177Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":62,"total":70,"activity":"crashed after journal append 63","elapsedS":6185}
+{"ts":"2026-10-19T03:36:25.811Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":62,"total":70,"activity":"second crash during recovery at append 7 (exit 137)","elapsedS":6195}
+{"ts":"2026-10-19T03:36:30.185Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":62,"total":70,"activity":"resume finished","elapsedS":6200}
+{"ts":"2026-10-19T03:36:35.658Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":62,"total":70,"activity":"run after resume finished","elapsedS":6205}
+{"ts":"2026-10-19T03:36:37.236Z","test":"M1-4 every boundary","scenario":"boundary 63","completed":63,"total":70,"activity":"completed","elapsedS":6207}
+{"ts":"2026-10-19T03:36:37.237Z","test":"M1-4 every boundary","scenario":"boundary 64","completed":63,"total":70,"activity":"begin","elapsedS":6207}
+{"ts":"2026-10-19T03:37:49.614Z","test":"M1-4 every boundary","scenario":"boundary 64","completed":63,"total":70,"activity":"crashed after journal append 64","elapsedS":6279}
+{"ts":"2026-10-19T03:38:00.842Z","test":"M1-4 every boundary","scenario":"boundary 64","completed":63,"total":70,"activity":"resume finished","elapsedS":6290}
+{"ts":"2026-10-19T03:38:06.541Z","test":"M1-4 every boundary","scenario":"boundary 64","completed":63,"total":70,"activity":"run after resume finished","elapsedS":6296}
+{"ts":"2026-10-19T03:38:08.016Z","test":"M1-4 every boundary","scenario":"boundary 64","completed":64,"total":70,"activity":"completed","elapsedS":6298}
+{"ts":"2026-10-19T03:38:08.016Z","test":"M1-4 every boundary","scenario":"boundary 65","completed":64,"total":70,"activity":"begin","elapsedS":6298}
+{"ts":"2026-10-19T03:39:21.714Z","test":"M1-4 every boundary","scenario":"boundary 65","completed":64,"total":70,"activity":"crashed after journal append 65","elapsedS":6371}
+{"ts":"2026-10-19T03:39:31.679Z","test":"M1-4 every boundary","scenario":"boundary 65","completed":64,"total":70,"activity":"resume finished","elapsedS":6381}
+{"ts":"2026-10-19T03:39:36.781Z","test":"M1-4 every boundary","scenario":"boundary 65","completed":64,"total":70,"activity":"run after resume finished","elapsedS":6386}
+{"ts":"2026-10-19T03:39:38.230Z","test":"M1-4 every boundary","scenario":"boundary 65","completed":65,"total":70,"activity":"completed","elapsedS":6388}
+{"ts":"2026-10-19T03:39:38.230Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":65,"total":70,"activity":"begin","elapsedS":6388}
+{"ts":"2026-10-19T03:40:57.803Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":65,"total":70,"activity":"crashed after journal append 66","elapsedS":6467}
+{"ts":"2026-10-19T03:41:08.325Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":65,"total":70,"activity":"second crash during recovery at append 13 (exit 0)","elapsedS":6478}
+{"ts":"2026-10-19T03:41:13.137Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":65,"total":70,"activity":"resume finished","elapsedS":6483}
+{"ts":"2026-10-19T03:41:18.361Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":65,"total":70,"activity":"run after resume finished","elapsedS":6488}
+{"ts":"2026-10-19T03:41:19.956Z","test":"M1-4 every boundary","scenario":"boundary 66","completed":66,"total":70,"activity":"completed","elapsedS":6490}
+{"ts":"2026-10-19T03:41:19.956Z","test":"M1-4 every boundary","scenario":"boundary 67","completed":66,"total":70,"activity":"begin","elapsedS":6490}
+{"ts":"2026-10-19T03:42:35.716Z","test":"M1-4 every boundary","scenario":"boundary 67","completed":66,"total":70,"activity":"crashed after journal append 67","elapsedS":6565}
+{"ts":"2026-10-19T03:42:43.835Z","test":"M1-4 every boundary","scenario":"boundary 67","completed":66,"total":70,"activity":"resume finished","elapsedS":6573}
+{"ts":"2026-10-19T03:42:48.693Z","test":"M1-4 every boundary","scenario":"boundary 67","completed":66,"total":70,"activity":"run after resume finished","elapsedS":6578}
+{"ts":"2026-10-19T03:42:49.976Z","test":"M1-4 every boundary","scenario":"boundary 67","completed":67,"total":70,"activity":"completed","elapsedS":6580}
+{"ts":"2026-10-19T03:42:49.976Z","test":"M1-4 every boundary","scenario":"boundary 68","completed":67,"total":70,"activity":"begin","elapsedS":6580}
+{"ts":"2026-10-19T03:44:06.664Z","test":"M1-4 every boundary","scenario":"boundary 68","completed":67,"total":70,"activity":"crashed after journal append 68","elapsedS":6656}
+{"ts":"2026-10-19T03:44:13.279Z","test":"M1-4 every boundary","scenario":"boundary 68","completed":67,"total":70,"activity":"resume finished","elapsedS":6663}
+{"ts":"2026-10-19T03:44:18.455Z","test":"M1-4 every boundary","scenario":"boundary 68","completed":67,"total":70,"activity":"run after resume finished","elapsedS":6668}
+{"ts":"2026-10-19T03:44:19.913Z","test":"M1-4 every boundary","scenario":"boundary 68","completed":68,"total":70,"activity":"completed","elapsedS":6670}
+{"ts":"2026-10-19T03:44:19.913Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":68,"total":70,"activity":"begin","elapsedS":6670}
+{"ts":"2026-10-19T03:45:35.919Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":68,"total":70,"activity":"crashed after journal append 69","elapsedS":6746}
+{"ts":"2026-10-19T03:45:42.721Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":68,"total":70,"activity":"second crash during recovery at append 4 (exit 0)","elapsedS":6752}
+{"ts":"2026-10-19T03:45:47.208Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":68,"total":70,"activity":"resume finished","elapsedS":6757}
+{"ts":"2026-10-19T03:45:52.365Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":68,"total":70,"activity":"run after resume finished","elapsedS":6762}
+{"ts":"2026-10-19T03:45:53.852Z","test":"M1-4 every boundary","scenario":"boundary 69","completed":69,"total":70,"activity":"completed","elapsedS":6763}
+{"ts":"2026-10-19T03:45:53.852Z","test":"M1-4 every boundary","scenario":"boundary 70","completed":69,"total":70,"activity":"begin","elapsedS":6763}
+{"ts":"2026-10-19T03:47:11.586Z","test":"M1-4 every boundary","scenario":"boundary 70","completed":69,"total":70,"activity":"crashed after journal append 70","elapsedS":6841}
+{"ts":"2026-10-19T03:47:15.775Z","test":"M1-4 every boundary","scenario":"boundary 70","completed":69,"total":70,"activity":"resume finished","elapsedS":6845}
+{"ts":"2026-10-19T03:47:20.805Z","test":"M1-4 every boundary","scenario":"boundary 70","completed":69,"total":70,"activity":"run after resume finished","elapsedS":6850}
+{"ts":"2026-10-19T03:47:22.229Z","test":"M1-4 every boundary","scenario":"boundary 70","completed":70,"total":70,"activity":"completed","elapsedS":6852}
+{"ts":"2026-10-19T03:48:42.891Z","test":"M1-4 random SIGKILLs","scenario":"","completed":0,"total":8,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T03:48:42.891Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T03:49:18.017Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":35}
+{"ts":"2026-10-19T03:49:24.998Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":42}
+{"ts":"2026-10-19T03:49:35.769Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":53}
+{"ts":"2026-10-19T03:49:49.301Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":66}
+{"ts":"2026-10-19T03:49:58.941Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"resume finished","elapsedS":76}
+{"ts":"2026-10-19T03:50:24.250Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":0,"total":8,"activity":"run after resume finished","elapsedS":101}
+{"ts":"2026-10-19T03:50:25.750Z","test":"M1-4 random SIGKILLs","scenario":"seed 1","completed":1,"total":8,"activity":"completed","elapsedS":103}
+{"ts":"2026-10-19T03:50:25.750Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"begin","elapsedS":103}
+{"ts":"2026-10-19T03:51:03.417Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":141}
+{"ts":"2026-10-19T03:51:18.640Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":156}
+{"ts":"2026-10-19T03:51:21.697Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":159}
+{"ts":"2026-10-19T03:51:33.718Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":171}
+{"ts":"2026-10-19T03:51:43.598Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"resume finished","elapsedS":181}
+{"ts":"2026-10-19T03:52:09.249Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":1,"total":8,"activity":"run after resume finished","elapsedS":206}
+{"ts":"2026-10-19T03:52:10.746Z","test":"M1-4 random SIGKILLs","scenario":"seed 2","completed":2,"total":8,"activity":"completed","elapsedS":208}
+{"ts":"2026-10-19T03:52:10.746Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"begin","elapsedS":208}
+{"ts":"2026-10-19T03:52:48.508Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":246}
+{"ts":"2026-10-19T03:53:07.190Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":264}
+{"ts":"2026-10-19T03:53:19.753Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":277}
+{"ts":"2026-10-19T03:53:24.450Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":282}
+{"ts":"2026-10-19T03:53:30.080Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"resume finished","elapsedS":287}
+{"ts":"2026-10-19T03:53:54.728Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":2,"total":8,"activity":"run after resume finished","elapsedS":312}
+{"ts":"2026-10-19T03:53:56.251Z","test":"M1-4 random SIGKILLs","scenario":"seed 3","completed":3,"total":8,"activity":"completed","elapsedS":313}
+{"ts":"2026-10-19T03:53:56.251Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"begin","elapsedS":313}
+{"ts":"2026-10-19T03:54:36.374Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":353}
+{"ts":"2026-10-19T03:54:40.829Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":358}
+{"ts":"2026-10-19T03:54:50.718Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":368}
+{"ts":"2026-10-19T03:54:54.019Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":371}
+{"ts":"2026-10-19T03:54:59.243Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"resume finished","elapsedS":376}
+{"ts":"2026-10-19T03:55:39.906Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":3,"total":8,"activity":"run after resume finished","elapsedS":417}
+{"ts":"2026-10-19T03:55:41.390Z","test":"M1-4 random SIGKILLs","scenario":"seed 4","completed":4,"total":8,"activity":"completed","elapsedS":418}
+{"ts":"2026-10-19T03:55:41.390Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"begin","elapsedS":418}
+{"ts":"2026-10-19T03:56:01.823Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":439}
+{"ts":"2026-10-19T03:56:19.608Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":457}
+{"ts":"2026-10-19T03:56:34.394Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":472}
+{"ts":"2026-10-19T03:56:45.888Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":483}
+{"ts":"2026-10-19T03:56:51.079Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"resume finished","elapsedS":488}
+{"ts":"2026-10-19T03:57:31.590Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":4,"total":8,"activity":"run after resume finished","elapsedS":529}
+{"ts":"2026-10-19T03:57:33.029Z","test":"M1-4 random SIGKILLs","scenario":"seed 5","completed":5,"total":8,"activity":"completed","elapsedS":530}
+{"ts":"2026-10-19T03:57:33.029Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"begin","elapsedS":530}
+{"ts":"2026-10-19T03:57:51.373Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":548}
+{"ts":"2026-10-19T03:58:02.058Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":559}
+{"ts":"2026-10-19T03:58:14.492Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":572}
+{"ts":"2026-10-19T03:58:19.564Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":577}
+{"ts":"2026-10-19T03:58:27.698Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"resume finished","elapsedS":585}
+{"ts":"2026-10-19T03:59:16.916Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":5,"total":8,"activity":"run after resume finished","elapsedS":634}
+{"ts":"2026-10-19T03:59:18.366Z","test":"M1-4 random SIGKILLs","scenario":"seed 6","completed":6,"total":8,"activity":"completed","elapsedS":635}
+{"ts":"2026-10-19T03:59:18.366Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"begin","elapsedS":635}
+{"ts":"2026-10-19T03:59:41.823Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":659}
+{"ts":"2026-10-19T03:59:50.223Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":667}
+{"ts":"2026-10-19T04:00:05.800Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":683}
+{"ts":"2026-10-19T04:00:17.649Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":695}
+{"ts":"2026-10-19T04:00:21.983Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"resume finished","elapsedS":699}
+{"ts":"2026-10-19T04:01:02.199Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":6,"total":8,"activity":"run after resume finished","elapsedS":739}
+{"ts":"2026-10-19T04:01:03.695Z","test":"M1-4 random SIGKILLs","scenario":"seed 7","completed":7,"total":8,"activity":"completed","elapsedS":741}
+{"ts":"2026-10-19T04:01:03.695Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"begin","elapsedS":741}
+{"ts":"2026-10-19T04:01:32.140Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 1 delivered","elapsedS":769}
+{"ts":"2026-10-19T04:01:41.888Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 2 delivered","elapsedS":779}
+{"ts":"2026-10-19T04:01:55.809Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 3 delivered","elapsedS":793}
+{"ts":"2026-10-19T04:01:58.293Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"SIGKILL 4 delivered","elapsedS":795}
+{"ts":"2026-10-19T04:02:06.965Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"resume finished","elapsedS":804}
+{"ts":"2026-10-19T04:02:50.070Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":7,"total":8,"activity":"run after resume finished","elapsedS":847}
+{"ts":"2026-10-19T04:02:51.816Z","test":"M1-4 random SIGKILLs","scenario":"seed 8","completed":8,"total":8,"activity":"completed","elapsedS":849}
+{"ts":"2026-10-19T04:03:36.215Z","test":"M1-4 escalation boundaries","scenario":"","completed":0,"total":37,"activity":"started","elapsedS":0}
+{"ts":"2026-10-19T04:03:36.215Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"begin","elapsedS":0}
+{"ts":"2026-10-19T04:03:49.536Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"crashed after journal append 1","elapsedS":13}
+{"ts":"2026-10-19T04:03:52.628Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"resume finished","elapsedS":16}
+{"ts":"2026-10-19T04:04:23.803Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":0,"total":37,"activity":"run after resume finished","elapsedS":48}
+{"ts":"2026-10-19T04:04:25.350Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 1","completed":1,"total":37,"activity":"completed","elapsedS":49}
+{"ts":"2026-10-19T04:04:25.350Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"begin","elapsedS":49}
+{"ts":"2026-10-19T04:04:38.813Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"crashed after journal append 2","elapsedS":63}
+{"ts":"2026-10-19T04:04:42.057Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"resume finished","elapsedS":66}
+{"ts":"2026-10-19T04:05:13.465Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":1,"total":37,"activity":"run after resume finished","elapsedS":97}
+{"ts":"2026-10-19T04:05:14.985Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 2","completed":2,"total":37,"activity":"completed","elapsedS":99}
+{"ts":"2026-10-19T04:05:14.985Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"begin","elapsedS":99}
+{"ts":"2026-10-19T04:05:28.083Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"crashed after journal append 3","elapsedS":112}
+{"ts":"2026-10-19T04:05:31.811Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"resume finished","elapsedS":116}
+{"ts":"2026-10-19T04:06:02.134Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":2,"total":37,"activity":"run after resume finished","elapsedS":146}
+{"ts":"2026-10-19T04:06:03.584Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 3","completed":3,"total":37,"activity":"completed","elapsedS":147}
+{"ts":"2026-10-19T04:06:03.584Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"begin","elapsedS":147}
+{"ts":"2026-10-19T04:06:18.259Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"crashed after journal append 4","elapsedS":162}
+{"ts":"2026-10-19T04:06:21.897Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"resume finished","elapsedS":166}
+{"ts":"2026-10-19T04:06:52.650Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":3,"total":37,"activity":"run after resume finished","elapsedS":196}
+{"ts":"2026-10-19T04:06:54.104Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 4","completed":4,"total":37,"activity":"completed","elapsedS":198}
+{"ts":"2026-10-19T04:06:54.104Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"begin","elapsedS":198}
+{"ts":"2026-10-19T04:07:09.952Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"crashed after journal append 5","elapsedS":214}
+{"ts":"2026-10-19T04:07:13.726Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"resume finished","elapsedS":218}
+{"ts":"2026-10-19T04:07:44.336Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":4,"total":37,"activity":"run after resume finished","elapsedS":248}
+{"ts":"2026-10-19T04:07:45.908Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 5","completed":5,"total":37,"activity":"completed","elapsedS":250}
+{"ts":"2026-10-19T04:07:45.909Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 6","completed":5,"total":37,"activity":"begin","elapsedS":250}
+{"ts":"2026-10-19T04:08:02.374Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 6","completed":5,"total":37,"activity":"crashed after journal append 6","elapsedS":266}
+{"ts":"2026-10-19T04:08:08.177Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 6","completed":5,"total":37,"activity":"resume finished","elapsedS":272}
+{"ts":"2026-10-19T04:08:37.686Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 6","completed":5,"total":37,"activity":"run after resume finished","elapsedS":301}
+{"ts":"2026-10-19T04:08:39.124Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 6","completed":6,"total":37,"activity":"completed","elapsedS":303}
+{"ts":"2026-10-19T04:08:39.125Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 7","completed":6,"total":37,"activity":"begin","elapsedS":303}
+{"ts":"2026-10-19T04:08:57.646Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 7","completed":6,"total":37,"activity":"crashed after journal append 7","elapsedS":321}
+{"ts":"2026-10-19T04:09:04.461Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 7","completed":6,"total":37,"activity":"resume finished","elapsedS":328}
+{"ts":"2026-10-19T04:09:28.070Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 7","completed":6,"total":37,"activity":"run after resume finished","elapsedS":352}
+{"ts":"2026-10-19T04:09:29.523Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 7","completed":7,"total":37,"activity":"completed","elapsedS":353}
+{"ts":"2026-10-19T04:09:29.523Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 8","completed":7,"total":37,"activity":"begin","elapsedS":353}
+{"ts":"2026-10-19T04:09:46.255Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 8","completed":7,"total":37,"activity":"crashed after journal append 8","elapsedS":370}
+{"ts":"2026-10-19T04:09:52.554Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 8","completed":7,"total":37,"activity":"resume finished","elapsedS":376}
+{"ts":"2026-10-19T04:10:20.220Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 8","completed":7,"total":37,"activity":"run after resume finished","elapsedS":404}
+{"ts":"2026-10-19T04:10:21.749Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 8","completed":8,"total":37,"activity":"completed","elapsedS":406}
+{"ts":"2026-10-19T04:10:21.749Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 9","completed":8,"total":37,"activity":"begin","elapsedS":406}
+{"ts":"2026-10-19T04:10:38.449Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 9","completed":8,"total":37,"activity":"crashed after journal append 9","elapsedS":422}
+{"ts":"2026-10-19T04:10:44.849Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 9","completed":8,"total":37,"activity":"resume finished","elapsedS":429}
+{"ts":"2026-10-19T04:11:08.828Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 9","completed":8,"total":37,"activity":"run after resume finished","elapsedS":453}
+{"ts":"2026-10-19T04:11:10.248Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 9","completed":9,"total":37,"activity":"completed","elapsedS":454}
+{"ts":"2026-10-19T04:11:10.248Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 10","completed":9,"total":37,"activity":"begin","elapsedS":454}
+{"ts":"2026-10-19T04:11:28.422Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 10","completed":9,"total":37,"activity":"crashed after journal append 10","elapsedS":472}
+{"ts":"2026-10-19T04:11:33.521Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 10","completed":9,"total":37,"activity":"resume finished","elapsedS":477}
+{"ts":"2026-10-19T04:11:56.381Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 10","completed":9,"total":37,"activity":"run after resume finished","elapsedS":500}
+{"ts":"2026-10-19T04:11:57.865Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 10","completed":10,"total":37,"activity":"completed","elapsedS":502}
+{"ts":"2026-10-19T04:11:57.865Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 11","completed":10,"total":37,"activity":"begin","elapsedS":502}
+{"ts":"2026-10-19T04:12:16.061Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 11","completed":10,"total":37,"activity":"crashed after journal append 11","elapsedS":520}
+{"ts":"2026-10-19T04:12:20.454Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 11","completed":10,"total":37,"activity":"resume finished","elapsedS":524}
+{"ts":"2026-10-19T04:12:44.531Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 11","completed":10,"total":37,"activity":"run after resume finished","elapsedS":548}
+{"ts":"2026-10-19T04:12:45.963Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 11","completed":11,"total":37,"activity":"completed","elapsedS":550}
+{"ts":"2026-10-19T04:12:45.963Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 12","completed":11,"total":37,"activity":"begin","elapsedS":550}
+{"ts":"2026-10-19T04:13:05.943Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 12","completed":11,"total":37,"activity":"crashed after journal append 12","elapsedS":570}
+{"ts":"2026-10-19T04:13:09.596Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 12","completed":11,"total":37,"activity":"resume finished","elapsedS":573}
+{"ts":"2026-10-19T04:13:32.423Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 12","completed":11,"total":37,"activity":"run after resume finished","elapsedS":596}
+{"ts":"2026-10-19T04:13:33.947Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 12","completed":12,"total":37,"activity":"completed","elapsedS":598}
+{"ts":"2026-10-19T04:13:33.947Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 13","completed":12,"total":37,"activity":"begin","elapsedS":598}
+{"ts":"2026-10-19T04:13:56.191Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 13","completed":12,"total":37,"activity":"crashed after journal append 13","elapsedS":620}
+{"ts":"2026-10-19T04:14:01.964Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 13","completed":12,"total":37,"activity":"resume finished","elapsedS":626}
+{"ts":"2026-10-19T04:14:26.728Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 13","completed":12,"total":37,"activity":"run after resume finished","elapsedS":651}
+{"ts":"2026-10-19T04:14:28.317Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 13","completed":13,"total":37,"activity":"completed","elapsedS":652}
+{"ts":"2026-10-19T04:14:28.317Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 14","completed":13,"total":37,"activity":"begin","elapsedS":652}
+{"ts":"2026-10-19T04:14:51.428Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 14","completed":13,"total":37,"activity":"crashed after journal append 14","elapsedS":675}
+{"ts":"2026-10-19T04:14:58.148Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 14","completed":13,"total":37,"activity":"resume finished","elapsedS":682}
+{"ts":"2026-10-19T04:15:17.100Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 14","completed":13,"total":37,"activity":"run after resume finished","elapsedS":701}
+{"ts":"2026-10-19T04:15:18.670Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 14","completed":14,"total":37,"activity":"completed","elapsedS":702}
+{"ts":"2026-10-19T04:15:18.670Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 15","completed":14,"total":37,"activity":"begin","elapsedS":702}
+{"ts":"2026-10-19T04:15:41.884Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 15","completed":14,"total":37,"activity":"crashed after journal append 15","elapsedS":726}
+{"ts":"2026-10-19T04:15:48.313Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 15","completed":14,"total":37,"activity":"resume finished","elapsedS":732}
+{"ts":"2026-10-19T04:16:07.180Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 15","completed":14,"total":37,"activity":"run after resume finished","elapsedS":751}
+{"ts":"2026-10-19T04:16:08.735Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 15","completed":15,"total":37,"activity":"completed","elapsedS":753}
+{"ts":"2026-10-19T04:16:08.735Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 16","completed":15,"total":37,"activity":"begin","elapsedS":753}
+{"ts":"2026-10-19T04:16:33.899Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 16","completed":15,"total":37,"activity":"crashed after journal append 16","elapsedS":778}
+{"ts":"2026-10-19T04:16:39.659Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 16","completed":15,"total":37,"activity":"resume finished","elapsedS":783}
+{"ts":"2026-10-19T04:16:58.809Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 16","completed":15,"total":37,"activity":"run after resume finished","elapsedS":803}
+{"ts":"2026-10-19T04:17:00.350Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 16","completed":16,"total":37,"activity":"completed","elapsedS":804}
+{"ts":"2026-10-19T04:17:00.350Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 17","completed":16,"total":37,"activity":"begin","elapsedS":804}
+{"ts":"2026-10-19T04:17:23.980Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 17","completed":16,"total":37,"activity":"crashed after journal append 17","elapsedS":828}
+{"ts":"2026-10-19T04:17:29.166Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 17","completed":16,"total":37,"activity":"resume finished","elapsedS":833}
+{"ts":"2026-10-19T04:17:47.678Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 17","completed":16,"total":37,"activity":"run after resume finished","elapsedS":851}
+{"ts":"2026-10-19T04:17:49.191Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 17","completed":17,"total":37,"activity":"completed","elapsedS":853}
+{"ts":"2026-10-19T04:17:49.191Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 18","completed":17,"total":37,"activity":"begin","elapsedS":853}
+{"ts":"2026-10-19T04:18:13.460Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 18","completed":17,"total":37,"activity":"crashed after journal append 18","elapsedS":877}
+{"ts":"2026-10-19T04:18:17.818Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 18","completed":17,"total":37,"activity":"resume finished","elapsedS":882}
+{"ts":"2026-10-19T04:18:35.878Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 18","completed":17,"total":37,"activity":"run after resume finished","elapsedS":900}
+{"ts":"2026-10-19T04:18:37.279Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 18","completed":18,"total":37,"activity":"completed","elapsedS":901}
+{"ts":"2026-10-19T04:18:37.280Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 19","completed":18,"total":37,"activity":"begin","elapsedS":901}
+{"ts":"2026-10-19T04:19:04.701Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 19","completed":18,"total":37,"activity":"crashed after journal append 19","elapsedS":928}
+{"ts":"2026-10-19T04:19:08.356Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 19","completed":18,"total":37,"activity":"resume finished","elapsedS":932}
+{"ts":"2026-10-19T04:19:27.045Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 19","completed":18,"total":37,"activity":"run after resume finished","elapsedS":951}
+{"ts":"2026-10-19T04:19:28.532Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 19","completed":19,"total":37,"activity":"completed","elapsedS":952}
+{"ts":"2026-10-19T04:19:28.532Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 20","completed":19,"total":37,"activity":"begin","elapsedS":952}
+{"ts":"2026-10-19T04:19:55.291Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 20","completed":19,"total":37,"activity":"crashed after journal append 20","elapsedS":979}
+{"ts":"2026-10-19T04:20:00.994Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 20","completed":19,"total":37,"activity":"resume finished","elapsedS":985}
+{"ts":"2026-10-19T04:20:20.346Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 20","completed":19,"total":37,"activity":"run after resume finished","elapsedS":1004}
+{"ts":"2026-10-19T04:20:21.754Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 20","completed":20,"total":37,"activity":"completed","elapsedS":1006}
+{"ts":"2026-10-19T04:20:21.754Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 21","completed":20,"total":37,"activity":"begin","elapsedS":1006}
+{"ts":"2026-10-19T04:20:49.030Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 21","completed":20,"total":37,"activity":"crashed after journal append 21","elapsedS":1033}
+{"ts":"2026-10-19T04:20:55.794Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 21","completed":20,"total":37,"activity":"resume finished","elapsedS":1040}
+{"ts":"2026-10-19T04:21:09.192Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 21","completed":20,"total":37,"activity":"run after resume finished","elapsedS":1053}
+{"ts":"2026-10-19T04:21:10.725Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 21","completed":21,"total":37,"activity":"completed","elapsedS":1055}
+{"ts":"2026-10-19T04:21:10.725Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 22","completed":21,"total":37,"activity":"begin","elapsedS":1055}
+{"ts":"2026-10-19T04:21:40.234Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 22","completed":21,"total":37,"activity":"crashed after journal append 22","elapsedS":1084}
+{"ts":"2026-10-19T04:21:47.255Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 22","completed":21,"total":37,"activity":"resume finished","elapsedS":1091}
+{"ts":"2026-10-19T04:22:00.290Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 22","completed":21,"total":37,"activity":"run after resume finished","elapsedS":1104}
+{"ts":"2026-10-19T04:22:01.735Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 22","completed":22,"total":37,"activity":"completed","elapsedS":1106}
+{"ts":"2026-10-19T04:22:01.735Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 23","completed":22,"total":37,"activity":"begin","elapsedS":1106}
+{"ts":"2026-10-19T04:22:30.117Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 23","completed":22,"total":37,"activity":"crashed after journal append 23","elapsedS":1134}
+{"ts":"2026-10-19T04:22:36.361Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 23","completed":22,"total":37,"activity":"resume finished","elapsedS":1140}
+{"ts":"2026-10-19T04:22:49.475Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 23","completed":22,"total":37,"activity":"run after resume finished","elapsedS":1153}
+{"ts":"2026-10-19T04:22:50.863Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 23","completed":23,"total":37,"activity":"completed","elapsedS":1155}
+{"ts":"2026-10-19T04:22:50.863Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 24","completed":23,"total":37,"activity":"begin","elapsedS":1155}
+{"ts":"2026-10-19T04:23:21.751Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 24","completed":23,"total":37,"activity":"crashed after journal append 24","elapsedS":1186}
+{"ts":"2026-10-19T04:23:26.698Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 24","completed":23,"total":37,"activity":"resume finished","elapsedS":1190}
+{"ts":"2026-10-19T04:23:39.453Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 24","completed":23,"total":37,"activity":"run after resume finished","elapsedS":1203}
+{"ts":"2026-10-19T04:23:41.022Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 24","completed":24,"total":37,"activity":"completed","elapsedS":1205}
+{"ts":"2026-10-19T04:23:41.022Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 25","completed":24,"total":37,"activity":"begin","elapsedS":1205}
+{"ts":"2026-10-19T04:24:10.850Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 25","completed":24,"total":37,"activity":"crashed after journal append 25","elapsedS":1235}
+{"ts":"2026-10-19T04:24:16.212Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 25","completed":24,"total":37,"activity":"resume finished","elapsedS":1240}
+{"ts":"2026-10-19T04:24:29.859Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 25","completed":24,"total":37,"activity":"run after resume finished","elapsedS":1254}
+{"ts":"2026-10-19T04:24:31.333Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 25","completed":25,"total":37,"activity":"completed","elapsedS":1255}
+{"ts":"2026-10-19T04:24:31.333Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 26","completed":25,"total":37,"activity":"begin","elapsedS":1255}
+{"ts":"2026-10-19T04:25:01.036Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 26","completed":25,"total":37,"activity":"crashed after journal append 26","elapsedS":1285}
+{"ts":"2026-10-19T04:25:05.497Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 26","completed":25,"total":37,"activity":"resume finished","elapsedS":1289}
+{"ts":"2026-10-19T04:25:19.084Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 26","completed":25,"total":37,"activity":"run after resume finished","elapsedS":1303}
+{"ts":"2026-10-19T04:25:20.619Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 26","completed":26,"total":37,"activity":"completed","elapsedS":1304}
+{"ts":"2026-10-19T04:25:20.619Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 27","completed":26,"total":37,"activity":"begin","elapsedS":1304}
+{"ts":"2026-10-19T04:25:52.884Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 27","completed":26,"total":37,"activity":"crashed after journal append 27","elapsedS":1337}
+{"ts":"2026-10-19T04:25:56.423Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 27","completed":26,"total":37,"activity":"resume finished","elapsedS":1340}
+{"ts":"2026-10-19T04:26:09.280Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 27","completed":26,"total":37,"activity":"run after resume finished","elapsedS":1353}
+{"ts":"2026-10-19T04:26:10.763Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 27","completed":27,"total":37,"activity":"completed","elapsedS":1355}
+{"ts":"2026-10-19T04:26:10.763Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 28","completed":27,"total":37,"activity":"begin","elapsedS":1355}
+{"ts":"2026-10-19T04:26:44.230Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 28","completed":27,"total":37,"activity":"crashed after journal append 28","elapsedS":1388}
+{"ts":"2026-10-19T04:26:50.006Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 28","completed":27,"total":37,"activity":"resume finished","elapsedS":1394}
+{"ts":"2026-10-19T04:27:03.170Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 28","completed":27,"total":37,"activity":"run after resume finished","elapsedS":1407}
+{"ts":"2026-10-19T04:27:04.701Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 28","completed":28,"total":37,"activity":"completed","elapsedS":1408}
+{"ts":"2026-10-19T04:27:04.701Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 29","completed":28,"total":37,"activity":"begin","elapsedS":1408}
+{"ts":"2026-10-19T04:27:38.181Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 29","completed":28,"total":37,"activity":"crashed after journal append 29","elapsedS":1442}
+{"ts":"2026-10-19T04:27:48.802Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 29","completed":28,"total":37,"activity":"resume finished","elapsedS":1453}
+{"ts":"2026-10-19T04:27:53.185Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 29","completed":28,"total":37,"activity":"run after resume finished","elapsedS":1457}
+{"ts":"2026-10-19T04:27:54.841Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 29","completed":29,"total":37,"activity":"completed","elapsedS":1459}
+{"ts":"2026-10-19T04:27:54.841Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 30","completed":29,"total":37,"activity":"begin","elapsedS":1459}
+{"ts":"2026-10-19T04:28:29.760Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 30","completed":29,"total":37,"activity":"crashed after journal append 30","elapsedS":1494}
+{"ts":"2026-10-19T04:28:39.757Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 30","completed":29,"total":37,"activity":"resume finished","elapsedS":1504}
+{"ts":"2026-10-19T04:28:44.305Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 30","completed":29,"total":37,"activity":"run after resume finished","elapsedS":1508}
+{"ts":"2026-10-19T04:28:45.842Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 30","completed":30,"total":37,"activity":"completed","elapsedS":1510}
+{"ts":"2026-10-19T04:28:45.842Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 31","completed":30,"total":37,"activity":"begin","elapsedS":1510}
+{"ts":"2026-10-19T04:29:19.863Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 31","completed":30,"total":37,"activity":"crashed after journal append 31","elapsedS":1544}
+{"ts":"2026-10-19T04:29:29.229Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 31","completed":30,"total":37,"activity":"resume finished","elapsedS":1553}
+{"ts":"2026-10-19T04:29:33.291Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 31","completed":30,"total":37,"activity":"run after resume finished","elapsedS":1557}
+{"ts":"2026-10-19T04:29:34.812Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 31","completed":31,"total":37,"activity":"completed","elapsedS":1559}
+{"ts":"2026-10-19T04:29:34.812Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 32","completed":31,"total":37,"activity":"begin","elapsedS":1559}
+{"ts":"2026-10-19T04:30:09.225Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 32","completed":31,"total":37,"activity":"crashed after journal append 32","elapsedS":1593}
+{"ts":"2026-10-19T04:30:17.650Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 32","completed":31,"total":37,"activity":"resume finished","elapsedS":1601}
+{"ts":"2026-10-19T04:30:21.706Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 32","completed":31,"total":37,"activity":"run after resume finished","elapsedS":1605}
+{"ts":"2026-10-19T04:30:23.193Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 32","completed":32,"total":37,"activity":"completed","elapsedS":1607}
+{"ts":"2026-10-19T04:30:23.193Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 33","completed":32,"total":37,"activity":"begin","elapsedS":1607}
+{"ts":"2026-10-19T04:31:02.911Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 33","completed":32,"total":37,"activity":"crashed after journal append 33","elapsedS":1647}
+{"ts":"2026-10-19T04:31:11.063Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 33","completed":32,"total":37,"activity":"resume finished","elapsedS":1655}
+{"ts":"2026-10-19T04:31:15.399Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 33","completed":32,"total":37,"activity":"run after resume finished","elapsedS":1659}
+{"ts":"2026-10-19T04:31:17.021Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 33","completed":33,"total":37,"activity":"completed","elapsedS":1661}
+{"ts":"2026-10-19T04:31:17.021Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 34","completed":33,"total":37,"activity":"begin","elapsedS":1661}
+{"ts":"2026-10-19T04:31:54.215Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 34","completed":33,"total":37,"activity":"crashed after journal append 34","elapsedS":1698}
+{"ts":"2026-10-19T04:32:01.541Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 34","completed":33,"total":37,"activity":"resume finished","elapsedS":1705}
+{"ts":"2026-10-19T04:32:05.682Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 34","completed":33,"total":37,"activity":"run after resume finished","elapsedS":1709}
+{"ts":"2026-10-19T04:32:07.298Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 34","completed":34,"total":37,"activity":"completed","elapsedS":1711}
+{"ts":"2026-10-19T04:32:07.298Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 35","completed":34,"total":37,"activity":"begin","elapsedS":1711}
+{"ts":"2026-10-19T04:32:46.313Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 35","completed":34,"total":37,"activity":"crashed after journal append 35","elapsedS":1750}
+{"ts":"2026-10-19T04:32:52.180Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 35","completed":34,"total":37,"activity":"resume finished","elapsedS":1756}
+{"ts":"2026-10-19T04:32:56.129Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 35","completed":34,"total":37,"activity":"run after resume finished","elapsedS":1760}
+{"ts":"2026-10-19T04:32:57.709Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 35","completed":35,"total":37,"activity":"completed","elapsedS":1761}
+{"ts":"2026-10-19T04:32:57.709Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 36","completed":35,"total":37,"activity":"begin","elapsedS":1761}
+{"ts":"2026-10-19T04:33:38.010Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 36","completed":35,"total":37,"activity":"crashed after journal append 36","elapsedS":1802}
+{"ts":"2026-10-19T04:33:42.970Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 36","completed":35,"total":37,"activity":"resume finished","elapsedS":1807}
+{"ts":"2026-10-19T04:33:46.948Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 36","completed":35,"total":37,"activity":"run after resume finished","elapsedS":1811}
+{"ts":"2026-10-19T04:33:48.421Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 36","completed":36,"total":37,"activity":"completed","elapsedS":1812}
+{"ts":"2026-10-19T04:33:48.421Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 37","completed":36,"total":37,"activity":"begin","elapsedS":1812}
+{"ts":"2026-10-19T04:34:30.317Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 37","completed":36,"total":37,"activity":"crashed after journal append 37","elapsedS":1854}
+{"ts":"2026-10-19T04:34:33.800Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 37","completed":36,"total":37,"activity":"resume finished","elapsedS":1858}
+{"ts":"2026-10-19T04:34:37.741Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 37","completed":36,"total":37,"activity":"run after resume finished","elapsedS":1862}
+{"ts":"2026-10-19T04:34:39.331Z","test":"M1-4 escalation boundaries","scenario":"escalation boundary 37","completed":37,"total":37,"activity":"completed","elapsedS":1863}

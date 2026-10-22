@@ -1,0 +1,84 @@
+import type { TaskState } from '../states.ts';
+
+export interface Claim {
+  owner: string;
+  /** Epoch milliseconds. A claim past this time is expired and may be reclaimed. */
+  leaseExpiresAt: number;
+}
+
+export interface TaskNote {
+  ts: string;
+  text: string;
+}
+
+export interface TaskCounters {
+  /** Implementation attempts started (attempt numbers are 1-based). */
+  attempt: number;
+  /** Correction attempts consumed (verification/review failures). */
+  correctionFailures: number;
+  /** Infra retries consumed (crash, kill, timeout, interruption). */
+  infraFailures: number;
+  /** Normalised signature of the last correction failure and how many times in a row it repeated. */
+  lastFailureSignature: string | null;
+  repeatCount: number;
+  /**
+   * Sequence number of the journal record of the last transition applied to this task (0 for
+   * none). It ties the store to one exact point in the journal, so a journal truncated or
+   * restored to an earlier point cannot pass for a crash that left the store behind.
+   */
+  journalSeq: number;
+}
+
+export interface TaskRecord extends TaskCounters {
+  id: string;
+  epicId: string;
+  title: string;
+  deps: string[];
+  state: TaskState;
+  claim: Claim | null;
+  notes: TaskNote[];
+}
+
+export interface NewTask {
+  id: string;
+  epicId: string;
+  title: string;
+  deps: string[];
+}
+
+/**
+ * Durable task graph. Only the controller process calls it (architecture principle 4).
+ * Every mutating operation is atomic with respect to other callers, including other processes.
+ */
+export interface TaskStore {
+  readonly kind: string;
+  createTask(t: NewTask): TaskRecord;
+  get(id: string): TaskRecord | undefined;
+  list(): TaskRecord[];
+  /** Change state only if the current state is `from`. Returns false (and changes nothing) otherwise. */
+  compareAndSetState(id: string, from: TaskState, to: TaskState, counters?: Partial<TaskCounters>): boolean;
+  /** Set counters without a state change. */
+  updateCounters(id: string, counters: Partial<TaskCounters>): void;
+  /** Atomically claim one task in state `ready` with no live claim. Lowest id first. */
+  claimReady(owner: string, leaseMs: number, now: number, exclude?: ReadonlySet<string>): TaskRecord | null;
+  /** Atomically claim a specific task if it has no live claim. */
+  claim(id: string, owner: string, leaseMs: number, now: number): boolean;
+  heartbeat(id: string, owner: string, leaseMs: number, now: number): boolean;
+  release(id: string, owner: string): boolean;
+  /** Clear claims whose lease has expired. Returns the affected task ids. */
+  reclaimExpired(now: number): string[];
+  addNote(id: string, text: string): void;
+}
+
+export class StoreError extends Error {}
+
+/** Longest task title in UTF-8 bytes; beads' own limit, applied to every store alike. */
+export const MAX_TITLE_BYTES = 500;
+
+/** Why a task title is unusable, or null. Shared by plan validation and every store. */
+export function titleProblem(title: string): string | null {
+  if (title.trim() === '') return 'title is empty or whitespace only';
+  if (/[\u0000-\u001f\u007f]/.test(title)) return 'title contains a control character';
+  if (Buffer.byteLength(title, 'utf8') > MAX_TITLE_BYTES) return `title is longer than ${MAX_TITLE_BYTES} bytes`;
+  return null;
+}

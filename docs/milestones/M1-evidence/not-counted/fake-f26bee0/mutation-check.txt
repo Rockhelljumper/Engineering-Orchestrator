@@ -1,0 +1,15 @@
+# mutation check at f26bee0c5b4d6a591d2b3c246bba961ae5b117b1, started 2026-10-19T16:05:07Z
+KILLED  M1 states: allow planned -> done  [src/states.ts]  # fail 1  (tests/unit/states.test.ts)
+KILLED  budget: USD cap never exceeded  [src/budget.ts]  # fail 7  (tests/unit/budget.test.ts, tests/unit/controller.test.ts)
+KILLED  budget: open reservations not counted (no defer)  [src/budget.ts]  # fail 6  (tests/unit/budget.test.ts)
+KILLED  store: claims without the cross-process lock  [src/store/fake.ts]  # fail 1  (tests/integration/concurrent-claims.test.ts)
+KILLED  resume: never-launched reservations left open  [src/controller.ts]  # fail 2  (tests/behavioral/crash-recovery.test.ts)
+KILLED  journal: MAC omits the chain link  [src/journal.ts]  # fail 1  (tests/unit/journal.test.ts)
+KILLED  limits: one extra correction attempt  [src/controller.ts]  # fail 1  (tests/unit/controller.test.ts)
+KILLED  evidence: artefact hashes not checked  [src/evidence.ts]  # fail 3  (tests/unit/evidence-policy-plan.test.ts, tests/integration/cli.test.ts)
+KILLED  resume: replays a store that is ahead of the journal  [src/controller.ts]  # fail 2  (tests/unit/controller.test.ts, tests/integration/cli.test.ts)
+KILLED  state root: group/other write not checked  [src/util/fsx.ts]  # fail 1  (tests/integration/cli.test.ts)
+KILLED  init: initialises over an existing journal  [src/stateRoot.ts]  # fail 1  (tests/integration/cli.test.ts)
+KILLED  plan import: journaled ids not reserved  [src/controller.ts]  # fail 1  (tests/unit/controller.test.ts)
+ALL KILLED
+# finished 2026-10-19T16:07:36Z

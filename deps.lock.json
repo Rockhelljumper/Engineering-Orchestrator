@@ -1,0 +1,40 @@
+{
+  "go": {
+    "version": "go1.26.7",
+    "toolchains": {
+      "linux-amd64": {
+        "module": "golang.org/toolchain@v0.0.1-go1.26.7.linux-amd64",
+        "moduleSum": "h1:BbG1DRIqH1ZVMRnQg/4M6jtOJjMFUusUjI+kXRBWqE8=",
+        "zipSha256": "478883fe531df5785b9186e7a39ecf2f67da37aaf81e3c9718e9c04e643ff5d1",
+        "verifiedBy": "sum.golang.org (go.dev/dl was unreachable from the build container)"
+      },
+      "windows-amd64": {
+        "module": "golang.org/toolchain@v0.0.1-go1.26.7.windows-amd64",
+        "moduleSum": "h1:lbbNIUXD76tVDW850cljAE22gUR0RdmZ0aVf0cjKnTo=",
+        "zipSha256": "ccada8b506d8a99124bd4654f15c74974c5d32f93b705b5c6081b76d629026b4",
+        "verifiedBy": "sum.golang.org, via go mod download in the build container; used only on GitHub-hosted Windows runners"
+      }
+    }
+  },
+  "beads": {
+    "repository": "https://github.com/gastownhall/beads",
+    "module": "github.com/steveyegge/beads",
+    "revision": "9c6f6e15cdfdc4478e634520e8320795914e68e5",
+    "version": "1.3.0",
+    "buildTags": "gms_pure_go",
+    "binaries": {
+      "linux-amd64": {
+        "sha256": "2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef",
+        "cc": "gcc 13.3.0",
+        "libc": "glibc 2.39",
+        "note": "CGO build: the hash reproduces only with this C toolchain and C library"
+      },
+      "windows-amd64": {
+        "sha256": "0b4d916b7076bb8ef7ab45882f6b7183399a90395ffbd867fb0b704ff12664f1",
+        "cc": "gcc 14.2.0",
+        "libc": "x86_64-w64-mingw32",
+        "note": "Built by the beads-windows CI job on a GitHub-hosted windows-2022 runner (run 39185244973, two builds with separate caches, identical); each later run must reproduce it on a fresh runner"
+      }
+    }
+  }
+}

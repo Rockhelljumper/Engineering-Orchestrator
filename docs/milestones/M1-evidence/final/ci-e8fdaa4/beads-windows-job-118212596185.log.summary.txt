@@ -1,0 +1,24 @@
+# Summary of final/ci-e8fdaa4/beads-windows-job-118212596185.log
+# The full log (407837 bytes, SHA-256 6c6dd72a0143fbb09eedc5e7024ff8bd367c915138b091953e6d334212e1ed98) is archived at commit 605decf6128942da4706b0ece0a5d97a329ed50c:
+# https://github.com/Rockhelljumper/Engineering-Orchestrator/blob/605decf6128942da4706b0ece0a5d97a329ed50c/docs/milestones/M1-evidence/final/ci-e8fdaa4/beads-windows-job-118212596185.log
+lines: 4582
+key lines (timestamps and ANSI codes removed):
+  HEAD is now at 69ed2c5 Merge e8fdaa45e31dad83325b0535cbafd19f0877af6f into 90ceb6cbe9bb0774f477351f6eb78d71ffb24cd0
+  HEAD is now at 9c6f6e1 bd versions + a config switch for versioned history — the minimum cut that makes versioned beads usable (#6138) (#6661)
+  D:\a\_temp/go.zip: OK
+  go version go1.26.7 windows/amd64
+  build-bd: windows-amd64, revision 9c6f6e15cdfdc4478e634520e8320795914e68e5, go1.26.7, gcc 14.2.0, x86_64-w64-mingw32, GOTOOLCHAIN=local GOPROXY=off
+  build-bd: unshare -n unavailable; relying on GOPROXY=off
+  build-bd: windows-amd64, revision 9c6f6e15cdfdc4478e634520e8320795914e68e5, go1.26.7, gcc 14.2.0, x86_64-w64-mingw32, GOTOOLCHAIN=local GOPROXY=off
+  build-bd: unshare -n unavailable; relying on GOPROXY=off
+  build 1: 0b4d916b7076bb8ef7ab45882f6b7183399a90395ffbd867fb0b704ff12664f1
+  build 2: 0b4d916b7076bb8ef7ab45882f6b7183399a90395ffbd867fb0b704ff12664f1
+  echo "bd build matches the pin $want"
+  bd build matches the pin 0b4d916b7076bb8ef7ab45882f6b7183399a90395ffbd867fb0b704ff12664f1
+  # tests 87
+  # suites 3
+  # pass 77
+  # fail 0
+  # cancelled 0
+  # skipped 10
+  # todo 0

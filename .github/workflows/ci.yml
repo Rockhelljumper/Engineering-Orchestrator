@@ -1,0 +1,113 @@
+# Runs the test suites only. No secrets, no deployment, no write permissions.
+# Third-party actions are pinned by full commit SHA (tag in the comment).
+name: ci
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.0
+      - run: node --version
+      - name: Unit tests
+        run: node --test "tests/unit/**/*.test.ts"
+      - name: Integration tests
+        run: node --test --test-concurrency=1 "tests/integration/**/*.test.ts"
+      - name: Behavioural tests (crash recovery)
+        run: node --test --test-concurrency=1 "tests/behavioral/**/*.test.ts"
+
+  # M1-8: build bd on a disposable Windows runner with the pinned Go toolchain, check the
+  # build is reproducible and matches the pin, and run the beads store tests against it.
+  # Go is fetched as the official toolchain module and checked against the SHA-256 recorded
+  # in deps.lock.json (itself verified against sum.golang.org); nothing is installed outside
+  # the runner's temporary directory.
+  beads-windows:
+    runs-on: windows-2022
+    timeout-minutes: 300
+    defaults:
+      run:
+        shell: bash
+    env:
+      GOTOOLCHAIN: local
+      GOENV: "off"
+      BD_DISABLE_METRICS: "1"
+      DO_NOT_TRACK: "1"
+    steps:
+      # Byte-exact sources: no CRLF conversion of the Go files being hashed and built.
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.0
+      - name: Read pins
+        id: pin
+        run: |
+          node -e '
+            const l = require("./deps.lock.json");
+            const t = l.go.toolchains["windows-amd64"];
+            const out = [`rev=${l.beads.revision}`, `gomod=${t.module}`, `gozip=${t.zipSha256}`];
+            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, out.join("\n") + "\n");'
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: gastownhall/beads
+          ref: ${{ steps.pin.outputs.rev }}
+          path: beads-src
+          persist-credentials: false
+      - name: Fetch the pinned Go toolchain and check its SHA-256
+        run: |
+          mod='${{ steps.pin.outputs.gomod }}'
+          url="https://proxy.golang.org/golang.org/toolchain/@v/${mod#golang.org/toolchain@}.zip"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/go.zip" "$url"
+          echo '${{ steps.pin.outputs.gozip }}  '"$RUNNER_TEMP/go.zip" | sha256sum -c -
+          7z x -y -bd -o"$RUNNER_TEMP/gotc" "$RUNNER_TEMP/go.zip" > /dev/null
+          goroot="$RUNNER_TEMP/gotc/$mod"
+          echo "GO=$goroot/bin/go.exe" >> "$GITHUB_ENV"
+          "$goroot/bin/go.exe" version
+          gcc --version | head -1
+      - name: Download beads modules (checked by go.sum and sum.golang.org)
+        run: |
+          cd beads-src
+          GOFLAGS=-mod=readonly GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org "$GO" mod download -x 2> "$RUNNER_TEMP/module-download.log"
+          "$GO" mod verify
+          tail -5 "$RUNNER_TEMP/module-download.log"
+      - name: Build bd twice with separate caches and compare
+        run: |
+          GOCACHE="$RUNNER_TEMP/cache1" scripts/build-bd.sh beads-src "$RUNNER_TEMP/b1/bd.exe" | tail -1 > "$RUNNER_TEMP/sha1"
+          GOCACHE="$RUNNER_TEMP/cache2" scripts/build-bd.sh beads-src "$RUNNER_TEMP/b2/bd.exe" | tail -1 > "$RUNNER_TEMP/sha2"
+          echo "build 1: $(cat "$RUNNER_TEMP/sha1")"
+          echo "build 2: $(cat "$RUNNER_TEMP/sha2")"
+          cmp "$RUNNER_TEMP/sha1" "$RUNNER_TEMP/sha2"
+          echo "EO_BD_BIN=$RUNNER_TEMP/b1/bd.exe" >> "$GITHUB_ENV"
+      - name: Check the build against the pin in deps.lock.json
+        run: |
+          got=$(cat "$RUNNER_TEMP/sha1")
+          want=$(node -p 'require("./deps.lock.json").beads.binaries["windows-amd64"]?.sha256 ?? ""')
+          if [ -z "$want" ]; then echo "::error::no pinned windows-amd64 bd build; this runner built $got"; exit 1; fi
+          if [ "$got" != "$want" ]; then
+            # CGO links the runner image's MinGW, which nothing pins: name it so an image
+            # update is told apart from a changed source or Go toolchain.
+            pinned=$(node -p 'const b = require("./deps.lock.json").beads.binaries["windows-amd64"]; `${b.cc}, ${b.libc}`')
+            echo "::error::bd build $got does not match the pin $want (pinned with $pinned; this runner has gcc $(gcc -dumpfullversion), $(gcc -dumpmachine))"
+            exit 1
+          fi
+          echo "bd build matches the pin $want"
+      - name: Beads store tests (contract, beads, CLI, claim race)
+        env:
+          EO_TEST_STORE: beads
+          EO_REQUIRE_BD: "1"
+        run: node --test --test-concurrency=1 tests/integration/store-contract.test.ts tests/integration/beads.test.ts tests/integration/cli.test.ts tests/integration/no-network.test.ts tests/integration/concurrent-claims.test.ts

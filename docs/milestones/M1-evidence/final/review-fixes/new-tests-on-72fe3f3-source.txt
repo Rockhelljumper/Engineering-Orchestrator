@@ -1,0 +1,27 @@
+# Tests from 08c4b57 run against src/ from 72fe3f3 (git checkout 72fe3f3 -- src). Expected: every new or changed test fails.
+# 2026-10-19T15:28:53Z tests@08c4b57636698e24178f7be88f46a3f1ef8c9200 src@72fe3f3
+ok 1 - tests/unit/budget.test.ts
+not ok 2 - a task id from a journaled plan cannot be imported again, even if a crash kept it out of the store
+not ok 3 - a truncated journal never rewinds finished work or runs it again
+not ok 4 - evidence paths cannot escape the ledger
+not ok 5 - invalid plans are refused
+not ok 6 - a repository that contains the state root, or lies inside it, cannot be approved
+ok 4 - tests/unit/journal.test.ts
+ok 5 - tests/unit/schema.test.ts
+ok 6 - tests/unit/states.test.ts
+# pass 4
+# fail 5
+not ok 1 - eo doctor reports a store that is ahead of the journal, and resume refuses to rewind it
+not ok 2 - eo init refuses a root left over from an earlier state root, even without policy.json
+not ok 3 - a state root that others can write is refused
+# pass 0
+# fail 3
+not ok 1 - a store entry that is a symlink or a hard link is replaced by a private copy on the next open
+not ok 2 - a beads store whose directories others can write is refused
+# pass 0
+# fail 2
+not ok 1 - a lease that cannot be renewed ends the attempt as an infra failure instead of crashing the controller
+  failureType: 'uncaughtException'
+  error: 'bd update failed (exit 1): simulated'
+not ok 1 - tests/unit/controller.test.ts
+  error: 'test timed out after 20000ms'

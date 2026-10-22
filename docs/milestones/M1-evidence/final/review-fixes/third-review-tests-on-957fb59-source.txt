@@ -1,0 +1,9 @@
+# tests@4978a1c, src@957fb59, FakeStore (2026-10-19T17:15:11Z). Expected: the four new third-review tests fail on 957fb59; the two updated tests (torn tail, legitimate crash) fail where their assertion was tightened
+not ok 1 - a torn journal tail is preserved in a forensic record before the repair drops it
+not ok 2 - a refused state root with a torn journal tail is left exactly as found
+not ok 3 - forensic records are never written through a link out of the state root
+not ok 4 - a legitimate crash followed by eo unblock of another task still recovers
+not ok 5 - a state root written before journal positions is refused with a clear message
+not ok 6 - a legitimate crash between the journal append and the store update is recovered
+# pass 0
+# fail 6

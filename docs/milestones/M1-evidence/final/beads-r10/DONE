@@ -1,0 +1,9 @@
+behavioral-every-boundary start 2026-10-20T02:26:39Z commit e8fdaa45e31dad83325b0535cbafd19f0877af6f dirty=0 node=v22.22.0 bd=2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef host=Linux 6.18.44-fc-v139 x86_64
+behavioral-escalation start 2026-10-20T02:26:39Z commit e8fdaa45e31dad83325b0535cbafd19f0877af6f dirty=0 node=v22.22.0 bd=2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef host=Linux 6.18.44-fc-v139 x86_64
+mutation start 2026-10-20T02:26:39Z commit e8fdaa45e31dad83325b0535cbafd19f0877af6f dirty=0 node=v22.22.0 bd=2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef host=Linux 6.18.44-fc-v139 x86_64
+behavioral-random-kills start 2026-10-20T02:26:39Z commit e8fdaa45e31dad83325b0535cbafd19f0877af6f dirty=0 node=v22.22.0 bd=2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef host=Linux 6.18.44-fc-v139 x86_64
+mutation exit=0 2026-10-20T02:39:12Z
+behavioral-random-kills exit=0 2026-10-20T02:48:40Z
+behavioral-escalation exit=0 2026-10-20T03:06:32Z
+behavioral-every-boundary exit=0 2026-10-20T04:25:50Z
+chain finished 2026-10-20T04:25:50Z

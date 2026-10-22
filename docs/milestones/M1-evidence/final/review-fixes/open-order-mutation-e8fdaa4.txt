@@ -1,0 +1,10 @@
+# mutant at e8fdaa4: finishLastTransition moved back before the policy and store-kind checks (src/controller.ts), 2026-10-20T04:31:30Z
+ src/controller.ts | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+not ok 1 - an open that fails its policy check finishes no interrupted transition; the accepting open does
+# pass 0
+# fail 1
+# control, unmutated e8fdaa4 (dirty=0)
+ok 1 - an open that fails its policy check finishes no interrupted transition; the accepting open does
+# pass 1
+# fail 0

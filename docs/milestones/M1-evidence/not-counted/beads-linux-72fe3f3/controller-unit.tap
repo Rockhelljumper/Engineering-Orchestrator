@@ -1,0 +1,160 @@
+TAP version 13
+# Subtest: happy path: every task reaches done in dependency order with verified evidence
+ok 1 - happy path: every task reaches done in dependency order with verified evidence
+  ---
+  duration_ms: 72239.821757
+  type: 'test'
+  ...
+# Subtest: a task never starts before its dependencies are done
+ok 2 - a task never starts before its dependencies are done
+  ---
+  duration_ms: 70208.597238
+  type: 'test'
+  ...
+# Subtest: the same plan and script produce the same journal sequence (determinism)
+ok 3 - the same plan and script produce the same journal sequence (determinism)
+  ---
+  duration_ms: 153266.016529
+  type: 'test'
+  ...
+# Subtest: failed verification returns the task to implementation and it then completes
+ok 4 - failed verification returns the task to implementation and it then completes
+  ---
+  duration_ms: 38471.693638
+  type: 'test'
+  ...
+# Subtest: review changes-requested returns the task to implementation
+ok 5 - review changes-requested returns the task to implementation
+  ---
+  duration_ms: 37729.070391
+  type: 'test'
+  ...
+# Subtest: correction attempts are bounded: the third distinct failure blocks with an escalation
+ok 6 - correction attempts are bounded: the third distinct failure blocks with an escalation
+  ---
+  duration_ms: 59254.569575
+  type: 'test'
+  ...
+# Subtest: the same failure twice in a row escalates early
+ok 7 - the same failure twice in a row escalates early
+  ---
+  duration_ms: 33260.853181
+  type: 'test'
+  ...
+# Subtest: infra failures are retried separately and then block
+ok 8 - infra failures are retried separately and then block
+  ---
+  duration_ms: 35677.212468
+  type: 'test'
+  ...
+# Subtest: a hanging worker is aborted at the timeout and retried as an infra failure
+ok 9 - a hanging worker is aborted at the timeout and retried as an infra failure
+  ---
+  duration_ms: 35888.854614
+  type: 'test'
+  ...
+# Subtest: budget: affordable work starts while unaffordable work is rejected before launch
+ok 10 - budget: affordable work starts while unaffordable work is rejected before launch
+  ---
+  duration_ms: 29904.537534
+  type: 'test'
+  ...
+# Subtest: budget: unknown costs charge the full reservation, so the budget can stop retries first
+ok 11 - budget: unknown costs charge the full reservation, so the budget can stop retries first
+  ---
+  duration_ms: 32101.434755
+  type: 'test'
+  ...
+# Subtest: budget: the epic cap stops new tasks once the epic is spent
+ok 12 - budget: the epic cap stops new tasks once the epic is spent
+  ---
+  duration_ms: 37264.149075
+  type: 'test'
+  ...
+# Subtest: M1-10: run and plan import refuse a repository that is not approved
+ok 13 - M1-10: run and plan import refuse a repository that is not approved
+  ---
+  duration_ms: 14895.308548
+  type: 'test'
+  ...
+# Subtest: blocked requires an escalation record, and only unblock leaves it
+ok 14 - blocked requires an escalation record, and only unblock leaves it
+  ---
+  duration_ms: 49164.666192
+  type: 'test'
+  ...
+# Subtest: a transition to blocked without an escalation id is refused
+ok 15 - a transition to blocked without an escalation id is refused
+  ---
+  duration_ms: 8697.196689
+  type: 'test'
+  ...
+# Subtest: a second controller on the same state root is refused in the same process
+ok 16 - a second controller on the same state root is refused in the same process
+  ---
+  duration_ms: 6026.730374
+  type: 'test'
+  ...
+# Subtest: a policy edited outside the controller is refused until accepted
+ok 17 - a policy edited outside the controller is refused until accepted
+  ---
+  duration_ms: 5788.905627
+  type: 'test'
+  ...
+# Subtest: importing the same task twice is refused
+ok 18 - importing the same task twice is refused
+  ---
+  duration_ms: 8546.445676
+  type: 'test'
+  ...
+# Subtest: the run summary reports tasks stalled behind a blocked dependency
+ok 19 - the run summary reports tasks stalled behind a blocked dependency
+  ---
+  duration_ms: 33294.841821
+  type: 'test'
+  ...
+# Subtest: a task injected into the store behind the controller is refused, not run
+ok 20 - a task injected into the store behind the controller is refused, not run # SKIP edits the FakeStore file; the beads equivalent is in tests/integration/beads.test.ts
+  ---
+  duration_ms: 0.175964
+  type: 'test'
+  ...
+# Subtest: a task whose epic or dependencies were edited in the store is refused
+ok 21 - a task whose epic or dependencies were edited in the store is refused # SKIP edits the FakeStore file; the beads equivalent is in tests/integration/beads.test.ts
+  ---
+  duration_ms: 0.048308
+  type: 'test'
+  ...
+# Subtest: tasks run only against the repository their plan was approved for
+ok 22 - tasks run only against the repository their plan was approved for
+  ---
+  duration_ms: 37358.92181
+  type: 'test'
+  ...
+# Subtest: a hand-edited policy can be accepted by a human, after which the controller opens
+ok 23 - a hand-edited policy can be accepted by a human, after which the controller opens
+  ---
+  duration_ms: 7734.973834
+  type: 'test'
+  ...
+# Subtest: a crash between journaling a policy change and committing it does not wedge the state root
+ok 24 - a crash between journaling a policy change and committing it does not wedge the state root
+  ---
+  duration_ms: 7577.443486
+  type: 'test'
+  ...
+# Subtest: a malformed reported cost is charged as unknown instead of wedging the journal
+ok 25 - a malformed reported cost is charged as unknown instead of wedging the journal
+  ---
+  duration_ms: 30835.344642
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 2
+# todo 0
+# duration_ms 849224.680763

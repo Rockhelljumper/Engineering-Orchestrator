@@ -1,0 +1,40 @@
+{
+  "epicId": "E1",
+  "title": "Sample epic",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "base",
+      "deps": []
+    },
+    {
+      "id": "T2",
+      "title": "left",
+      "deps": [
+        "T1"
+      ]
+    },
+    {
+      "id": "T3",
+      "title": "right",
+      "deps": [
+        "T1"
+      ]
+    },
+    {
+      "id": "T4",
+      "title": "join",
+      "deps": [
+        "T2",
+        "T3"
+      ]
+    },
+    {
+      "id": "T5",
+      "title": "tail",
+      "deps": [
+        "T4"
+      ]
+    }
+  ]
+}
