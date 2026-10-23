@@ -7,7 +7,8 @@ import { spawnSync } from 'node:child_process';
 import { Controller } from '../../src/controller.ts';
 import { FakeRunner } from '../../src/runner/fake.ts';
 import { BeadsStore, bdEnv, pinnedBdSha256 } from '../../src/store/beads.ts';
-import { initStateRoot, statePaths } from '../../src/stateRoot.ts';
+import { initStateRoot, readJournalKey, statePaths } from '../../src/stateRoot.ts';
+import { rootIdOf } from '../../src/anchor.ts';
 import { doctor } from '../../src/doctor.ts';
 import { BD_BIN, CLI, readExecLog, requireTrace, samplePlan, tmpDir, writeJson } from '../support/helpers.ts';
 
@@ -373,9 +374,56 @@ test('a beads store that lost its marker is refused once evidence exists, even w
   fs.rmSync(path.join(p.store, '.eo-initialised'));
   fs.writeFileSync(p.journal, '');
   const beadsBefore = fs.readdirSync(path.join(p.store, '.beads')).sort();
+  // The rollback anchor (M2-0b) refuses the emptied journal first.
+  assert.throws(() => Controller.open(sb.root), /the journal ends at seq 0, behind its anchored head/);
+  // With the anchor's head gone too, the check inside the state root still refuses.
+  fs.rmSync(path.join(process.env['EO_ANCHOR_DIR'] as string, 'heads', `${rootIdOf(readJournalKey(p))}.json`));
   assert.throws(() => Controller.open(sb.root), /not initialised, but this state root is already in use .*; refusing to re-initialise it/);
   assert.deepEqual(fs.readdirSync(path.join(p.store, '.beads')).sort(), beadsBefore);
   assert.equal(bdRaw(p.store, ['list', '--json', '--all']).includes('eo-T5'), true, 'the tasks are still there');
+});
+
+test('M2-0b: a beads store whose journal was emptied and whose marker was deleted, with no evidence yet, is refused, not re-initialised', { skip }, () => {
+  // The M1 residual: with nothing else in the state root showing it was in use, M1
+  // re-initialised the store and its tasks were gone. The anchor still holds the journal head.
+  const sb = beadsSandbox();
+  const c = Controller.open(sb.root, { store: sb.store });
+  c.importPlan(samplePlan(), sb.repo, 'h');
+  c.close();
+  const p = statePaths(sb.root);
+  fs.rmSync(path.join(p.store, '.eo-initialised'));
+  fs.writeFileSync(p.journal, '');
+  const beadsBefore = fs.readdirSync(path.join(p.store, '.beads')).sort();
+  assert.throws(() => Controller.open(sb.root), /the journal ends at seq 0, behind its anchored head .* Forensic record: .*rollback-refused/);
+  assert.equal(fs.existsSync(path.join(p.store, '.eo-initialised')), false, 'not re-initialised');
+  assert.deepEqual(fs.readdirSync(path.join(p.store, '.beads')).sort(), beadsBefore);
+  assert.equal(bdRaw(p.store, ['list', '--json', '--all']).includes('eo-T5'), true, 'the tasks are still there');
+  assert.ok(doctor(sb.root).problems.some((x) => /^anchor: the journal ends at seq 0/.test(x)));
+});
+
+test('M2-0b: an older copy of a whole beads state root is refused, and the real one carries on', { skip, timeout: 900_000 }, async () => {
+  const sb = beadsSandbox();
+  let c = Controller.open(sb.root, { store: sb.store });
+  c.importPlan(samplePlan(), sb.repo, 'h');
+  c.close();
+  const snap = path.join(sb.dir, 'snap');
+  fs.cpSync(sb.root, snap, { recursive: true });
+  c = Controller.open(sb.root, { store: sb.store });
+  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
+  c.close();
+  const latest = path.join(sb.dir, 'latest');
+  fs.cpSync(sb.root, latest, { recursive: true });
+  fs.rmSync(sb.root, { recursive: true });
+  fs.cpSync(snap, sb.root, { recursive: true });
+  assert.throws(() => Controller.open(sb.root), /behind its anchored head/);
+  fs.rmSync(sb.root, { recursive: true });
+  fs.cpSync(latest, sb.root, { recursive: true });
+  c = Controller.open(sb.root);
+  try {
+    assert.deepEqual(c.summary().states, { T1: 'done', T2: 'done', T3: 'done', T4: 'done', T5: 'done' });
+  } finally {
+    c.close();
+  }
 });
 
 test('a state root bound to the fake store is refused before any beads files are written', { skip }, () => {

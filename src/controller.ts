@@ -3,6 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { Journal, verifyJournalFile, type JournalRecord } from './journal.ts';
+import { checkAnchor, defaultAnchorDir, rootIdOf, RollbackAnchor } from './anchor.ts';
 import { EvidenceLedger } from './evidence.ts';
 import { BudgetGovernor, type Amount } from './budget.ts';
 import { assertRepositoryApproved, canonicalRepoPath, loadPolicy, policyHash, savePolicy, withApprovedRepository, type Policy } from './policy.ts';
@@ -48,6 +49,8 @@ export interface EscalationRecord {
 
 export interface ResumeReport {
   tornTailRepaired: boolean;
+  /** The rollback anchor was one journal record behind (a crash between the append and the anchor update) and was brought up to date on open. */
+  anchorRepaired: boolean;
   tasksCreated: string[];
   transitionsReplayed: string[];
   interrupted: string[];
@@ -63,6 +66,13 @@ export interface RunSummary {
 }
 
 export class ControllerError extends Error {}
+
+export interface ControllerOpenOptions {
+  store?: TaskStore;
+  allowPolicyDrift?: boolean;
+  /** The rollback anchor directory (M2-0b); default EO_ANCHOR_DIR, else defaultAnchorDir(). */
+  anchorDir?: string;
+}
 
 /** A refusal to work on a state root whose store, evidence or journal no crash can explain. */
 export class RecoveryRefusedError extends ControllerError {}
@@ -127,11 +137,15 @@ export class Controller {
   readonly budget: BudgetGovernor;
   readonly owner: string;
   readonly tornTailRepaired: boolean;
+  readonly anchor: RollbackAnchor;
+  /** This state root's id in the anchor, derived from its journal key. */
+  readonly rootId: string;
+  readonly anchorRepaired: boolean;
   /** The interrupted transition this open finished, if any ("task:from->to"). */
   private readonly finishedOnOpen: string | undefined;
   private readonly lock: FileLock;
 
-  private constructor(paths: StateRootPaths, lock: FileLock, opts: { store?: TaskStore; allowPolicyDrift?: boolean }) {
+  private constructor(paths: StateRootPaths, lock: FileLock, opts: ControllerOpenOptions) {
     this.paths = paths;
     this.lock = lock;
     this.owner = `ctl:${os.hostname()}:${process.pid}:${randomUUID().slice(0, 8)}`;
@@ -139,6 +153,22 @@ export class Controller {
     const before = verifyJournalFile(paths.journal, key);
     // A tampered journal is refused here, before anything else.
     if (!before.ok) Journal.open(paths.journal, key);
+    // M2-0b: before anything else reads or repairs the state root, its journal must reach the
+    // head recorded in the rollback anchor, which lives outside the state root. A restored
+    // older copy of the whole state root is consistent inside but behind its anchor.
+    this.anchor = RollbackAnchor.open(opts.anchorDir ?? defaultAnchorDir(), paths.root);
+    this.rootId = rootIdOf(key);
+    const anchored = this.anchor.read(this.rootId);
+    const anchorState = checkAnchor(before.records, anchored, this.anchor.id, this.rootId);
+    if (anchorState.kind === 'refuse') {
+      const note = writeForensic(paths.root, 'rollback-refused', {
+        reason: anchorState.reason,
+        anchor: { dir: this.anchor.dir, id: this.anchor.id, rootId: this.rootId, head: anchored },
+        journal: { records: before.records.length, lastSeq: before.records.at(-1)?.seq ?? 0, lastMac: before.records.at(-1)?.mac ?? null, file: journalFileFacts(paths.journal) },
+        journalBase64: journalContent(paths.journal),
+      });
+      throw new RecoveryRefusedError(`refusing to open: ${anchorState.reason}. Nothing was changed; a human must investigate. ${note}`);
+    }
     this.policy = loadPolicy(paths.policy);
     // With the journal's records, openStore checks the store binding before it creates or
     // repairs anything.
@@ -159,8 +189,15 @@ export class Controller {
       });
       if (!note.startsWith('Forensic record:')) throw new ControllerError(`the journal has a torn final line, and it could not be preserved before repair. ${note}`);
     }
-    this.journal = Journal.open(paths.journal, key, { repairTornTail: true });
+    this.journal = Journal.open(paths.journal, key, { repairTornTail: true, onAppend: (r) => this.anchor.advance(this.rootId, r.seq, r.mac) });
     this.tornTailRepaired = before.tornTail;
+    // The one gap a crash can leave: the last record was journaled but not yet anchored.
+    const last = this.journal.records().at(-1);
+    this.anchorRepaired = anchorState.kind === 'one-ahead';
+    if (anchorState.kind === 'one-ahead' && last) this.anchor.advance(this.rootId, last.seq, last.mac);
+    // A new state root, or one made before M2-0b: bind it to this anchor. From here on a copy
+    // without the binding, or bound elsewhere, is refused.
+    if (anchorState.kind === 'unbound') this.journal.append('anchor.bound', { anchorId: this.anchor.id, rootId: this.rootId });
     this.budget = new BudgetGovernor(this.journal, this.policy.budget);
     const now = policyHash(this.policy);
     const { committed, pending } = policyRecords(this.journal.records());
@@ -190,7 +227,7 @@ export class Controller {
   private planIndex: Map<string, PlannedTask>;
 
   /** Acquire the controller lock and open state. Throws if another controller is running. */
-  static open(root: string, opts: { store?: TaskStore; allowPolicyDrift?: boolean } = {}): Controller {
+  static open(root: string, opts: ControllerOpenOptions = {}): Controller {
     const paths = statePaths(root);
     // Before anything is written: a root others can change is never used.
     if (fs.existsSync(paths.root)) {
@@ -385,6 +422,7 @@ export class Controller {
   resume(): ResumeReport {
     const report: ResumeReport = {
       tornTailRepaired: this.tornTailRepaired,
+      anchorRepaired: this.anchorRepaired,
       tasksCreated: [],
       transitionsReplayed: this.finishedOnOpen ? [this.finishedOnOpen] : [],
       interrupted: [],

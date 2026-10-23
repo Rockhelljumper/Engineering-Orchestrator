@@ -99,6 +99,20 @@ test('a lock left by a killed process is taken over, and a live one is not', asy
   assert.ok(Date.now() - started < 5_000);
 });
 
+test('an empty lock (holder killed between creating and writing it) is stale after 2 s, not 30 s', () => {
+  const file = path.join(tmpDir(), 'x.lock');
+  fs.writeFileSync(file, '');
+  assert.equal(new FileLock(file, 'a').tryAcquire(), false, 'a fresh empty lock may be mid-write');
+  const old = new Date(Date.now() - 3_000);
+  fs.utimesSync(file, old, old);
+  assert.equal(new FileLock(file, 'a').tryAcquire(), true);
+  // Partly written content keeps the longer window.
+  const f2 = path.join(tmpDir(), 'y.lock');
+  fs.writeFileSync(f2, '{"pid":');
+  fs.utimesSync(f2, old, old);
+  assert.equal(new FileLock(f2, 'b').tryAcquire(), false);
+});
+
 test('release removes only the lock this instance created', () => {
   const file = path.join(tmpDir(), 'x.lock');
   const a = new FileLock(file, 'a');

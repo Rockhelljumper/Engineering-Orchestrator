@@ -1,10 +1,14 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { createHash } from 'node:crypto';
 import { verifyJournalFile } from './journal.ts';
 import { EvidenceLedger } from './evidence.ts';
 import { BudgetLedger } from './budget.ts';
 import { loadPolicy, policyHash } from './policy.ts';
-import { readJournalKey, statePaths } from './stateRoot.ts';
+import { readJournalKey, statePaths, type StateRootPaths } from './stateRoot.ts';
+import { checkAnchor, defaultAnchorDir, journaledBinding, rootIdOf, RollbackAnchor } from './anchor.ts';
+import { sleepSync } from './util/lock.ts';
+import { isProcessAlive } from './util/fsx.ts';
 import { openStore } from './store/open.ts';
 import type { TaskRecord, TaskStore } from './store/types.ts';
 import { expectedStates, listEscalationFiles, listEvidenceAttempts, recoveryProblems, storeDrift, journaledTasks, planMismatches, type EscalationRecord } from './controller.ts';
@@ -16,20 +20,84 @@ export interface DoctorReport {
   journalRecords: number;
 }
 
+/** How many times doctor rereads when a running controller changes the journal under it. */
+const SNAPSHOT_ATTEMPTS = 20;
+
+function fileHash(file: string): string {
+  try {
+    return createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+  } catch {
+    return 'absent';
+  }
+}
+
 /**
  * Integrity check of a state root. It never changes the journal, policy, evidence or tasks.
  * Opening a beads store can still restore the store's private bd entry, and bd itself
  * touches its lock and version files.
+ *
+ * Doctor takes no lock, so a controller may be running. It reads a consistent snapshot: the
+ * journal file must be byte-identical before and after the store and evidence are read, or
+ * the read is repeated (M2-0b). A transition in flight is then never reported as tampering;
+ * if the journal keeps changing, doctor says a controller is running instead of guessing.
  */
-export function doctor(root: string, store?: TaskStore): DoctorReport {
+export function doctor(root: string, store?: TaskStore, opts: { anchorDir?: string } = {}): DoctorReport {
   const p = statePaths(root);
+  const key = readJournalKey(p);
+  for (let attempt = 1; ; attempt++) {
+    const before = fileHash(p.journal);
+    const r = check(p, key, store, opts);
+    if (fileHash(p.journal) === before) return r;
+    if (attempt >= SNAPSHOT_ATTEMPTS) {
+      return {
+        ok: false,
+        problems: [`snapshot: the journal changed during each of ${SNAPSHOT_ATTEMPTS} reads, so a controller is running; the store was not checked (run doctor again when it is idle)`],
+        warnings: r.warnings,
+        journalRecords: r.journalRecords,
+      };
+    }
+    sleepSync(25 * attempt);
+  }
+}
+
+/** The pid of a live controller holding the lock, if any. */
+function runningController(lockFile: string): number | undefined {
+  try {
+    const pid = (JSON.parse(fs.readFileSync(lockFile, 'utf8')) as { pid?: unknown }).pid;
+    return typeof pid === 'number' && pid !== process.pid && isProcessAlive(pid) ? pid : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function check(p: StateRootPaths, key: Buffer, store: TaskStore | undefined, opts: { anchorDir?: string }): DoctorReport {
   const problems: string[] = [];
   const warnings: string[] = [];
   if (process.env['EO_CRASH_AT'] !== undefined) warnings.push('EO_CRASH_AT is set (test-only crash injection)');
-  const key = readJournalKey(p);
+  if (process.env['EO_CRASH_PHASE'] !== undefined) warnings.push('EO_CRASH_PHASE is set (test-only crash injection)');
   const v = verifyJournalFile(p.journal, key);
   problems.push(...v.errors.map((e) => `journal: ${e}`));
   if (v.tornTail) warnings.push('journal has a torn final line (crash during write); the next command that opens the controller removes it');
+  const running = runningController(p.controllerLock);
+  if (running !== undefined) warnings.push(`a controller is running (pid ${running}); a transition may be in flight`);
+
+  // M2-0b: the journal against its rollback anchor, outside the state root.
+  const anchorDir = opts.anchorDir ?? defaultAnchorDir();
+  const rootId = rootIdOf(key);
+  try {
+    if (!fs.existsSync(path.join(anchorDir, 'anchor.json'))) {
+      if (journaledBinding(v.records)) problems.push(`anchor: the journal is bound to a rollback anchor, but there is none at ${anchorDir}`);
+      else warnings.push(`anchor: this state root is not anchored yet (no anchor at ${anchorDir}); the next controller open binds it`);
+    } else {
+      const anchor = RollbackAnchor.open(anchorDir, p.root, { create: false });
+      const a = checkAnchor(v.records, anchor.read(rootId), anchor.id, rootId);
+      if (a.kind === 'refuse') problems.push(`anchor: ${a.reason} (the controller refuses to open)`);
+      else if (a.kind === 'one-ahead') warnings.push(`anchor: the journal is one record ahead of its anchor (seq ${a.anchored}), left by a crash; the next controller open records it`);
+      else if (a.kind === 'unbound') warnings.push('anchor: this state root is not bound to the anchor yet; the next controller open binds it');
+    }
+  } catch (err) {
+    problems.push(`anchor: ${(err as Error).message}`);
+  }
 
   try {
     const pol = loadPolicy(p.policy);
@@ -52,7 +120,9 @@ export function doctor(root: string, store?: TaskStore): DoctorReport {
       const t = byId.get(id);
       if (!t && !exp.prev) problems.push(`store: task ${id} missing (journal has it; resume will create it)`);
       else if (t && storeDrift(t, exp) === 'behind' && exp.counters.journalSeq === lastTransition) {
-        problems.push(`store: ${id} is ${t.state}, journal says ${exp.state} (the journal's last transition, left unapplied by a crash; the next controller open finishes it)`);
+        // With a controller running, this is a transition in flight, not damage.
+        if (running !== undefined) warnings.push(`store: ${id} is ${t.state}, journal says ${exp.state} (the journal's last transition, being applied by the running controller)`);
+        else problems.push(`store: ${id} is ${t.state}, journal says ${exp.state} (the journal's last transition, left unapplied by a crash; the next controller open finishes it)`);
       }
     }
     // What resume refuses: states no crash can produce.

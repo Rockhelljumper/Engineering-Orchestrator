@@ -124,9 +124,12 @@ function isStale(file: string): boolean {
     info = JSON.parse(fs.readFileSync(file, 'utf8')) as LockInfo;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false;
-    // Holder may be mid-write. Unreadable content older than 30s is stale.
+    // Holder may be mid-write. Unreadable content older than 30s is stale. An empty file is
+    // written by the same call that created it, microseconds later; one that is still empty
+    // after 2 s was left by a holder killed between the two (found by the M2-0 kill runs).
     try {
-      return Date.now() - fs.statSync(file).mtimeMs > 30_000;
+      const st = fs.statSync(file);
+      return Date.now() - st.mtimeMs > (st.size === 0 ? 2_000 : 30_000);
     } catch {
       return false;
     }
