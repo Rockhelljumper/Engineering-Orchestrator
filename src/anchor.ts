@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { canonicalJson, hmacHex, sha256Hex } from './util/canonical.ts';
-import { assertPrivateDir, writeFileAtomic } from './util/fsx.ts';
+import { assertPrivateDir, fsyncDir, writeFileAtomic } from './util/fsx.ts';
 import type { JournalRecord } from './journal.ts';
 
 /**
@@ -17,6 +17,13 @@ import type { JournalRecord } from './journal.ts';
  *
  *   anchor.json          {"id", "key"}: this anchor's id and the 256-bit key that MACs its heads
  *   heads/<rootId>.json  the latest journal head of one state root, MACed with that key
+ *
+ * A state root is known to the anchor by its canonical path (rootId) and by the fingerprint of
+ * its journal key (keyId), both of which the head records. Neither can be changed from inside
+ * the state root: a restored copy re-signed with a new key still sits at the same path, whose
+ * head names the old key, and a copy at another path has no head and is refused until an
+ * operator adopts it ("eo anchor adopt"). Only a state root with an empty journal is bound
+ * without an operator.
  *
  * Each head is replaced atomically (write, fsync, rename), so a crash leaves the old head or
  * the new one, never a mix. The controller writes the head after the journal record is
@@ -33,6 +40,10 @@ import type { JournalRecord } from './journal.ts';
 export interface AnchorHead {
   rootId: string;
   anchorId: string;
+  /** Fingerprint of the journal key the head was recorded under. */
+  keyId: string;
+  /** The canonical state-root path rootId was derived from (for people reading the head). */
+  root: string;
   journalSeq: number;
   journalMac: string;
   ts: string;
@@ -41,9 +52,25 @@ export interface AnchorHead {
 
 export class AnchorError extends Error {}
 
-/** A state root's id: stable for its whole life (every copy of it shares it), derived from its journal key. */
-export function rootIdOf(journalKey: Buffer): string {
-  return sha256Hex(Buffer.concat([Buffer.from('eo-root-id\0'), journalKey])).slice(0, 32);
+/**
+ * The canonical form of a state-root path: symlinks resolved and, where the filesystem
+ * usually folds case (Windows, macOS), lower-cased, so one directory never gets two ids. Two
+ * directories differing only by case on a case-sensitive macOS volume share an id, which
+ * refuses the second rather than accepting either wrongly.
+ */
+export function canonicalRoot(stateRoot: string): string {
+  const real = resolveExisting(stateRoot);
+  return process.platform === 'win32' || process.platform === 'darwin' ? real.toLowerCase() : real;
+}
+
+/** A state root's id in an anchor: derived from where it lives, which nothing inside it can change. */
+export function rootIdOf(stateRoot: string): string {
+  return sha256Hex(Buffer.from(`eo-root-id\0${canonicalRoot(stateRoot)}`)).slice(0, 32);
+}
+
+/** Fingerprint of a journal key: a copy re-signed with a new key has a different one. */
+export function keyIdOf(journalKey: Buffer): string {
+  return sha256Hex(Buffer.concat([Buffer.from('eo-key-id\0'), journalKey])).slice(0, 32);
 }
 
 /** The default anchor directory: beside, never inside, the default state roots. EO_ANCHOR_DIR overrides it. */
@@ -63,11 +90,23 @@ function isWithin(child: string, parent: string): boolean {
   return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }
 
-function realOrResolved(p: string): string {
-  try {
-    return fs.realpathSync(p);
-  } catch {
-    return path.resolve(p);
+/**
+ * Resolve a path whose tail may not exist yet: realpath its deepest existing ancestor and
+ * append the rest, so a link anywhere along an existing prefix is followed before anything is
+ * created under it.
+ */
+function resolveExisting(p: string): string {
+  let cur = path.resolve(p);
+  const rest: string[] = [];
+  for (;;) {
+    try {
+      return path.join(fs.realpathSync.native(cur), ...rest);
+    } catch {
+      const parent = path.dirname(cur);
+      if (parent === cur) return path.join(cur, ...rest);
+      rest.unshift(path.basename(cur));
+      cur = parent;
+    }
   }
 }
 
@@ -95,32 +134,42 @@ export class RollbackAnchor {
    */
   static open(dir: string, stateRoot: string, opts: { create?: boolean } = {}): RollbackAnchor {
     const d = path.resolve(dir);
-    const root = realOrResolved(stateRoot);
-    if (isWithin(realOrResolved(d), root)) throw new AnchorError(`the rollback anchor ${d} is inside the state root ${root}; a restored copy of the state root would carry it`);
-    if (isWithin(root, realOrResolved(d))) throw new AnchorError(`the state root ${root} is inside the rollback anchor ${d}`);
+    // Both paths are resolved through their existing prefixes before anything is created, so a
+    // link into the state root is refused before a file is written there.
+    const root = resolveExisting(stateRoot);
+    if (isWithin(resolveExisting(d), root)) throw new AnchorError(`the rollback anchor ${d} is inside the state root ${root}; a restored copy of the state root would carry it`);
+    if (isWithin(root, resolveExisting(d))) throw new AnchorError(`the state root ${root} is inside the rollback anchor ${d}`);
     const meta = path.join(d, 'anchor.json');
     if (!fs.existsSync(meta)) {
       if (opts.create === false) throw new AnchorError(`no rollback anchor at ${d}`);
       fs.mkdirSync(path.join(d, 'heads'), { recursive: true, mode: 0o700 });
       assertPrivateDir(d);
       const body = JSON.stringify({ id: randomBytes(16).toString('hex'), key: randomBytes(32).toString('hex') }) + '\n';
-      // Exclusive create: two controllers opening a fresh anchor at once agree on one key.
+      // Written in full and fsynced under a temporary name, then linked into place: link fails
+      // if the name exists, so two controllers opening a fresh anchor at once agree on one key,
+      // and a crash leaves either no anchor.json or a complete one, never an empty file.
+      const tmp = path.join(d, `.anchor.json.${process.pid}.${randomBytes(4).toString('hex')}.tmp`);
+      const fd = fs.openSync(tmp, 'wx', 0o600);
       try {
-        const fd = fs.openSync(meta, 'wx', 0o600);
-        try {
-          fs.writeSync(fd, body);
-          fs.fsyncSync(fd);
-        } finally {
-          fs.closeSync(fd);
-        }
+        fs.writeSync(fd, body);
+        fs.fsyncSync(fd);
+      } finally {
+        fs.closeSync(fd);
+      }
+      try {
+        fs.linkSync(tmp, meta);
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+      } finally {
+        fs.rmSync(tmp, { force: true });
       }
+      fsyncDir(d);
+      fsyncDir(path.dirname(d));
     }
     assertPrivateDir(d);
     if (fs.existsSync(path.join(d, 'heads'))) assertPrivateDir(path.join(d, 'heads'));
-    // Re-check after creation: the directory now exists, so a link is resolved.
-    if (isWithin(realOrResolved(d), root)) throw new AnchorError(`the rollback anchor ${d} is inside the state root ${root}`);
+    // Re-check after creation, in case a link was swapped in meanwhile.
+    if (isWithin(resolveExisting(d), root)) throw new AnchorError(`the rollback anchor ${d} is inside the state root ${root}`);
     let m: Partial<{ id: string; key: string }>;
     try {
       m = JSON.parse(fs.readFileSync(meta, 'utf8')) as Partial<{ id: string; key: string }>;
@@ -139,7 +188,16 @@ export class RollbackAnchor {
   }
 
   private macOf(h: Omit<AnchorHead, 'mac'>): string {
-    return hmacHex(this.key, canonicalJson({ rootId: h.rootId, anchorId: h.anchorId, journalSeq: h.journalSeq, journalMac: h.journalMac, ts: h.ts }));
+    return hmacHex(this.key, canonicalJson({ rootId: h.rootId, anchorId: h.anchorId, keyId: h.keyId, root: h.root, journalSeq: h.journalSeq, journalMac: h.journalMac, ts: h.ts }));
+  }
+
+  /** The head file's bytes as found (base64), for forensic records; null if there is none. */
+  rawHead(rootId: string): string | null {
+    try {
+      return fs.readFileSync(this.headFile(rootId)).toString('base64');
+    } catch {
+      return null;
+    }
   }
 
   /** The recorded head for a state root, or null if this anchor has never seen it. Throws on a head that fails its MAC. */
@@ -155,6 +213,8 @@ export class RollbackAnchor {
     if (
       h.rootId !== rootId ||
       h.anchorId !== this.id ||
+      typeof h.keyId !== 'string' ||
+      typeof h.root !== 'string' ||
       !Number.isInteger(h.journalSeq) ||
       h.journalSeq < 1 ||
       typeof h.journalMac !== 'string' ||
@@ -170,14 +230,30 @@ export class RollbackAnchor {
    * Record a new journal head. Monotonic: a head behind the recorded one is refused, so the
    * anchor itself never moves backwards.
    */
-  advance(rootId: string, journalSeq: number, journalMac: string): AnchorHead {
+  advance(rootId: string, keyId: string, root: string, journalSeq: number, journalMac: string): AnchorHead {
     const cur = this.read(rootId);
+    if (cur && cur.keyId !== keyId) throw new AnchorError(`refusing to move the anchor of ${rootId}: it was recorded under journal key ${cur.keyId}, not ${keyId}`);
     if (cur && journalSeq < cur.journalSeq) throw new AnchorError(`refusing to move the anchor of ${rootId} back from journal seq ${cur.journalSeq} to ${journalSeq}`);
     if (cur && journalSeq === cur.journalSeq) {
       if (cur.journalMac !== journalMac) throw new AnchorError(`journal seq ${journalSeq} of ${rootId} has a different MAC from the anchored one`);
       return cur;
     }
-    const base = { rootId, anchorId: this.id, journalSeq, journalMac, ts: new Date().toISOString() };
+    return this.write(rootId, keyId, root, journalSeq, journalMac);
+  }
+
+  /**
+   * Drop a state root's head, so its next append starts a new one. Only for an operator who
+   * adopts a state root and explicitly accepts that it is older than, or differs from, what
+   * the anchor recorded ("eo anchor adopt --accept-rollback"); the controller keeps a forensic
+   * record of the head it drops.
+   */
+  forget(rootId: string): void {
+    fs.rmSync(this.headFile(rootId), { force: true });
+    fsyncDir(path.join(this.dir, 'heads'));
+  }
+
+  private write(rootId: string, keyId: string, root: string, journalSeq: number, journalMac: string): AnchorHead {
+    const base = { rootId, anchorId: this.id, keyId, root, journalSeq, journalMac, ts: new Date().toISOString() };
     const head: AnchorHead = { ...base, mac: this.macOf(base) };
     writeFileAtomic(this.headFile(rootId), JSON.stringify(head) + '\n');
     return head;
@@ -188,38 +264,52 @@ export type AnchorCheck =
   | { kind: 'match' }
   /** A crash between the journal append and the anchor update: the journal is one record ahead. */
   | { kind: 'one-ahead'; anchored: number }
-  /** Neither the anchor nor the journal has a binding: a new state root, or one made before M2-0b. */
-  | { kind: 'unbound' }
+  /** An empty journal with no head: a new state root, bound on open. */
+  | { kind: 'new' }
+  /** A journal with records but no head and no binding here: made before M2-0b, moved, or copied. An operator must adopt it. */
+  | { kind: 'unadopted'; reason: string }
   | { kind: 'refuse'; reason: string };
 
 export interface AnchorBinding {
   anchorId: string;
   rootId: string;
+  keyId: string;
+  root?: string;
 }
 
-/** The journal's record of which anchor holds its head, if any. */
+/** The journal's latest record of which anchor holds its head, if any (a later adoption supersedes an earlier binding). */
 export function journaledBinding(records: readonly JournalRecord[]): AnchorBinding | undefined {
-  return records.find((r) => r.type === 'anchor.bound')?.data as AnchorBinding | undefined;
+  return records.findLast((r) => r.type === 'anchor.bound')?.data as AnchorBinding | undefined;
 }
+
+const ADOPT = 'an operator who has checked where it came from can adopt it with "eo anchor adopt"';
 
 /**
- * Compare a verified journal with its anchored head. Shared by open (which refuses or
- * repairs) and doctor (which reports). Pure: it reads nothing and writes nothing.
+ * Compare a verified journal with its anchored head. Shared by open (which refuses, repairs
+ * or binds), doctor and the read-only commands (which report). Pure: it reads nothing and
+ * writes nothing.
  */
-export function checkAnchor(records: readonly JournalRecord[], head: AnchorHead | null, anchorId: string, rootId: string): AnchorCheck {
+export function checkAnchor(records: readonly JournalRecord[], head: AnchorHead | null, anchorId: string, rootId: string, keyId: string): AnchorCheck {
   const bound = journaledBinding(records);
-  if (bound && bound.rootId !== rootId) return { kind: 'refuse', reason: `the journal is bound to state root id ${bound.rootId}, not ${rootId}` };
+  const n = records.length;
+  if (head && head.keyId !== keyId) {
+    return { kind: 'refuse', reason: `the journal key differs from the one this state root was anchored under (${head.keyId}, now ${keyId}): an older copy re-signed with a new key, or the key was replaced` };
+  }
   if (bound && bound.anchorId !== anchorId) {
     return { kind: 'refuse', reason: `the journal is bound to rollback anchor ${bound.anchorId}, but the configured anchor is ${anchorId}` };
   }
-  if (!head) {
-    // A crash right after journaling the binding, before its first head was written.
-    const boundAt = records.findIndex((r) => r.type === 'anchor.bound');
-    if (bound && boundAt === records.length - 1) return { kind: 'one-ahead', anchored: 0 };
-    if (bound) return { kind: 'refuse', reason: `the journal is bound to rollback anchor ${bound.anchorId}, which has no head for this state root (the anchor was removed or replaced)` };
-    return { kind: 'unbound' };
+  if (bound && (bound.rootId !== rootId || bound.keyId !== keyId)) {
+    return head
+      ? { kind: 'refuse', reason: `the journal's latest binding is for ${bound.root ?? bound.rootId} under key ${bound.keyId}, not this state root: it was copied over this one` }
+      : { kind: 'unadopted', reason: `the journal is bound to the state root at ${bound.root ?? bound.rootId}, not this one: it was moved or copied here; ${ADOPT}` };
   }
-  const n = records.length;
+  if (!head) {
+    if (n === 0) return { kind: 'new' };
+    // A crash right after journaling the binding, before its first head was written.
+    if (bound && records.at(-1)?.type === 'anchor.bound') return { kind: 'one-ahead', anchored: n - 1 };
+    if (bound) return { kind: 'refuse', reason: `the journal is bound to rollback anchor ${bound.anchorId}, which has no head for this state root (the anchor was removed or replaced)` };
+    return { kind: 'unadopted', reason: `the journal has ${n} records but this state root has never been anchored (made before M2-0b, or restored where no anchor knows it); ${ADOPT}` };
+  }
   if (head.journalSeq > n) {
     return { kind: 'refuse', reason: `the journal ends at seq ${n}, behind its anchored head at seq ${head.journalSeq}: the state root was rolled back or the journal truncated` };
   }
@@ -231,4 +321,31 @@ export function checkAnchor(records: readonly JournalRecord[], head: AnchorHead 
   if (n === head.journalSeq) return { kind: 'match' };
   if (n === head.journalSeq + 1) return { kind: 'one-ahead', anchored: head.journalSeq };
   return { kind: 'refuse', reason: `the journal is ${n - head.journalSeq} records ahead of its anchored head (seq ${head.journalSeq}); a crash leaves at most one` };
+}
+
+/** Where a state root stands against an anchor, without creating or changing anything. */
+export interface AnchorInspection {
+  dir: string;
+  anchorId: string | null;
+  rootId: string;
+  keyId: string;
+  head: AnchorHead | null;
+  check: AnchorCheck;
+}
+
+export function inspectAnchor(dir: string, stateRoot: string, journalKey: Buffer, records: readonly JournalRecord[]): AnchorInspection {
+  const rootId = rootIdOf(stateRoot);
+  const keyId = keyIdOf(journalKey);
+  if (!fs.existsSync(path.join(dir, 'anchor.json'))) {
+    const bound = journaledBinding(records);
+    const check: AnchorCheck = bound
+      ? { kind: 'refuse', reason: `the journal is bound to rollback anchor ${bound.anchorId}, but there is no anchor at ${dir}` }
+      : records.length === 0
+        ? { kind: 'new' }
+        : { kind: 'unadopted', reason: `there is no anchor at ${dir} and the journal has ${records.length} records; ${ADOPT}` };
+    return { dir, anchorId: null, rootId, keyId, head: null, check };
+  }
+  const anchor = RollbackAnchor.open(dir, stateRoot, { create: false });
+  const head = anchor.read(rootId);
+  return { dir, anchorId: anchor.id, rootId, keyId, head, check: checkAnchor(records, head, anchor.id, rootId, keyId) };
 }

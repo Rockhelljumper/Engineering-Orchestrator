@@ -37,6 +37,13 @@ export class FileLock {
         const info: LockInfo = { pid: process.pid, owner: this.owner, acquiredAt: new Date().toISOString(), nonce: this.nonce };
         fs.writeSync(fd, JSON.stringify(info));
         fs.closeSync(fd);
+        // A holder paused between the create and the write (longer than an empty lock stays
+        // fresh) can have its file removed as stale and replaced by a contender's; it must not
+        // then believe it holds the lock.
+        if (!this.stillOurs()) {
+          this.nonce = '';
+          return false;
+        }
         this.held = true;
         heldHere.add(this.file);
         return true;
@@ -58,6 +65,14 @@ export class FileLock {
     while (!this.tryAcquire()) {
       if (Date.now() > deadline) throw new Error(`lock busy: ${this.file} (${describe(this.file)})`);
       sleepSync(5 + Math.floor(Math.random() * 10));
+    }
+  }
+
+  private stillOurs(): boolean {
+    try {
+      return (JSON.parse(fs.readFileSync(this.file, 'utf8')) as LockInfo).nonce === this.nonce;
+    } catch {
+      return false;
     }
   }
 

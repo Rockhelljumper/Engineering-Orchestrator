@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { initStateRoot, readJournalKey, statePaths, type StoreConfig } from '../../src/stateRoot.ts';
-import { rootIdOf } from '../../src/anchor.ts';
+import { canonicalRoot, keyIdOf, rootIdOf } from '../../src/anchor.ts';
 import { verifyJournalFile } from '../../src/journal.ts';
 import { canonicalJson, hmacHex } from '../../src/util/canonical.ts';
 import { Controller } from '../../src/controller.ts';
@@ -149,8 +149,8 @@ export function setAnchorHead(root: string, seq: number): void {
   const jkey = readJournalKey(p);
   const rec = verifyJournalFile(p.journal, jkey).records[seq - 1];
   if (!rec) throw new Error(`no journal record ${seq}`);
-  const rootId = rootIdOf(jkey);
-  const base = { rootId, anchorId: meta.id, journalSeq: rec.seq, journalMac: rec.mac, ts: new Date().toISOString() };
+  const rootId = rootIdOf(root);
+  const base = { rootId, anchorId: meta.id, keyId: keyIdOf(jkey), root: canonicalRoot(root), journalSeq: rec.seq, journalMac: rec.mac, ts: new Date().toISOString() };
   const head = { ...base, mac: hmacHex(Buffer.from(meta.key, 'hex'), canonicalJson(base)) };
   fs.writeFileSync(path.join(dir, 'heads', `${rootId}.json`), JSON.stringify(head) + '\n');
 }

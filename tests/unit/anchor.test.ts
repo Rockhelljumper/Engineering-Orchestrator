@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawn } from 'node:child_process';
-import { AnchorError, RollbackAnchor, rootIdOf } from '../../src/anchor.ts';
-import { Controller, ControllerError, RecoveryRefusedError } from '../../src/controller.ts';
+import { randomBytes } from 'node:crypto';
+import { canonicalJson, hmacHex } from '../../src/util/canonical.ts';
+import { keyIdOf, RollbackAnchor, rootIdOf } from '../../src/anchor.ts';
+import { Controller, RecoveryRefusedError } from '../../src/controller.ts';
 import { doctor } from '../../src/doctor.ts';
 import { Journal, JournalTamperError, verifyJournalFile } from '../../src/journal.ts';
 import { FakeRunner } from '../../src/runner/fake.ts';
@@ -32,8 +34,29 @@ function storeStates(root: string): Record<string, string> {
 }
 
 function headOf(root: string): { journalSeq: number; journalMac: string } | null {
+  return RollbackAnchor.open(anchorDir(), root).read(rootIdOf(root));
+}
+
+function headFile(root: string): string {
+  return path.join(anchorDir(), 'heads', `${rootIdOf(root)}.json`);
+}
+
+/** Re-sign a journal with a new key, as someone holding a copy of the state root can. */
+function rekey(root: string, edit: (r: { type: string; data: unknown }) => void = () => {}): void {
   const p = statePaths(root);
-  return RollbackAnchor.open(anchorDir(), root).read(rootIdOf(readJournalKey(p)));
+  const newKey = randomBytes(32);
+  let prev = 'genesis';
+  const out: string[] = [];
+  for (const line of fs.readFileSync(p.journal, 'utf8').split('\n').filter(Boolean)) {
+    const r = JSON.parse(line) as { seq: number; ts: string; type: string; data: unknown; prev: string; mac: string };
+    edit(r);
+    r.prev = prev;
+    r.mac = hmacHex(newKey, canonicalJson({ seq: r.seq, ts: r.ts, type: r.type, data: r.data, prev: r.prev }));
+    prev = r.mac;
+    out.push(JSON.stringify(r));
+  }
+  fs.writeFileSync(p.journal, out.join('\n') + '\n');
+  fs.writeFileSync(p.journalKey, newKey.toString('hex'), { mode: 0o600 });
 }
 
 function journalLength(root: string): number {
@@ -110,6 +133,13 @@ test('M2-0b: an older copy of the whole state root is refused at every point; no
     assert.notEqual(run.status, 0, `copy ${i}: eo run`);
     assert.match(run.stderr, /behind its anchored head/);
     assert.ok(doctor(sb.root).problems.some((p) => /^anchor: the journal ends at seq \d+, behind its anchored head/.test(p)), `copy ${i}: doctor`);
+    // The read-only reports do not present the older copy as current.
+    const st = runCli(['status', '--state-root', sb.root]);
+    assert.equal(st.status, 1, `copy ${i}: eo status`);
+    assert.match(st.stdout, /rollback anchor: REFUSED: the journal ends at seq \d+, behind its anchored head/);
+    const ev = runCli(['evidence', 'T1', '--state-root', sb.root]);
+    assert.notEqual(ev.status, 0, `copy ${i}: eo evidence`);
+    assert.match(ev.stderr, /not verified: the rollback anchor refuses this state root/);
     // Nothing changed and nothing ran.
     assert.deepEqual(fs.readFileSync(statePaths(sb.root).journal), journalBefore, `copy ${i}: journal unchanged`);
     assert.deepEqual(storeStates(sb.root), statesBefore, `copy ${i}: store unchanged`);
@@ -167,8 +197,8 @@ test('M2-0b: a crash right after journaling the binding, before the first head, 
   const p = initStateRoot(root);
   const key = readJournalKey(p);
   const anchor = RollbackAnchor.open(anchorDir(), root);
-  Journal.open(p.journal, key).append('anchor.bound', { anchorId: anchor.id, rootId: rootIdOf(key) });
-  assert.equal(anchor.read(rootIdOf(key)), null);
+  Journal.open(p.journal, key).append('anchor.bound', { anchorId: anchor.id, rootId: rootIdOf(root), keyId: keyIdOf(key) });
+  assert.equal(anchor.read(rootIdOf(root)), null);
   const c = Controller.open(root);
   try {
     assert.equal(c.anchorRepaired, true);
@@ -226,14 +256,122 @@ test('M2-0b: a removed journal is refused before the store is opened or repaired
   assert.equal(fs.existsSync(p.journal), false, 'nothing recreated the journal');
 });
 
-test('M2-0b: a tampered anchor head is refused and recorded', () => {
+test('M2-0b: a tampered anchor head is refused, and the forensic record keeps its bytes and the journal', () => {
   const sb = sandbox();
-  const p = statePaths(sb.root);
-  const f = path.join(anchorDir(), 'heads', `${rootIdOf(readJournalKey(p))}.json`);
+  const f = headFile(sb.root);
   const h = JSON.parse(fs.readFileSync(f, 'utf8')) as { journalSeq: number };
   fs.writeFileSync(f, JSON.stringify({ ...h, journalSeq: 1 }));
-  assert.throws(() => Controller.open(sb.root), (err: unknown) => err instanceof ControllerError || err instanceof AnchorError ? /failed verification.*Forensic record: .*open-refused/.test((err as Error).message) : false);
+  const tampered = fs.readFileSync(f);
+  assert.throws(() => Controller.open(sb.root), (err: unknown) => err instanceof RecoveryRefusedError && /failed verification.*Forensic record: .*rollback-refused/.test(err.message));
+  const rec = JSON.parse(fs.readFileSync(path.join(sb.root, 'forensics', forensicFiles(sb.root, 'rollback-refused').at(-1) as string), 'utf8')) as { anchor: { headFileBase64: string }; journalBase64: string };
+  assert.deepEqual(Buffer.from(rec.anchor.headFileBase64, 'base64'), tampered);
+  assert.deepEqual(Buffer.from(rec.journalBase64, 'base64'), fs.readFileSync(statePaths(sb.root).journal));
   assert.ok(doctor(sb.root).problems.some((x) => /^anchor: anchor head .* failed verification/.test(x)));
+});
+
+test('M2-0b: an older copy re-signed with a new journal key is refused, with or without its binding', { skip: copiesRoot }, async () => {
+  const sb = sandbox();
+  const log = path.join(sb.dir, 'exec.log');
+  const script = { execLog: log, default: { behaviour: 'pass' as const, costUsd: 0.5 } };
+  let c = Controller.open(sb.root);
+  c.importPlan(twoIndependent, sb.repo, 'h');
+  c.close();
+  const snap = snapshot(sb, 'old');
+  c = Controller.open(sb.root);
+  await c.run(new FakeRunner(script), { repoPath: sb.repo });
+  c.close();
+  const executions = readExecLog(log).length;
+  assert.equal(executions, 2);
+  const strip = (r: { type: string; data: unknown }): void => {
+    if (r.type === 'anchor.bound') {
+      r.type = 'note';
+      r.data = {};
+    }
+  };
+  for (const edit of [undefined, strip]) {
+    restore(sb, snap);
+    rekey(sb.root, edit);
+    assert.throws(() => Controller.open(sb.root), /the journal key differs from the one this state root was anchored under/);
+    assert.ok(doctor(sb.root).problems.some((x) => /journal key differs/.test(x)));
+    assert.equal(runCli(['status', '--state-root', sb.root]).status, 1);
+  }
+  assert.equal(readExecLog(log).length, executions, 'nothing ran again');
+  // The anchor itself refuses to record a head under another key.
+  const a = RollbackAnchor.open(anchorDir(), sb.root);
+  const h = a.read(rootIdOf(sb.root));
+  assert.throws(() => a.advance(rootIdOf(sb.root), 'f'.repeat(32), 'x', (h?.journalSeq ?? 0) + 1, 'aa'), /recorded under journal key/);
+});
+
+test('M2-0b: a copy at another path is not adopted without an operator, and its older copy is refused even then', { skip: copiesRoot }, async () => {
+  const sb = sandbox();
+  let c = Controller.open(sb.root);
+  c.importPlan(twoIndependent, sb.repo, 'h');
+  c.close();
+  const old = path.join(sb.dir, 'old-copy');
+  fs.cpSync(sb.root, old, { recursive: true });
+  c = Controller.open(sb.root);
+  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
+  c.close();
+  // Moved (or copied) elsewhere: the anchor has never seen that path.
+  const moved = path.join(sb.dir, 'moved');
+  fs.cpSync(old, moved, { recursive: true });
+  assert.throws(() => Controller.open(moved), /bound to the state root at .*, not this one: it was moved or copied here; an operator .* "eo anchor adopt"/);
+  assert.ok(doctor(moved).problems.some((x) => /moved or copied here/.test(x)));
+  assert.equal(forensicFiles(moved, 'rollback-refused').length, 1);
+  // The CLI's adopt needs a person at a terminal.
+  const r = runCli(['anchor', 'adopt', '--state-root', moved]);
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /needs a human at an interactive terminal/);
+  // An operator adopts it; from then on it is anchored at its new path.
+  c = Controller.open(moved, { adopt: { by: 'operator' } });
+  try {
+    assert.equal(c.anchorBinding, 'adopted');
+    const b = c.journal.ofType<{ rootId: string; adoptedBy: string }>('anchor.bound').at(-1);
+    assert.equal(b?.data.rootId, rootIdOf(moved));
+    assert.equal(b?.data.adoptedBy, 'operator');
+  } finally {
+    c.close();
+  }
+  assert.equal(headOf(moved)?.journalSeq, journalLength(moved));
+  assert.deepEqual(doctor(moved).problems, []);
+  // The original stays anchored and untouched; its older copy put back is refused as before.
+  restore(sb, old);
+  assert.throws(() => Controller.open(sb.root), /behind its anchored head/);
+});
+
+test('M2-0b: an operator can accept a restored backup explicitly; the replaced head is kept, and M1 checks still apply', { skip: copiesRoot }, async () => {
+  const sb = sandbox();
+  let c = Controller.open(sb.root);
+  c.importPlan(twoIndependent, sb.repo, 'h');
+  c.close();
+  const snap = snapshot(sb, 'backup');
+  c = Controller.open(sb.root);
+  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
+  c.close();
+  const headBefore = fs.readFileSync(headFile(sb.root));
+  restore(sb, snap);
+  // Adoption alone does not accept a rollback.
+  assert.throws(() => Controller.open(sb.root, { adopt: { by: 'operator' } }), /behind its anchored head/);
+  c = Controller.open(sb.root, { adopt: { by: 'operator', acceptRollback: true } });
+  try {
+    assert.equal(c.anchorBinding, 'rollback-accepted');
+    const b = c.journal.ofType<{ acceptedRollback: string }>('anchor.bound').at(-1);
+    assert.match(b?.data.acceptedRollback ?? '', /behind its anchored head/);
+  } finally {
+    c.close();
+  }
+  const rec = JSON.parse(fs.readFileSync(path.join(sb.root, 'forensics', forensicFiles(sb.root, 'rollback-accepted')[0] as string), 'utf8')) as { by: string; anchor: { headFileBase64: string } };
+  assert.equal(rec.by, 'operator');
+  assert.deepEqual(Buffer.from(rec.anchor.headFileBase64, 'base64'), headBefore);
+  assert.equal(headOf(sb.root)?.journalSeq, journalLength(sb.root));
+  assert.deepEqual(doctor(sb.root).problems, []);
+  // Accepting a rollback is not a way past the checks inside the state root.
+  restore(sb, snap);
+  const p = statePaths(sb.root);
+  const j = Journal.open(p.journal, readJournalKey(p));
+  j.append('task.transition', { taskId: 'A', from: 'planned', to: 'ready', reason: 'x' });
+  fs.writeFileSync(p.journal, fs.readFileSync(p.journal, 'utf8').replace('"to":"ready"', '"to":"done"'));
+  assert.throws(() => Controller.open(sb.root, { adopt: { by: 'operator', acceptRollback: true } }), /tamper|MAC|verif/i);
 });
 
 test('M2-0b: an anchor inside the state root, or a state root inside the anchor, is refused', () => {
@@ -245,6 +383,10 @@ test('M2-0b: an anchor inside the state root, or a state root inside the anchor,
     const link = path.join(tmpDir(), 'link');
     fs.symlinkSync(path.join(sb.root, 'evidence'), link);
     assert.throws(() => Controller.open(sb.root, { anchorDir: link }), /inside the state root/);
+    // A link earlier in a path that does not exist yet: refused before anything is created.
+    fs.symlinkSync(sb.root, path.join(sb.dir, 'root-link'));
+    assert.throws(() => Controller.open(sb.root, { anchorDir: path.join(sb.dir, 'root-link', 'sub', 'anchor') }), /inside the state root/);
+    assert.equal(fs.existsSync(path.join(sb.root, 'sub')), false, 'nothing was written inside the state root');
   }
 });
 
@@ -255,12 +397,13 @@ test('M2-0b: a state root whose anchor lost its head, or that is pointed at anot
   // Another anchor: the journal is bound to this one.
   assert.throws(() => Controller.open(sb.root, { anchorDir: other }), /bound to rollback anchor [0-9a-f]+, but the configured anchor is [0-9a-f]+/);
   // The head removed from the right anchor.
-  fs.rmSync(path.join(anchorDir(), 'heads', `${rootIdOf(readJournalKey(p))}.json`));
+  void p;
+  fs.rmSync(headFile(sb.root));
   assert.throws(() => Controller.open(sb.root), /which has no head for this state root/);
   assert.ok(doctor(sb.root).problems.some((x) => /no head for this state root/.test(x)));
 });
 
-test('M2-0b: a state root made before M2-0b is bound on its first open; its older unbound copy is refused after that', { skip: copiesRoot }, () => {
+test('M2-0b: a state root made before M2-0b is refused until an operator adopts it; its older copy is refused after that', { skip: copiesRoot }, () => {
   // Build a pre-M2-0b state root: its journal has no anchor binding and no anchor has its head.
   const dir = tmpDir();
   const root = path.join(dir, 'state');
@@ -271,15 +414,31 @@ test('M2-0b: a state root made before M2-0b is bound on its first open; its olde
   j.append('store.bound', { kind: 'fake' });
   const old = path.join(dir, 'old');
   fs.cpSync(root, old, { recursive: true });
-  assert.ok(doctor(root).warnings.some((w) => /not bound to the anchor yet|not anchored yet/.test(w)));
-  const c = Controller.open(root);
+  assert.ok(doctor(root).problems.some((w) => /has 2 records but this state root has never been anchored/.test(w)));
+  assert.throws(() => Controller.open(root), /never been anchored .* "eo anchor adopt"/);
+  const c = Controller.open(root, { adopt: { by: 'operator' } });
   c.close();
   const records = verifyJournalFile(p.journal, key).records;
   assert.equal(records.filter((r) => r.type === 'anchor.bound').length, 1);
   assert.equal(headOf(root)?.journalSeq, records.length);
   fs.rmSync(root, { recursive: true });
   fs.cpSync(old, root, { recursive: true });
-  assert.throws(() => Controller.open(root), /the journal ends at seq 2, behind its anchored head at seq 3/);
+  assert.throws(() => Controller.open(root, { adopt: { by: 'operator' } }), /the journal ends at seq 2, behind its anchored head at seq 3/);
+});
+
+test('M2-0b: a fresh anchor is created whole: a leftover temporary file is ignored and two opens agree on one key', () => {
+  const dir = tmpDir();
+  const root = path.join(dir, 'state');
+  fs.mkdirSync(root, { mode: 0o700 });
+  const ad = path.join(dir, 'anchor');
+  fs.mkdirSync(path.join(ad, 'heads'), { recursive: true, mode: 0o700 });
+  // What a crash before the link leaves: a temporary file, never an empty anchor.json.
+  fs.writeFileSync(path.join(ad, '.anchor.json.1.dead.tmp'), '');
+  const a = RollbackAnchor.open(ad, root);
+  const b = RollbackAnchor.open(ad, root);
+  assert.equal(a.id, b.id);
+  assert.match(fs.readFileSync(path.join(ad, 'anchor.json'), 'utf8'), /"key":"[0-9a-f]{64}"/);
+  assert.deepEqual(fs.readdirSync(ad).filter((f) => f.startsWith('.anchor.json.') && !f.includes('dead')), [], 'no temporary file of ours is left');
 });
 
 test('M2-0b: the anchor never moves backwards, and the journal stops after a failed anchor update', () => {
@@ -288,9 +447,10 @@ test('M2-0b: the anchor never moves backwards, and the journal stops after a fai
   fs.mkdirSync(root, { mode: 0o700 });
   const a = RollbackAnchor.open(path.join(dir, 'anchor'), root);
   const id = 'ab'.repeat(16);
-  a.advance(id, 5, 'aa');
-  assert.throws(() => a.advance(id, 4, 'bb'), /refusing to move the anchor .* back from journal seq 5 to 4/);
-  assert.throws(() => a.advance(id, 5, 'cc'), /different MAC/);
+  const k = 'cd'.repeat(16);
+  a.advance(id, k, root, 5, 'aa');
+  assert.throws(() => a.advance(id, k, root, 4, 'bb'), /refusing to move the anchor .* back from journal seq 5 to 4/);
+  assert.throws(() => a.advance(id, k, root, 5, 'cc'), /different MAC/);
   assert.equal(a.read(id)?.journalSeq, 5);
   // An append whose anchor update fails is the last: one more would leave the journal two ahead.
   const file = path.join(dir, 'journal.jsonl');

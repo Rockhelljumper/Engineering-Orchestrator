@@ -377,7 +377,7 @@ test('a beads store that lost its marker is refused once evidence exists, even w
   // The rollback anchor (M2-0b) refuses the emptied journal first.
   assert.throws(() => Controller.open(sb.root), /the journal ends at seq 0, behind its anchored head/);
   // With the anchor's head gone too, the check inside the state root still refuses.
-  fs.rmSync(path.join(process.env['EO_ANCHOR_DIR'] as string, 'heads', `${rootIdOf(readJournalKey(p))}.json`));
+  fs.rmSync(path.join(process.env['EO_ANCHOR_DIR'] as string, 'heads', `${rootIdOf(sb.root)}.json`));
   assert.throws(() => Controller.open(sb.root), /not initialised, but this state root is already in use .*; refusing to re-initialise it/);
   assert.deepEqual(fs.readdirSync(path.join(p.store, '.beads')).sort(), beadsBefore);
   assert.equal(bdRaw(p.store, ['list', '--json', '--all']).includes('eo-T5'), true, 'the tasks are still there');

@@ -14,6 +14,7 @@ import { verifyJournalFile } from './journal.ts';
 import { readJournalKey } from './stateRoot.ts';
 import { loadPolicy } from './policy.ts';
 import { EvidenceLedger } from './evidence.ts';
+import { defaultAnchorDir, inspectAnchor } from './anchor.ts';
 
 const USAGE = `eo — Engineering Orchestrator controller (M2 Phase A)
 
@@ -21,7 +22,8 @@ Usage: eo <command> [options]   (global: --state-root <dir>, or EO_STATE_ROOT)
 
   The rollback anchor (M2-0b) records the journal head outside the state root, in
   EO_ANCHOR_DIR or the platform default (~/.local/state/eo-anchor on Linux); keep it where a
-  restore of the state root cannot reach it.
+  restore of the state root cannot reach it. A state root the anchor refuses is not opened;
+  only a human can adopt it.
 
   init [--store fake|beads] [--bd-bin <path>]
                                     create a state root (policy, journal key, store); beads
@@ -36,6 +38,11 @@ Usage: eo <command> [options]   (global: --state-root <dir>, or EO_STATE_ROOT)
   doctor                            read-only integrity check (exit 1 on problems)
   unblock <task> --note <text>      return a blocked task to ready (interactive confirmation)
   evidence <task> [--attempt n]     show and verify an evidence manifest
+  anchor adopt [--accept-rollback]  bind a state root the anchor has never seen (made before
+                                    M2-0b, or moved) after checking where it came from; with
+                                    --accept-rollback, also one the anchor refuses (an older
+                                    or different copy), keeping a forensic record of the head
+                                    it replaces (interactive confirmation)
 `;
 
 async function main(argv: string[]): Promise<number> {
@@ -52,6 +59,7 @@ async function main(argv: string[]): Promise<number> {
       note: { type: 'string' },
       store: { type: 'string' },
       'bd-bin': { type: 'string' },
+      'accept-rollback': { type: 'boolean' },
       json: { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
     },
@@ -152,10 +160,37 @@ async function main(argv: string[]): Promise<number> {
         return 0;
       });
     }
+    case 'anchor': {
+      if (sub !== 'adopt') break;
+      const p = statePaths(root);
+      const a = inspectAnchor(defaultAnchorDir(), p.root, readJournalKey(p), verifyJournalFile(p.journal, readJournalKey(p)).records);
+      out(`anchor: ${a.check.kind}${'reason' in a.check ? `: ${a.check.reason}` : ''}`);
+      const rollback = values['accept-rollback'] === true;
+      if (a.check.kind === 'refuse' && !rollback) throw new UsageError('the anchor refuses this state root; adopting it means accepting it as older than, or different from, what the anchor recorded: rerun with --accept-rollback after investigating');
+      if (a.check.kind !== 'refuse' && a.check.kind !== 'unadopted') {
+        out('nothing to adopt');
+        return 0;
+      }
+      await confirmHuman(
+        rollback ? `Accept ${p.root} as the state root to carry on from, replacing the anchor's head for it? Type "accept rollback" to continue: ` : `Adopt ${p.root} into the rollback anchor? Type "adopt" to continue: `,
+        rollback ? 'accept rollback' : 'adopt',
+      );
+      const c = Controller.open(root, { adopt: { by: os.userInfo().username, acceptRollback: rollback } });
+      try {
+        out(`${c.anchorBinding ?? 'already bound'}: ${p.root}`);
+        return 0;
+      } finally {
+        c.close();
+      }
+    }
     case 'evidence': {
       if (!sub) throw new UsageError('usage: eo evidence <task> [--attempt n]');
       const p = statePaths(root);
-      const store = openStore(p, { create: false, records: verifyJournalFile(p.journal, readJournalKey(p)).records });
+      const v = verifyJournalFile(p.journal, readJournalKey(p));
+      // Evidence from a rolled-back or unknown state root is not reported as verified.
+      const a = inspectAnchor(defaultAnchorDir(), p.root, readJournalKey(p), v.records).check;
+      if (a.kind === 'refuse' || a.kind === 'unadopted') throw new UsageError(`not verified: the rollback anchor refuses this state root (${a.reason})`);
+      const store = openStore(p, { create: false, records: v.records });
       const t = store.get(sub);
       if (!t) throw new UsageError(`unknown task ${sub}`);
       const attempt = values.attempt ? Number(values.attempt) : t.attempt;
@@ -181,6 +216,13 @@ function status(root: string, json: boolean): number {
   const p = statePaths(root);
   const key = readJournalKey(p);
   const v = verifyJournalFile(p.journal, key);
+  let anchor: string;
+  try {
+    const a = inspectAnchor(defaultAnchorDir(), p.root, key, v.records).check;
+    anchor = a.kind === 'refuse' || a.kind === 'unadopted' ? `REFUSED: ${a.reason}` : a.kind;
+  } catch (err) {
+    anchor = `REFUSED: ${(err as Error).message}`;
+  }
   const store = openStore(p, { create: false, records: v.records });
   const policy = loadPolicy(p.policy);
   const ledger = BudgetLedger.fromRecords(v.records);
@@ -195,18 +237,20 @@ function status(root: string, json: boolean): number {
     reservationPerInvocation: reservationAmount(policy.budget),
     escalations: openEsc,
     journal: { records: v.records.length, ok: v.ok, tornTail: v.tornTail },
+    anchor,
   };
   if (json) {
     out(JSON.stringify(data, null, 2));
-    return 0;
+    return anchor.startsWith('REFUSED') ? 1 : 0;
   }
   const lines = ['TASK                 STATE            ATTEMPT  FAILS(corr/infra)'];
   for (const t of data.tasks) lines.push(`${t.id.padEnd(20)} ${t.state.padEnd(16)} ${String(t.attempt).padEnd(8)} ${t.correctionFailures}/${t.infraFailures}`);
   for (const b of data.budget) lines.push(`budget ${b.epic}: spent $${b.spent.usd.toFixed(4)} / ${b.spent.tokens} tok, reserved $${b.reserved.usd.toFixed(4)}, cap $${b.cap.usd} / ${b.cap.tokens} tok (estimates, not billing)`);
   for (const e of data.escalations) lines.push(`ESCALATION ${JSON.stringify(e)}`);
   lines.push(`journal: ${data.journal.records} records, ${data.journal.ok ? 'verified' : 'FAILED VERIFICATION'}`);
+  lines.push(`rollback anchor: ${anchor}${anchor.startsWith('REFUSED') ? ' (these states are not trustworthy; run "eo doctor")' : ''}`);
   out(lines.join('\n'));
-  return 0;
+  return anchor.startsWith('REFUSED') ? 1 : 0;
 }
 
 /**

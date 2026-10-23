@@ -6,7 +6,7 @@ import { EvidenceLedger } from './evidence.ts';
 import { BudgetLedger } from './budget.ts';
 import { loadPolicy, policyHash } from './policy.ts';
 import { readJournalKey, statePaths, type StateRootPaths } from './stateRoot.ts';
-import { checkAnchor, defaultAnchorDir, journaledBinding, rootIdOf, RollbackAnchor } from './anchor.ts';
+import { defaultAnchorDir, inspectAnchor } from './anchor.ts';
 import { sleepSync } from './util/lock.ts';
 import { isProcessAlive } from './util/fsx.ts';
 import { openStore } from './store/open.ts';
@@ -82,19 +82,11 @@ function check(p: StateRootPaths, key: Buffer, store: TaskStore | undefined, opt
   if (running !== undefined) warnings.push(`a controller is running (pid ${running}); a transition may be in flight`);
 
   // M2-0b: the journal against its rollback anchor, outside the state root.
-  const anchorDir = opts.anchorDir ?? defaultAnchorDir();
-  const rootId = rootIdOf(key);
   try {
-    if (!fs.existsSync(path.join(anchorDir, 'anchor.json'))) {
-      if (journaledBinding(v.records)) problems.push(`anchor: the journal is bound to a rollback anchor, but there is none at ${anchorDir}`);
-      else warnings.push(`anchor: this state root is not anchored yet (no anchor at ${anchorDir}); the next controller open binds it`);
-    } else {
-      const anchor = RollbackAnchor.open(anchorDir, p.root, { create: false });
-      const a = checkAnchor(v.records, anchor.read(rootId), anchor.id, rootId);
-      if (a.kind === 'refuse') problems.push(`anchor: ${a.reason} (the controller refuses to open)`);
-      else if (a.kind === 'one-ahead') warnings.push(`anchor: the journal is one record ahead of its anchor (seq ${a.anchored}), left by a crash; the next controller open records it`);
-      else if (a.kind === 'unbound') warnings.push('anchor: this state root is not bound to the anchor yet; the next controller open binds it');
-    }
+    const a = inspectAnchor(opts.anchorDir ?? defaultAnchorDir(), p.root, key, v.records).check;
+    if (a.kind === 'refuse' || a.kind === 'unadopted') problems.push(`anchor: ${a.reason} (the controller refuses to open)`);
+    else if (a.kind === 'one-ahead') warnings.push(`anchor: the journal is one record ahead of its anchor (seq ${a.anchored}), left by a crash; the next controller open records it`);
+    else if (a.kind === 'new') warnings.push('anchor: this new state root is not bound to the anchor yet; the next controller open binds it');
   } catch (err) {
     problems.push(`anchor: ${(err as Error).message}`);
   }

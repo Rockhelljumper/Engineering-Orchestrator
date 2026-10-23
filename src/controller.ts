@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { Journal, verifyJournalFile, type JournalRecord } from './journal.ts';
-import { checkAnchor, defaultAnchorDir, rootIdOf, RollbackAnchor } from './anchor.ts';
+import { AnchorError, canonicalRoot, checkAnchor, defaultAnchorDir, keyIdOf, rootIdOf, RollbackAnchor, type AnchorHead } from './anchor.ts';
 import { EvidenceLedger } from './evidence.ts';
 import { BudgetGovernor, type Amount } from './budget.ts';
 import { assertRepositoryApproved, canonicalRepoPath, loadPolicy, policyHash, savePolicy, withApprovedRepository, type Policy } from './policy.ts';
@@ -72,6 +72,14 @@ export interface ControllerOpenOptions {
   allowPolicyDrift?: boolean;
   /** The rollback anchor directory (M2-0b); default EO_ANCHOR_DIR, else defaultAnchorDir(). */
   anchorDir?: string;
+  /**
+   * An operator adopts this state root into the anchor ("eo anchor adopt"): one with journal
+   * records that the anchor has never seen (made before M2-0b, or moved). With
+   * acceptRollback, also one the anchor refuses (older than its head, a different history,
+   * re-keyed): the operator accepts it as the state root to carry on from, and the head it
+   * replaces is kept in a forensic record. The M1 recovery checks still apply.
+   */
+  adopt?: { by: string; acceptRollback?: boolean };
 }
 
 /** A refusal to work on a state root whose store, evidence or journal no crash can explain. */
@@ -138,8 +146,12 @@ export class Controller {
   readonly owner: string;
   readonly tornTailRepaired: boolean;
   readonly anchor: RollbackAnchor;
-  /** This state root's id in the anchor, derived from its journal key. */
+  /** This state root's id in the anchor, derived from its canonical path. */
   readonly rootId: string;
+  /** Fingerprint of this state root's journal key, recorded with its anchored head. */
+  readonly keyId: string;
+  /** How this open bound the state root to the anchor, if it did. */
+  readonly anchorBinding: 'new' | 'adopted' | 'rollback-accepted' | undefined;
   readonly anchorRepaired: boolean;
   /** The interrupted transition this open finished, if any ("task:from->to"). */
   private readonly finishedOnOpen: string | undefined;
@@ -156,19 +168,43 @@ export class Controller {
     // M2-0b: before anything else reads or repairs the state root, its journal must reach the
     // head recorded in the rollback anchor, which lives outside the state root. A restored
     // older copy of the whole state root is consistent inside but behind its anchor.
-    this.anchor = RollbackAnchor.open(opts.anchorDir ?? defaultAnchorDir(), paths.root);
-    this.rootId = rootIdOf(key);
-    const anchored = this.anchor.read(this.rootId);
-    const anchorState = checkAnchor(before.records, anchored, this.anchor.id, this.rootId);
-    if (anchorState.kind === 'refuse') {
+    const anchorDir = opts.anchorDir ?? defaultAnchorDir();
+    this.rootId = rootIdOf(paths.root);
+    this.keyId = keyIdOf(key);
+    const refusal = (reason: string, head: AnchorHead | null, rawHead: string | null, anchorId: string | null): RecoveryRefusedError => {
       const note = writeForensic(paths.root, 'rollback-refused', {
-        reason: anchorState.reason,
-        anchor: { dir: this.anchor.dir, id: this.anchor.id, rootId: this.rootId, head: anchored },
+        reason,
+        anchor: { dir: anchorDir, id: anchorId, rootId: this.rootId, keyId: this.keyId, root: canonicalRoot(paths.root), head, headFileBase64: rawHead },
         journal: { records: before.records.length, lastSeq: before.records.at(-1)?.seq ?? 0, lastMac: before.records.at(-1)?.mac ?? null, file: journalFileFacts(paths.journal) },
         journalBase64: journalContent(paths.journal),
       });
-      throw new RecoveryRefusedError(`refusing to open: ${anchorState.reason}. Nothing was changed; a human must investigate. ${note}`);
+      return new RecoveryRefusedError(`refusing to open: ${reason}. Nothing was changed; a human must investigate. ${note}`);
+    };
+    let anchored: AnchorHead | null;
+    try {
+      this.anchor = RollbackAnchor.open(anchorDir, paths.root);
+      anchored = this.anchor.read(this.rootId);
+    } catch (err) {
+      if (!(err instanceof AnchorError)) throw err;
+      let raw: string | null = null;
+      try {
+        raw = fs.readFileSync(path.join(anchorDir, 'heads', `${this.rootId}.json`)).toString('base64');
+      } catch {
+        // no head file
+      }
+      throw refusal(err.message, null, raw, null);
     }
+    const anchorState = checkAnchor(before.records, anchored, this.anchor.id, this.rootId, this.keyId);
+    let binding: 'new' | 'adopted' | 'rollback-accepted' | undefined;
+    if (anchorState.kind === 'new') binding = 'new';
+    else if (anchorState.kind === 'unadopted') {
+      if (!opts.adopt) throw refusal(anchorState.reason, anchored, this.anchor.rawHead(this.rootId), this.anchor.id);
+      binding = 'adopted';
+    } else if (anchorState.kind === 'refuse') {
+      if (!opts.adopt?.acceptRollback) throw refusal(anchorState.reason, anchored, this.anchor.rawHead(this.rootId), this.anchor.id);
+      binding = 'rollback-accepted';
+    }
+    this.anchorBinding = binding;
     this.policy = loadPolicy(paths.policy);
     // With the journal's records, openStore checks the store binding before it creates or
     // repairs anything.
@@ -189,15 +225,37 @@ export class Controller {
       });
       if (!note.startsWith('Forensic record:')) throw new ControllerError(`the journal has a torn final line, and it could not be preserved before repair. ${note}`);
     }
-    this.journal = Journal.open(paths.journal, key, { repairTornTail: true, onAppend: (r) => this.anchor.advance(this.rootId, r.seq, r.mac) });
+    const root = canonicalRoot(paths.root);
+    if (binding === 'rollback-accepted') {
+      // The operator accepts this older or different state root. Keep what the anchor held,
+      // then start its head again from this journal.
+      const note = writeForensic(paths.root, 'rollback-accepted', {
+        reason: anchorState.kind === 'refuse' ? anchorState.reason : '',
+        by: opts.adopt?.by,
+        anchor: { dir: this.anchor.dir, id: this.anchor.id, rootId: this.rootId, keyId: this.keyId, root, head: anchored, headFileBase64: this.anchor.rawHead(this.rootId) },
+        journal: { records: before.records.length, file: journalFileFacts(paths.journal) },
+        journalBase64: journalContent(paths.journal),
+      });
+      if (!note.startsWith('Forensic record:')) throw new ControllerError(`the anchor's head could not be preserved before it is replaced. ${note}`);
+      this.anchor.forget(this.rootId);
+    }
+    this.journal = Journal.open(paths.journal, key, { repairTornTail: true, onAppend: (r) => this.anchor.advance(this.rootId, this.keyId, root, r.seq, r.mac) });
     this.tornTailRepaired = before.tornTail;
     // The one gap a crash can leave: the last record was journaled but not yet anchored.
     const last = this.journal.records().at(-1);
     this.anchorRepaired = anchorState.kind === 'one-ahead';
-    if (anchorState.kind === 'one-ahead' && last) this.anchor.advance(this.rootId, last.seq, last.mac);
-    // A new state root, or one made before M2-0b: bind it to this anchor. From here on a copy
-    // without the binding, or bound elsewhere, is refused.
-    if (anchorState.kind === 'unbound') this.journal.append('anchor.bound', { anchorId: this.anchor.id, rootId: this.rootId });
+    if (anchorState.kind === 'one-ahead' && last) this.anchor.advance(this.rootId, this.keyId, root, last.seq, last.mac);
+    // A new state root, or one an operator adopted: bind it to this anchor. From here on a
+    // copy without the binding, bound elsewhere, or behind the head is refused.
+    if (binding) {
+      this.journal.append('anchor.bound', {
+        anchorId: this.anchor.id,
+        rootId: this.rootId,
+        keyId: this.keyId,
+        root,
+        ...(binding === 'new' ? {} : { adoptedBy: opts.adopt?.by, ...(binding === 'rollback-accepted' && anchorState.kind === 'refuse' ? { acceptedRollback: anchorState.reason } : {}) }),
+      });
+    }
     this.budget = new BudgetGovernor(this.journal, this.policy.budget);
     const now = policyHash(this.policy);
     const { committed, pending } = policyRecords(this.journal.records());
