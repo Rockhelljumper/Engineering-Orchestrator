@@ -149,6 +149,8 @@ test('M2-0b: a crash between the journal append and the anchor update is recover
   c = Controller.open(sb.root);
   try {
     assert.equal(c.anchorRepaired, true);
+    // Repaired by the open itself, before any further append.
+    assert.equal(headOf(sb.root)?.journalSeq, rec.seq);
     const report = c.resume();
     assert.equal(report.anchorRepaired, true);
     assert.deepEqual(report.transitionsReplayed, ['A:planned->ready']);
@@ -301,6 +303,30 @@ test('M2-0b: the anchor never moves backwards, and the journal stops after a fai
   assert.throws(() => j.append('x', {}), /disk full/);
   fail = false;
   assert.throws(() => j.append('y', {}), (err: unknown) => err instanceof JournalTamperError && /recording an earlier one failed/.test(err.message));
+});
+
+test('M2-0b: doctor reports the last transition unapplied as damage when no controller runs, and as in flight while one does', async () => {
+  const sb = sandbox();
+  const c = Controller.open(sb.root);
+  c.importPlan(twoIndependent, sb.repo, 'h');
+  c.journal.append('task.transition', { taskId: 'A', from: 'planned', to: 'ready', reason: 'dependencies done' });
+  c.close();
+  const unapplied = /A is planned, journal says ready/;
+  assert.ok(doctor(sb.root).problems.some((x) => unapplied.test(x)), 'no controller: reported');
+  // A live process holds the controller lock.
+  const holder = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' });
+  try {
+    fs.writeFileSync(statePaths(sb.root).controllerLock, JSON.stringify({ pid: holder.pid, owner: 'controller:test', acquiredAt: new Date().toISOString(), nonce: 'x' }));
+    const d = doctor(sb.root);
+    assert.ok(!d.problems.some((x) => unapplied.test(x)), JSON.stringify(d.problems));
+    assert.ok(d.warnings.some((x) => unapplied.test(x) && /being applied by the running controller/.test(x)));
+    assert.ok(d.warnings.some((x) => /a controller is running \(pid \d+\)/.test(x)));
+  } finally {
+    holder.kill('SIGKILL');
+    await new Promise((resolve) => holder.on('exit', resolve));
+  }
+  // The holder is gone: its lock is left over from a crash, and the gap is reported again.
+  assert.ok(doctor(sb.root).problems.some((x) => unapplied.test(x)), 'dead holder: reported');
 });
 
 test('M2-0b: doctor run beside a working controller never reports a transition in flight as damage', { skip: TEST_STORE === 'beads' && 'FakeStore timing' }, async () => {

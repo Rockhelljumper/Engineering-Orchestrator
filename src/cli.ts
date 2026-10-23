@@ -15,9 +15,13 @@ import { readJournalKey } from './stateRoot.ts';
 import { loadPolicy } from './policy.ts';
 import { EvidenceLedger } from './evidence.ts';
 
-const USAGE = `eo — Engineering Orchestrator controller (M1)
+const USAGE = `eo — Engineering Orchestrator controller (M2 Phase A)
 
 Usage: eo <command> [options]   (global: --state-root <dir>, or EO_STATE_ROOT)
+
+  The rollback anchor (M2-0b) records the journal head outside the state root, in
+  EO_ANCHOR_DIR or the platform default (~/.local/state/eo-anchor on Linux); keep it where a
+  restore of the state root cannot reach it.
 
   init [--store fake|beads] [--bd-bin <path>]
                                     create a state root (policy, journal key, store); beads
