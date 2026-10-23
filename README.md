@@ -2,9 +2,9 @@
 
 A secure, multi-agent software-development orchestrator for Claude Code: it takes an engineering epic through architecture, planning, implementation, independent testing, security review, correction and final verification, with durable state and evidence-based quality gates.
 
-**Status: M1 — controller core and durable task store, in review.** M0 (revision 2) was architecturally approved by the owner on 2026-10-18. M1 uses only the fake runner (no model spend). Its one approved install is Go 1.26.7, used to build beads (`bd`) offline from the pinned revision for the beads task store; see the [M1 report](docs/milestones/M1-report.md). Each later milestone keeps its own approval gate.
+**Status: M2 Phase A — durable test checkpointing (M2-0) and whole-state-root rollback detection (M2-0b), in review.** M1 (controller core and durable task store) was approved and merged on 2026-10-22; see the [M1 report](docs/milestones/M1-report.md). Phase A uses only the fake runner (no model spend) and installs nothing; see the [M2 Phase A report](docs/milestones/M2-phaseA-report.md). M2 Phases B and C (isolation and live workers) need their own approval.
 
-## Try it (M1, fake runner only)
+## Try it (fake runner only)
 
 Requires Node ≥ 22.18 (runs TypeScript directly; no npm dependencies).
 
@@ -18,7 +18,9 @@ node src/cli.ts status
 node src/cli.ts doctor
 ```
 
-Tests: `npm test` (unit), `npm run test:integration`, `npm run test:behavioral` (crash recovery, about 2 minutes).
+The controller records its journal head in a rollback anchor outside the state root (`EO_ANCHOR_DIR`, default `~/.local/state/eo-anchor`). An older copy of the state root, or one the anchor has never seen, is refused; a person can adopt it with `node src/cli.ts anchor adopt` (add `--accept-rollback` to accept a restored backup).
+
+Tests: `npm test` (unit), `npm run test:integration`, `npm run test:behavioral` (crash recovery and the durable runner, several minutes). Long suites can run under the durable runner, which checkpoints each scenario and resumes after an interruption: `npm run durable -- start <run dir> --suite crash-sample`, then `npm run durable -- status <run dir>`.
 
 ## Documents
 
@@ -34,6 +36,7 @@ Tests: `npm test` (unit), `npm run test:integration`, `npm run test:behavioral` 
 | [07 Isolation, credentials and spend limits](docs/07-isolation-and-credentials.md) | Windows user vs WSL2 vs containers vs VMs, GitHub ref restrictions, what budget flags guarantee |
 | [M0 report](docs/milestones/M0-report.md) | M0 acceptance results and review findings |
 | [M1 report](docs/milestones/M1-report.md) | M1 acceptance results, evidence and review findings |
+| [M2 Phase A report](docs/milestones/M2-phaseA-report.md) | M2-0 and M2-0b acceptance results, evidence and review findings |
 
 ## Decisions approved with M0 revision 2
 
