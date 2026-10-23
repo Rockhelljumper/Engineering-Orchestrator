@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "runId": "eea04f93-f61a-4e9d-8230-51864e42e601",
+  "suite": "random-kills",
+  "params": {
+    "seeds": 8
+  },
+  "derived": {
+    "baseline": {
+      "T1": "done",
+      "T2": "done",
+      "T3": "done",
+      "T4": "done",
+      "T5": "done"
+    },
+    "durationMs": 1281
+  },
+  "scenarios": [
+    {
+      "id": "seed-1",
+      "seed": 1
+    },
+    {
+      "id": "seed-2",
+      "seed": 2
+    },
+    {
+      "id": "seed-3",
+      "seed": 3
+    },
+    {
+      "id": "seed-4",
+      "seed": 4
+    },
+    {
+      "id": "seed-5",
+      "seed": 5
+    },
+    {
+      "id": "seed-6",
+      "seed": 6
+    },
+    {
+      "id": "seed-7",
+      "seed": 7
+    },
+    {
+      "id": "seed-8",
+      "seed": 8
+    }
+  ],
+  "identity": {
+    "commit": "1624fa4da916bd1d26267b127c3026471022ab79",
+    "dirty": false,
+    "testSourceSha256": "be60eb629c25033f398ecf17816f2a50e285d381befed85d0fe4bd8bdb9c05c1",
+    "binaries": {
+      "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+    },
+    "config": {
+      "suite": "random-kills",
+      "params": {
+        "seeds": 8
+      },
+      "env": {
+        "EO_TEST_STORE": null,
+        "EO_BD_BIN": null,
+        "EO_REQUIRE_BD": null,
+        "EO_REQUIRE_TRACE": null
+      }
+    },
+    "configSha256": "93aa8d2c5774932d81f5f27e1c4f0c6196595b36afe4fe5946d56556551b0491",
+    "platform": {
+      "os": "linux",
+      "arch": "x64",
+      "node": "v22.22.0"
+    }
+  },
+  "createdAt": "2026-10-23T14:20:06.439Z",
+  "stallWindowS": 120
+}

@@ -1,0 +1,10 @@
+2026-10-23T14:40:47Z commit 3c99dbf4d0bccc9b7947f4572df5a761643241c5 dirty=0 node v22.22.0 bd-env=none
+2026-10-23T14:40:47Z unit
+2026-10-23T14:40:57Z unit exit 0 # pass 114 # fail 0 # skipped 0 
+2026-10-23T14:40:57Z integration
+2026-10-23T14:41:21Z integration exit 0 # pass 53 # fail 0 # skipped 20 
+2026-10-23T14:41:21Z behavioral
+2026-10-23T14:48:30Z behavioral exit 0 # pass 14 # fail 0 # skipped 0 
+2026-10-23T14:48:30Z typecheck
+2026-10-23T14:48:34Z typecheck exit 0
+2026-10-23T14:48:34Z suites done

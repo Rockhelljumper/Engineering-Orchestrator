@@ -1,0 +1,25 @@
+drill: 2026-10-23T14:30:30.451Z uninterrupted run of claim-race store=fake rounds=30 workers=10
+drill: 2026-10-23T14:30:56.566Z PASS uninterrupted run PASSED: 30/30
+drill: 2026-10-23T14:30:59.911Z kill 1: SIGKILL to the runner's process group with round-3 attempt 1 in flight (runner c612a46d)
+drill: 2026-10-23T14:31:06.945Z kill 2: SIGKILL to the runner's process group with round-3 attempt 2 in flight (runner 4820ddd4)
+drill: 2026-10-23T14:31:13.318Z kill 3: SIGKILL to the runner's process group with round-3 attempt 3 in flight (runner ddf5aa6d)
+drill: 2026-10-23T14:31:20.051Z worker kill: SIGKILL to scenario process 28206 (round-3) only; the runner lives
+drill: 2026-10-23T14:31:20.051Z PASS the worker kill landed on a running scenario process: round-3
+drill: 2026-10-23T14:31:20.433Z container restart: every process killed with round-3 attempt 5 in flight (runner 19a3150b)
+drill: 2026-10-23T14:31:20.859Z PASS a run whose runner vanished reads as RUNNING within the stall window, never PASSED: RUNNING
+drill: 2026-10-23T14:31:26.820Z PASS after the stall window it is INTERRUPTED: INTERRUPTED: no heartbeat for 6 s (stall window 5 s); 28 scenarios not finished
+drill: 2026-10-23T14:32:07.626Z resumed from the copy: PASSED 30/30
+drill: 2026-10-23T14:32:07.626Z PASS interrupted run PASSED after resuming
+drill: 2026-10-23T14:32:07.626Z PASS same scenarios passed as the uninterrupted run: 30/30 vs 30/30
+drill: 2026-10-23T14:32:07.629Z PASS no scenario counted twice: []
+drill: 2026-10-23T14:32:07.629Z PASS every interrupted scenario was rerun from scratch (a later attempt passed): round-3
+drill: 2026-10-23T14:32:07.629Z PASS the log records each resume: 4 resumes
+drill: 2026-10-23T14:32:07.629Z PASS each of the 3 runner kills landed mid-scenario, in 3 different runners: [{"scenario":"round-3","invocation":"c612a46d","attempt":1},{"scenario":"round-3","invocation":"4820ddd4","attempt":2},{"scenario":"round-3","invocation":"ddf5aa6d","attempt":3}]
+drill: 2026-10-23T14:32:07.893Z PASS a different commit reads STALE: the run's identity differs from the checkout under review in: commit
+drill: 2026-10-23T14:32:08.464Z PASS resuming under a different configuration is refused as STALE (exit 3): durable: run b4206ebd-bb5d-4ba5-83e1-b1b567623551 is STALE: the run's identity differs from the checkout under review in: config, configSha256. Its results do not apply to this checkout; start a new run.
+drill: 2026-10-23T14:32:08.482Z PASS a truncated log is detected: log truncated: 70 records, head says 72
+drill: 2026-10-23T14:32:08.493Z PASS an edited record is detected: line 37: hash mismatch (record edited)
+drill: 2026-10-23T14:32:08.502Z PASS reordered records are detected: line 1: seq 2, expected 1; line 1: chain broken
+drill: 2026-10-23T14:32:08.512Z PASS a missing manifest is NOT_VERIFIED: manifest.json: ENOENT: no such file or directory, open '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/ev/drill-claim-race/damaged-no-manifest/manifest.json'
+drill: 2026-10-23T14:32:47.504Z PASS resuming a damaged log keeps it in forensics/ and reruns every scenario: PASSED, forensics 2026-10-23T14-32-09-248Z-883d85f6
+drill: 2026-10-23T14:32:47.504Z DRILL PASSED

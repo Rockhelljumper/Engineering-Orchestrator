@@ -1,0 +1,14 @@
+== wt-prefix 7286274ef06a40d94333e9152e3bbbaee1d19fe2
+start exit 1
+resume exit 0
+durable: s5 attempt 1: pass
+status exit 0
+final status PASSED
+verdict VULNERABLE
+== wt-final 61a5d0d4e55bf568f18ab7db1414b0f8c8be7b95
+start exit 1
+resume exit 4
+durable: run 5b49a27e-d3b9-4b2d-ae61-34f3851cb431 is NOT_VERIFIED: records 1, 2, 3, 4, 5, ... were written for a different manifest (manifest.json changed); this run cannot be verified or resumed, start a new one
+status exit 1
+final status NOT_VERIFIED
+verdict DEFENDED
