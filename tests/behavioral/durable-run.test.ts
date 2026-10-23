@@ -133,6 +133,13 @@ test('M2-0: duplicated, foreign, mixed-identity or undeclared records and a chan
     fs.rmSync(path.join(d, FILES.heartbeat));
   });
   assert.equal(empty.status, 'INTERRUPTED');
+  // A log cut back behind its head (records lost after they were acknowledged).
+  const cut = variant('truncated', (d) => {
+    const f = path.join(d, FILES.log);
+    fs.writeFileSync(f, fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).slice(0, -2).join('\n') + '\n');
+  });
+  assert.equal(cut.status, 'FAILED');
+  assert.match(cut.reasons.join(), /log truncated: \d+ records, head says \d+/);
   // A second run.end changes nothing.
   const again = variant('second-end', (d, w) => {
     void d;
