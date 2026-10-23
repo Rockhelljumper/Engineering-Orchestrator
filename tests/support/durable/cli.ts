@@ -52,6 +52,8 @@ async function main(argv: string[]): Promise<number> {
     const m = readManifest(dir);
     if ('error' in m) throw new DurableRunError(m.error, 'not-verified');
     if (!m.manifest.scenarios.some((s) => s.id === scenario)) throw new DurableRunError(`no scenario ${scenario} in this run`, 'usage');
+    const agg = aggregate(dir, computeIdentity(REPO_ROOT, m.manifest.suite, m.manifest.params));
+    if (agg.status === 'STALE') throw new DurableRunError(`run is STALE (${agg.reasons.join('; ')}); a replay here would not reproduce it`, 'stale');
     const work = tmpDir('eo-replay-');
     const resultFile = path.join(work, 'result.json');
     const r = spawnSync(process.execPath, [path.join(REPO_ROOT, 'tests', 'support', 'durable', 'scenario-child.ts'), dir, scenario, resultFile], { stdio: 'inherit', env: { ...process.env, TMPDIR: work, TMP: work, TEMP: work } });

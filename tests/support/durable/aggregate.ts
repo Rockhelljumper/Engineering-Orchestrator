@@ -29,6 +29,12 @@ export interface Aggregate {
   chainHead: { seq: number; hash: string } | null;
   /** True when the log's integrity failed: resume sets it aside and reruns every scenario. */
   integrityFailed: boolean;
+  /**
+   * True when manifest.json is not the manifest the records were written for. Nothing in the
+   * run directory says which scenarios were declared then, so such a run is NOT_VERIFIED and
+   * is never resumed: rerunning under an edited manifest could drop a failed scenario.
+   */
+  manifestChanged: boolean;
   heartbeatAgeS: number | null;
 }
 
@@ -63,7 +69,7 @@ export function heartbeatAgeS(dir: string, now = Date.now()): number | null {
  * checkout under review. Anything missing or unreadable is NOT_VERIFIED or FAILED, never PASSED.
  */
 export function aggregate(dir: string, current?: RunIdentity, now = Date.now()): Aggregate {
-  const empty: Aggregate = { status: 'NOT_VERIFIED', reasons: [], runId: null, suite: null, identity: null, declared: 0, passed: 0, failed: [], missing: [], interrupted: [], records: 0, chainHead: null, integrityFailed: false, heartbeatAgeS: heartbeatAgeS(dir, now) };
+  const empty: Aggregate = { status: 'NOT_VERIFIED', reasons: [], runId: null, suite: null, identity: null, declared: 0, passed: 0, failed: [], missing: [], interrupted: [], records: 0, chainHead: null, integrityFailed: false, manifestChanged: false, heartbeatAgeS: heartbeatAgeS(dir, now) };
   const m = readManifest(dir);
   if ('error' in m) return { ...empty, reasons: [m.error] };
   const { manifest } = m;
@@ -75,23 +81,39 @@ export function aggregate(dir: string, current?: RunIdentity, now = Date.now()):
   base.chainHead = last ? { seq: last.seq, hash: last.hash } : null;
   const reasons: string[] = [];
 
-  // 1. Integrity of the evidence itself.
+  // 1. The manifest the records were written for.
+  const changed = records.filter((r) => r.manifestSha256 !== m.sha256).map((r) => r.seq);
+  if (changed.length > 0) {
+    return { ...base, status: 'NOT_VERIFIED', manifestChanged: true, reasons: [`records ${changed.slice(0, 5).join(', ')}${changed.length > 5 ? ', ...' : ''} were written for a different manifest (manifest.json changed); this run cannot be verified or resumed, start a new one`] };
+  }
+
+  // 2. Integrity of the evidence itself.
   const integrity = [...log.integrity];
   const want = identitySha256(manifest.identity);
   for (const r of records) {
-    if (r.manifestSha256 !== m.sha256) integrity.push(`record ${r.seq}: written for a different manifest (manifest.json changed)`);
-    else if (identitySha256(r.identity) !== want) integrity.push(`record ${r.seq}: identity differs from the manifest (${identityDiff(manifest.identity, r.identity).join(', ')})`);
+    if (identitySha256(r.identity) !== want) integrity.push(`record ${r.seq}: identity differs from the manifest (${identityDiff(manifest.identity, r.identity).join(', ')})`);
+  }
+  // Each end closes the start of the same scenario, attempt and runner just before it in that
+  // runner's records: an end appended on its own is not a result.
+  const openStart = new Map<string, CheckpointRecord>();
+  for (const r of records) {
+    if (r.kind === 'scenario.start' && r.scenario !== undefined) openStart.set(r.invocation, r);
+    if (r.kind === 'scenario.end') {
+      const st = openStart.get(r.invocation);
+      if (!st || st.scenario !== r.scenario || st.attempt !== r.attempt) integrity.push(`record ${r.seq}: an end for ${r.scenario} attempt ${r.attempt} with no matching start by the same runner`);
+      openStart.delete(r.invocation);
+    }
   }
   const declared = new Set(manifest.scenarios.map((s) => s.id));
   for (const r of records) if (r.scenario !== undefined && !declared.has(r.scenario)) integrity.push(`record ${r.seq}: scenario ${r.scenario} is not in the manifest`);
   if (integrity.length > 0) return { ...base, status: 'FAILED', reasons: integrity, integrityFailed: true };
 
-  // 2. Results for the checkout under review only.
+  // 3. Results for the checkout under review only.
   if (current && identitySha256(current) !== want) {
     return { ...base, status: 'STALE', reasons: [`the run's identity differs from the checkout under review in: ${identityDiff(manifest.identity, current).join(', ')}`] };
   }
 
-  // 3. Per-scenario tally. Only the records after the last reset count.
+  // 4. Per-scenario tally. Only the records after the last reset count.
   const resetAt = records.map((r) => r.kind).lastIndexOf('run.reset');
   const live = records.slice(resetAt + 1);
   const states = new Map<string, ScenarioState>(manifest.scenarios.map((s) => [s.id, { id: s.id, passes: 0, fails: 0, interrupted: 0, open: false }]));
@@ -117,7 +139,7 @@ export function aggregate(dir: string, current?: RunIdentity, now = Date.now()):
   if (failed.length > 0) return { ...out, status: 'FAILED', reasons: [`failed: ${failed.join(', ')}`] };
   if (missing.length === 0) return { ...out, status: 'PASSED', reasons };
 
-  // 4. Not finished: still running, stopped early, or its runner is gone.
+  // 5. Not finished: still running, stopped early, or its runner is gone.
   const age = base.heartbeatAgeS;
   const ended = last?.kind === 'run.end';
   if (!ended && age !== null && age <= manifest.stallWindowS) return { ...out, status: 'RUNNING', reasons: [`${missing.length} of ${manifest.scenarios.length} scenarios to go`] };

@@ -57,12 +57,22 @@ function records(dir: string): CheckpointRecord[] {
   return readLog(dir, m.runId).records;
 }
 
-/** The scenario started and not yet ended, if any. */
-function inFlight(dir: string): string | undefined {
-  if (!fs.existsSync(path.join(dir, FILES.manifest))) return undefined;
-  const open = new Map<string, boolean>();
-  for (const r of records(dir)) if (r.scenario) open.set(r.scenario, r.kind === 'scenario.start');
-  return [...open].find(([, o]) => o)?.[0];
+/** How many runners have started or resumed this run so far. */
+function invocations(dir: string): number {
+  return fs.existsSync(path.join(dir, FILES.manifest)) ? records(dir).filter((r) => r.kind === 'run.start' || r.kind === 'run.resume').length : 0;
+}
+
+/**
+ * The scenario the newest runner has started and not yet ended, if that runner is the
+ * `nth` one (so a start left open by a runner killed earlier never counts as in flight).
+ */
+function inFlight(dir: string, nth: number): { scenario: string; invocation: string; attempt: number } | undefined {
+  if (invocations(dir) < nth) return undefined;
+  const recs = records(dir);
+  const from = recs.map((r) => r.kind === 'run.start' || r.kind === 'run.resume').lastIndexOf(true);
+  const last = recs.at(-1);
+  if (from < 0 || !last || last.kind !== 'scenario.start' || recs.indexOf(last) < from) return undefined;
+  return { scenario: last.scenario as string, invocation: last.invocation, attempt: last.attempt ?? 1 };
 }
 
 async function waitFor(cond: () => boolean, what: string, ms: number): Promise<void> {
@@ -98,51 +108,67 @@ check('uninterrupted run PASSED', baseAgg.status === 'PASSED', `${baseAgg.passed
 const runA = path.join(out, 'interrupted');
 let runner = detached(['start', runA, '--suite', suite, '--stall-window', String(stall), ...params.flatMap((p) => ['--param', p])]);
 const killedIn: string[] = [];
+const kills_: Array<{ scenario: string; invocation: string; attempt: number }> = [];
+let nth = 1;
 for (let k = 1; k <= kills; k++) {
-  await waitFor(() => inFlight(runA) !== undefined, `a scenario in flight before kill ${k}`, 3_600_000);
-  const s = inFlight(runA) as string;
+  await waitFor(() => inFlight(runA, nth) !== undefined, `a scenario in flight before kill ${k}`, 3_600_000);
+  const s = inFlight(runA, nth);
   // Somewhere inside that scenario: wait a random fraction of a second, then make sure it is still the one running.
   await sleep(Math.floor(random() * 1500));
-  const now = inFlight(runA);
-  if (now === undefined) {
+  const now = inFlight(runA, nth);
+  if (now === undefined || now.scenario !== s?.scenario || now.attempt !== s.attempt) {
     k--;
     continue;
   }
   await killGroup(runner);
-  killedIn.push(now);
-  note(`kill ${k}: SIGKILL to the runner's process group with ${now} in flight (first seen ${s})`);
+  killedIn.push(now.scenario);
+  kills_.push(now);
+  note(`kill ${k}: SIGKILL to the runner's process group with ${now.scenario} attempt ${now.attempt} in flight (runner ${now.invocation})`);
   if (k < kills) {
     await sleep(stall * 1000 + 500); // the killed runner's heartbeat must go stale before another may take over
     runner = detached(['resume', runA]);
+    nth++;
   }
 }
 // A worker killed on its own while the runner lives: the runner records it as interrupted and reruns it.
 await sleep(stall * 1000 + 500); // the killed runner's heartbeat must go stale before another may take over
 runner = detached(['resume', runA]);
-await waitFor(() => {
+nth++;
+// The live runner's own heartbeat names its scenario process (a dead runner's never counts).
+type Beat = { invocation: string; childPid: number | null; scenario: string | null };
+const liveChild = (): Beat | undefined => {
+  const f = inFlight(runA, nth);
+  if (!f) return undefined;
   try {
-    return (JSON.parse(fs.readFileSync(path.join(runA, FILES.heartbeat), 'utf8')) as { childPid: number | null }).childPid !== null && inFlight(runA) !== undefined;
+    const hb = JSON.parse(fs.readFileSync(path.join(runA, FILES.heartbeat), 'utf8')) as Beat;
+    return hb.invocation === f.invocation && hb.childPid !== null && hb.scenario === f.scenario ? hb : undefined;
   } catch {
-    return false;
+    return undefined;
   }
-}, 'a scenario process to kill', 3_600_000);
-await sleep(Math.floor(random() * 800));
-const hb = JSON.parse(fs.readFileSync(path.join(runA, FILES.heartbeat), 'utf8')) as { childPid: number | null; scenario: string };
+};
 let workerKilled: string | null = null;
-if (hb.childPid !== null) {
+let workerAttempt = 0;
+for (let tries = 0; workerKilled === null && tries < 20; tries++) {
+  await waitFor(() => liveChild() !== undefined, 'a scenario process to kill', 3_600_000);
+  await sleep(Math.floor(random() * 800));
+  const hb = liveChild();
+  if (!hb) continue;
   try {
-    process.kill(hb.childPid, 'SIGKILL');
+    process.kill(hb.childPid as number, 'SIGKILL');
     workerKilled = hb.scenario;
+    workerAttempt = inFlight(runA, nth)?.attempt ?? 0;
     note(`worker kill: SIGKILL to scenario process ${hb.childPid} (${hb.scenario}) only; the runner lives`);
   } catch {
-    note('worker kill: the scenario process had already exited');
+    // it finished just now; wait for the next one
   }
 }
-await waitFor(() => workerKilled === null || records(runA).some((r) => r.kind === 'scenario.end' && r.scenario === workerKilled && r.result === 'interrupted'), 'the runner to record the worker kill', 600_000);
+check('the worker kill landed on a running scenario process', workerKilled !== null, workerKilled ?? 'no scenario process could be killed');
+await waitFor(() => workerKilled === null || records(runA).some((r) => r.kind === 'scenario.end' && r.scenario === workerKilled && r.attempt === workerAttempt && r.result === 'interrupted'), 'the runner to record the worker kill', 600_000);
 // 3. Container restart: every process killed mid-scenario; the run directory is all that survives.
-await waitFor(() => inFlight(runA) !== undefined, 'a scenario in flight before the restart', 3_600_000);
+await waitFor(() => inFlight(runA, nth) !== undefined, 'a scenario in flight before the restart', 3_600_000);
+const atRestart = inFlight(runA, nth);
 await killGroup(runner);
-note(`container restart: every process killed with ${inFlight(runA)} in flight`);
+note(`container restart: every process killed with ${atRestart?.scenario} attempt ${atRestart?.attempt} in flight (runner ${atRestart?.invocation})`);
 const runB = path.join(out, 'after-restart');
 fs.cpSync(runA, runB, { recursive: true });
 fs.rmSync(path.join(runB, 'work'), { recursive: true, force: true });
@@ -167,6 +193,12 @@ const rerunOk = rerun.every((s) => recs.some((r) => r.kind === 'scenario.end' &&
 check('every interrupted scenario was rerun from scratch (a later attempt passed)', rerunOk, rerun.join(', '));
 const kinds = recs.map((r) => r.kind);
 check('the log records each resume', kinds.filter((k) => k === 'run.resume').length >= kills, `${kinds.filter((k) => k === 'run.resume').length} resumes`);
+// Each runner kill hit a scenario that runner had started and never ended, in a different runner each time.
+const midScenario = kills_.every((k) => {
+  const own = recs.filter((r) => r.invocation === k.invocation && r.scenario === k.scenario && r.attempt === k.attempt);
+  return own.some((r) => r.kind === 'scenario.start') && !own.some((r) => r.kind === 'scenario.end');
+});
+check(`each of the ${kills} runner kills landed mid-scenario, in ${kills} different runners`, kills_.length === kills && midScenario && new Set(kills_.map((k) => k.invocation)).size === kills, JSON.stringify(kills_));
 
 // 5. Evidence that must not pass.
 const m = JSON.parse(fs.readFileSync(path.join(runB, FILES.manifest), 'utf8')) as Manifest;
@@ -203,7 +235,7 @@ check('resuming a damaged log keeps it in forensics/ and reruns every scenario',
 const ok = checks.every((c) => c.ok);
 fs.writeFileSync(
   path.join(out, 'drill-report.json'),
-  JSON.stringify({ suite, params, kills, killedIn, workerKilled, identity: here, uninterrupted: baseAgg, interrupted: finalAgg, checks, events, ok }, null, 2) + '\n',
+  JSON.stringify({ suite, params, kills, killedIn, runnerKills: kills_, workerKilled, identity: here, uninterrupted: baseAgg, interrupted: finalAgg, checks, events, ok }, null, 2) + '\n',
 );
 note(ok ? 'DRILL PASSED' : 'DRILL FAILED');
 process.exit(ok ? 0 : 1);

@@ -224,6 +224,22 @@ export function baselineRun(variant: 'sample' | 'escalation', delayMs = 0): { ba
   }
 }
 
+/**
+ * What an uninterrupted run must end in (M1-4). Every boundary recovers to the baseline, so a
+ * regression that changed the baseline itself would otherwise pass every boundary.
+ */
+export const EXPECTED_BASELINE = {
+  sample: { states: { T1: 'done', T2: 'done', T3: 'done', T4: 'done', T5: 'done' }, escalations: [] as string[], minBoundaries: 12 },
+  escalation: { states: { A: 'blocked', B: 'planned', C: 'done' }, escalations: ['A:attempts'], minBoundaries: 1 },
+};
+
+export function assertExpectedBaseline(variant: 'sample' | 'escalation', b: { baseline: Record<string, string>; boundaries: number; escalations: string[] }): void {
+  const want = EXPECTED_BASELINE[variant];
+  assert.deepEqual(b.baseline, want.states, `the uninterrupted ${variant} run ended differently from M1-4's baseline`);
+  assert.deepEqual(b.escalations, want.escalations, `the uninterrupted ${variant} run escalated differently`);
+  assert.ok(b.boundaries >= want.minBoundaries, `only ${b.boundaries} boundaries`);
+}
+
 /** Kill delays for one random-kill seed: deterministic in the seed and the measured run length, so a seed replays exactly. */
 export function killDelays(seed: number, durationMs: number): number[] {
   let rnd = (seed * 2654435761) % 2 ** 31;

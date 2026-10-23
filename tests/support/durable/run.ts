@@ -28,6 +28,7 @@ export interface ExecuteOptions {
 
 const CHILD = path.join(REPO_ROOT, 'tests', 'support', 'durable', 'scenario-child.ts');
 const HEARTBEAT_MS = 2_000;
+const INTERRUPT_SIGNALS = new Set(['SIGKILL', 'SIGTERM', 'SIGINT', 'SIGHUP']);
 
 /** Create a run: plan the suite (a baseline where it needs one) and fix its scenarios and identity in the manifest. */
 export async function createRun(dir: string, suiteName: string, params: Record<string, unknown>, opts: { stallWindowS?: number; identity?: RunIdentity } = {}): Promise<Manifest> {
@@ -81,10 +82,21 @@ export async function execute(dir: string, opts: ExecuteOptions = {}): Promise<A
   const m = readManifest(dir);
   if ('error' in m) throw new DurableRunError(`${dir}: ${m.error}`, 'not-verified');
   const { manifest } = m;
+  // Crash injection would reach every scenario through the environment.
+  for (const k of ['EO_CRASH_AT', 'EO_CRASH_PHASE']) if (process.env[k] !== undefined) throw new DurableRunError(`${k} is set; unset it before running a suite`, 'usage');
   const identity = opts.identity ?? computeIdentity(REPO_ROOT, manifest.suite, manifest.params);
   // A run for another checkout or configuration is refused before anything in it is touched.
   const first = aggregate(dir, identity);
   if (first.status === 'STALE') throw new DurableRunError(`run ${manifest.runId} is STALE: ${first.reasons.join('; ')}. Its results do not apply to this checkout; start a new run.`, 'stale');
+  if (first.manifestChanged) throw new DurableRunError(`run ${manifest.runId} is NOT_VERIFIED: ${first.reasons.join('; ')}`, 'not-verified');
+  // The declared scenarios must be the ones the suite plans for these parameters, so an
+  // edited manifest (with no records yet to give it away) cannot drop a scenario either.
+  const suite = SUITES[manifest.suite];
+  if (!suite) throw new DurableRunError(`unknown suite ${manifest.suite}`, 'not-verified');
+  const planned = (await suite.plan(manifest.params)).scenarios.map((s) => `${s.id}:${s.seed ?? ''}`).join(',');
+  if (planned !== manifest.scenarios.map((s) => `${s.id}:${s.seed ?? ''}`).join(',')) {
+    throw new DurableRunError(`run ${manifest.runId} is NOT_VERIFIED: its manifest declares other scenarios than suite ${manifest.suite} plans for its parameters`, 'not-verified');
+  }
   const invocation = randomUUID().slice(0, 8);
   takeLock(dir, invocation, manifest.stallWindowS);
   let current: string | null = null;
@@ -103,6 +115,7 @@ export async function execute(dir: string, opts: ExecuteOptions = {}): Promise<A
       // rerun every scenario.
       const keep = path.join(dir, 'forensics', `${new Date().toISOString().replace(/[:.]/g, '-')}-${invocation}`);
       fs.mkdirSync(keep, { recursive: true });
+      fs.copyFileSync(path.join(dir, FILES.manifest), path.join(keep, FILES.manifest));
       for (const f of [FILES.log, FILES.head]) if (fs.existsSync(path.join(dir, f))) fs.renameSync(path.join(dir, f), path.join(keep, f));
       reset = [...before.reasons, `log set aside in ${keep}`];
       log(`integrity failure, every scenario reruns: ${reset.join('; ')}`);
@@ -160,7 +173,12 @@ export async function execute(dir: string, opts: ExecuteOptions = {}): Promise<A
     return final;
   } finally {
     clearInterval(timer);
-    fs.rmSync(path.join(dir, FILES.lock), { force: true });
+    // Only our own lock: a runner wrongly taken for dead must not remove its successor's.
+    try {
+      if ((JSON.parse(fs.readFileSync(path.join(dir, FILES.lock), 'utf8')) as { invocation?: string }).invocation === invocation) fs.rmSync(path.join(dir, FILES.lock), { force: true });
+    } catch {
+      // gone already
+    }
   }
 }
 
@@ -179,7 +197,10 @@ function runChild(dir: string, id: string, work: string, started: (pid: number |
       } catch {
         r = undefined;
       }
-      if (signal !== null) resolve({ result: 'interrupted', detail: `scenario process killed by ${signal}` });
+      // Killed from outside (a runner, container or host going down) is an interruption; a
+      // scenario that crashes on its own (SIGSEGV, SIGABRT, ...) has failed.
+      if (signal !== null && INTERRUPT_SIGNALS.has(signal)) resolve({ result: 'interrupted', detail: `scenario process killed by ${signal}` });
+      else if (signal !== null) resolve({ result: 'fail', detail: `scenario process died by ${signal}` });
       else if (code === 0 && r?.ok === true) resolve({ result: 'pass', detail: r.detail });
       else resolve({ result: 'fail', detail: r?.detail ?? `scenario process exited ${code} without a result` });
     });

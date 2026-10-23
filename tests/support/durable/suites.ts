@@ -8,7 +8,7 @@ import { BeadsStore } from '../../../src/store/beads.ts';
 import type { TaskStore } from '../../../src/store/types.ts';
 import { sleepSync } from '../../../src/util/lock.ts';
 import { BD_BIN, REPO_ROOT, tmpDir } from '../helpers.ts';
-import { baselineRun, escalationBoundary, randomKillSeed, sampleBoundary, type CrashPhase } from '../crash-scenarios.ts';
+import { assertExpectedBaseline, baselineRun, escalationBoundary, randomKillSeed, sampleBoundary, type CrashPhase } from '../crash-scenarios.ts';
 
 /**
  * Suites the durable runner (M2-0) can run, each split into scenarios that run one per
@@ -49,6 +49,8 @@ export const SUITES: Record<string, Suite> = {
       if (typeof p['markerDir'] === 'string') appendLineDurable(path.join(p['markerDir'], 'executions.log'), `${s.id} ${process.pid} ${process.env['TMPDIR'] ?? ''}`);
       await sleep(num(p, 'sleepMs', 300));
       if (p['failAt'] === s.id) throw new Error(`scenario ${s.id} fails by request`);
+      // A scenario that crashes on its own (not killed from outside).
+      if (p['abortAt'] === s.id) process.kill(process.pid, 'SIGABRT');
       return `slept ${num(p, 'sleepMs', 300)} ms (seed ${s.seed})`;
     },
   },
@@ -57,6 +59,7 @@ export const SUITES: Record<string, Suite> = {
   'crash-sample': {
     async plan() {
       const b = baselineRun('sample');
+      assertExpectedBaseline('sample', b);
       return { scenarios: boundaries(b.boundaries), derived: { baseline: b.baseline } };
     },
     async run(s, p, d) {
@@ -69,6 +72,7 @@ export const SUITES: Record<string, Suite> = {
   'crash-escalation': {
     async plan() {
       const b = baselineRun('escalation');
+      assertExpectedBaseline('escalation', b);
       return { scenarios: boundaries(b.boundaries), derived: { baseline: b.baseline, escalations: b.escalations } };
     },
     async run(s, p, d) {
@@ -81,6 +85,7 @@ export const SUITES: Record<string, Suite> = {
   'random-kills': {
     async plan(p) {
       const b = baselineRun('sample', 150);
+      assertExpectedBaseline('sample', b);
       return { scenarios: Array.from({ length: num(p, 'seeds', 8) }, (_, i) => ({ id: `seed-${i + 1}`, seed: i + 1 })), derived: { baseline: b.baseline, durationMs: b.durationMs } };
     },
     async run(s, _p, d) {

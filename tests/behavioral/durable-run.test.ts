@@ -88,9 +88,16 @@ test('M2-0: duplicated, foreign, mixed-identity or undeclared records and a chan
     return aggregate(d, id);
   };
   // A second pass for a scenario, appended with a valid chain (a runner bug, or a merged log).
-  const twice = variant('twice', (_d, w) => w.append({ kind: 'scenario.end', scenario: 's1', attempt: 2, result: 'pass', detail: 'again' }));
+  const twice = variant('twice', (_d, w) => {
+    w.append({ kind: 'scenario.start', scenario: 's1', attempt: 2 });
+    w.append({ kind: 'scenario.end', scenario: 's1', attempt: 2, result: 'pass', detail: 'again' });
+  });
   assert.equal(twice.status, 'FAILED');
   assert.match(twice.reasons.join(), /counted twice: s1/);
+  // A pass appended on its own, with no start by the same runner, is not a result.
+  const lone = variant('lone-end', (_d, w) => w.append({ kind: 'scenario.end', scenario: 's2', attempt: 2, result: 'pass', detail: 'forged' }));
+  assert.equal(lone.status, 'FAILED');
+  assert.match(lone.reasons.join(), /an end for s2 attempt 2 with no matching start by the same runner/);
   // A record for a scenario the manifest does not declare.
   const extra = variant('undeclared', (_d, w) => w.append({ kind: 'scenario.end', scenario: 's9', result: 'pass' }));
   assert.equal(extra.status, 'FAILED');
@@ -108,7 +115,7 @@ test('M2-0: duplicated, foreign, mixed-identity or undeclared records and a chan
     const mm = manifestOf(d);
     fs.writeFileSync(f, JSON.stringify({ ...mm, scenarios: mm.scenarios.slice(0, 2) }, null, 2));
   });
-  assert.equal(edited.status, 'FAILED');
+  assert.equal(edited.status, 'NOT_VERIFIED');
   assert.match(edited.reasons.join(), /written for a different manifest/);
   // A log from another run copied in.
   const other = path.join(tmpDir(), 'other');
@@ -126,12 +133,13 @@ test('M2-0: duplicated, foreign, mixed-identity or undeclared records and a chan
     fs.rmSync(path.join(d, FILES.heartbeat));
   });
   assert.equal(empty.status, 'INTERRUPTED');
-  // A run that ended with scenarios missing is INCOMPLETE.
-  const short = variant('incomplete', (d, w) => {
+  // A second run.end changes nothing.
+  const again = variant('second-end', (d, w) => {
     void d;
     w.append({ kind: 'run.end' });
   });
-  assert.equal(short.status, 'PASSED', 'a complete run stays PASSED after a second run.end');
+  assert.equal(again.status, 'PASSED', 'a complete run stays PASSED after a second run.end');
+  // A run that ended with scenarios missing is INCOMPLETE.
   const part = path.join(tmpDir(), 'part');
   await createRun(part, 'selftest', { count: 3, sleepMs: 10 });
   const pm = manifestOf(part);
@@ -156,4 +164,73 @@ test('M2-0: a run is RUNNING while its runner beats, and a second runner is refu
   assert.equal(aggregate(dir, id).status, 'RUNNING');
   await assert.rejects(execute(dir, quiet), /another runner is active/);
   assert.equal((await running).status, 'PASSED');
+});
+
+test('M2-0: a manifest edited to drop a failed scenario is never resumed into a PASS, and an edited manifest with no records yet is refused too', { timeout: 120_000 }, async () => {
+  const dir = path.join(tmpDir(), 'run');
+  await createRun(dir, 'selftest', { count: 5, sleepMs: 10, failAt: 's4' });
+  assert.equal((await execute(dir, quiet)).status, 'FAILED');
+  const f = path.join(dir, FILES.manifest);
+  const original = fs.readFileSync(f);
+  const mm = manifestOf(dir);
+  fs.writeFileSync(f, JSON.stringify({ ...mm, scenarios: mm.scenarios.filter((x) => x.id !== 's4') }, null, 2));
+  const st = aggregate(dir, computeIdentity(REPO_ROOT, mm.suite, mm.params));
+  assert.equal(st.status, 'NOT_VERIFIED');
+  await assert.rejects(execute(dir, quiet), (err: unknown) => (err as { code?: string }).code === 'not-verified' && /written for a different manifest/.test((err as Error).message));
+  assert.equal(aggregate(dir).status, 'NOT_VERIFIED', 'still not verified: nothing was reset or rerun');
+  fs.writeFileSync(f, original);
+  assert.equal(aggregate(dir).status, 'FAILED', 'the original manifest brings back the original verdict');
+  // Before any record exists, the declared scenarios are checked against the suite's plan.
+  const fresh = path.join(tmpDir(), 'fresh');
+  await createRun(fresh, 'selftest', { count: 5, sleepMs: 10, failAt: 's4' });
+  const fm = manifestOf(fresh);
+  fs.writeFileSync(path.join(fresh, FILES.manifest), JSON.stringify({ ...fm, scenarios: fm.scenarios.filter((x) => x.id !== 's4') }, null, 2));
+  await assert.rejects(execute(fresh, quiet), /declares other scenarios than suite selftest plans/);
+});
+
+test('M2-0: a log whose last line was torn by a crash is cut back before the next append, keeping the fragment', { timeout: 120_000 }, async () => {
+  const dir = path.join(tmpDir(), 'run');
+  await createRun(dir, 'selftest', { count: 4, sleepMs: 10 });
+  assert.equal((await execute(dir, quiet)).status, 'PASSED');
+  const m = manifestOf(dir);
+  // Drop the last two records (the s4 end and run.end), then leave half a record: a host crash mid-write.
+  const lines = fs.readFileSync(path.join(dir, FILES.log), 'utf8').split('\n').filter(Boolean);
+  const kept = lines.slice(0, -3);
+  const fragment = (lines.at(-2) as string).slice(0, 40);
+  fs.writeFileSync(path.join(dir, FILES.log), kept.join('\n') + '\n' + lines.at(-3) + '\n' + fragment);
+  const last = JSON.parse(lines.at(-3) as string) as { seq: number; hash: string };
+  fs.writeFileSync(path.join(dir, FILES.head), JSON.stringify({ seq: last.seq, hash: last.hash }));
+  fs.rmSync(path.join(dir, FILES.heartbeat));
+  const before = aggregate(dir);
+  assert.equal(before.status, 'INTERRUPTED');
+  const after = await execute(dir, quiet);
+  assert.equal(after.status, 'PASSED', after.reasons.join('; '));
+  assert.equal(readLog(dir, m.runId).integrity.length, 0);
+  const torn = fs.readdirSync(path.join(dir, 'forensics')).filter((x) => x.endsWith('-torn-tail.bin'));
+  assert.equal(torn.length, 1);
+  assert.equal(fs.readFileSync(path.join(dir, 'forensics', torn[0] as string), 'utf8'), fragment);
+});
+
+test('M2-0: a source-file change makes a run STALE; a scenario that crashes on its own fails; crash injection is refused', { timeout: 120_000 }, async () => {
+  const dir = path.join(tmpDir(), 'run');
+  await createRun(dir, 'selftest', { count: 3, sleepMs: 10, abortAt: 's2' });
+  const m = manifestOf(dir);
+  const here = computeIdentity(REPO_ROOT, m.suite, m.params);
+  await assert.rejects(execute(dir, { ...quiet, identity: { ...here, testSourceSha256: 'f'.repeat(64) } }), (err: unknown) => (err as { code?: string }).code === 'stale' && /testSourceSha256/.test((err as Error).message));
+  const r = await execute(dir, quiet);
+  assert.equal(r.status, 'FAILED');
+  assert.deepEqual(r.failed, ['s2']);
+  assert.match(readLog(dir, m.runId).records.find((x) => x.scenario === 's2' && x.kind === 'scenario.end')?.detail ?? '', /died by SIGABRT/);
+  process.env['EO_CRASH_AT'] = '3';
+  try {
+    await assert.rejects(execute(dir, quiet), /EO_CRASH_AT is set/);
+  } finally {
+    delete process.env['EO_CRASH_AT'];
+  }
+});
+
+test('M2-0: a checkout git cannot list has no identity, so no run can be verified there', () => {
+  const bare = tmpDir();
+  fs.writeFileSync(path.join(bare, 'package.json'), '{}');
+  assert.throws(() => computeIdentity(bare, 'selftest', {}), /cannot identify the checkout/);
 });

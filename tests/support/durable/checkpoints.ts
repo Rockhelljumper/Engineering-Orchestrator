@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { canonicalJson, sha256Hex } from '../../../src/util/canonical.ts';
-import { appendLineDurable, writeFileAtomic } from '../../../src/util/fsx.ts';
+import { appendLineDurable, fsyncDir, writeFileAtomic } from '../../../src/util/fsx.ts';
 
 /**
  * Durable checkpoints for long-running test suites (M2-0).
@@ -97,9 +97,14 @@ export function fileSha256(file: string): string {
 }
 
 export function computeIdentity(repo: string, suite: string, params: Record<string, unknown>, overrides: Partial<RunIdentity> = {}): RunIdentity {
-  const commit = git(repo, ['rev-parse', 'HEAD'])?.trim() ?? 'none';
-  const status = git(repo, ['status', '--porcelain']);
-  const files = (git(repo, ['ls-files', '-co', '--exclude-standard', '-z', '--', ...SOURCE_PATHS]) ?? '').split('\0').filter(Boolean).sort();
+  // Without git the source files cannot be listed, so the identity would not change with an
+  // edit: fail closed rather than record one that cannot tell checkouts apart.
+  const commit = git(repo, ['rev-parse', 'HEAD'])?.trim();
+  const status = git(repo, ['status', '--porcelain', '--', ...SOURCE_PATHS]);
+  const listed = git(repo, ['ls-files', '-co', '--exclude-standard', '-z', '--', ...SOURCE_PATHS]);
+  if (!commit || status === null || listed === null) throw new Error(`cannot identify the checkout at ${repo}: git is unavailable or this is not a git checkout; a run's identity needs both`);
+  const files = listed.split('\0').filter(Boolean).sort();
+  if (files.length === 0) throw new Error(`cannot identify the checkout at ${repo}: no source files are listed`);
   const parts = files.filter((f) => fs.existsSync(path.join(repo, f))).map((f) => `${f}\0${fileSha256(path.join(repo, f))}`);
   const binaries: Record<string, string> = { node: fileSha256(process.execPath) };
   if (process.env['EO_BD_BIN']) binaries['bd'] = fileSha256(process.env['EO_BD_BIN']);
@@ -108,7 +113,8 @@ export function computeIdentity(repo: string, suite: string, params: Record<stri
   const config = { suite, params, env };
   return {
     commit,
-    dirty: status === null || status.trim() !== '',
+    // Dirty means a change to the files the identity hashes; a docs edit does not make a run STALE.
+    dirty: status.trim() !== '',
     testSourceSha256: sha256Hex(parts.join('\n')),
     binaries,
     config,
@@ -206,6 +212,28 @@ export function readLog(dir: string, runId: string): LogRead {
   return { records, integrity, tornTail };
 }
 
+/**
+ * A crash mid-append leaves a partial last line, which readLog ignores. Appending after it
+ * would glue the next record onto the fragment, so before the first append the fragment is
+ * copied to forensics/ and cut off (to the end of the last complete line).
+ */
+function dropTornTail(dir: string, invocation: string): void {
+  const file = path.join(dir, FILES.log);
+  let buf: Buffer;
+  try {
+    buf = fs.readFileSync(file);
+  } catch {
+    return;
+  }
+  if (buf.length === 0 || buf[buf.length - 1] === 0x0a) return;
+  const keep = buf.lastIndexOf(0x0a) + 1;
+  const f = path.join(dir, 'forensics', `${new Date().toISOString().replace(/[:.]/g, '-')}-${invocation}-torn-tail.bin`);
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  writeFileAtomic(f, buf.subarray(keep));
+  fs.truncateSync(file, keep);
+  fsyncDir(dir);
+}
+
 /** Appends to a run's log; one writer at a time (the runner lock). */
 export class CheckpointWriter {
   private seq: number;
@@ -216,6 +244,7 @@ export class CheckpointWriter {
 
   constructor(dir: string, manifest: Manifest, manifestSha256: string, invocation: string, existing: readonly CheckpointRecord[]) {
     this.dir = dir;
+    dropTornTail(dir, invocation);
     const last = existing.at(-1);
     this.seq = last?.seq ?? 0;
     this.prev = last?.hash ?? genesis(manifest.runId);
