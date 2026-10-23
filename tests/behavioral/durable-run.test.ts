@@ -25,7 +25,12 @@ function executions(markerDir: string): string[] {
   return fs.existsSync(f) ? fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => l.split(' ')[0] as string) : [];
 }
 
-test('M2-0: the interruption drill (3 runner kills mid-scenario, a worker kill, a container restart) matches the uninterrupted run and rejects damaged evidence', { timeout: 600_000 }, () => {
+// The drill kills process groups and reads kill signals, which Windows does not have: there a
+// killed scenario exits with a code, not a signal, so the runner records it as failed (never
+// passed). Interruption on Windows is not verified by this drill.
+const posixOnly = process.platform === 'win32' && 'process groups and POSIX kill signals';
+
+test('M2-0: the interruption drill (3 runner kills mid-scenario, a worker kill, a container restart) matches the uninterrupted run and rejects damaged evidence', { timeout: 600_000, skip: posixOnly }, () => {
   const out = tmpDir('eo-drill-');
   const r = spawnSync(process.execPath, [DRILL, out, '--suite', 'selftest', '--param', 'count=10', '--param', 'sleepMs=700', '--kills', '3', '--stall-window', '3'], { encoding: 'utf8', timeout: 590_000 });
   const report = JSON.parse(fs.readFileSync(path.join(out, 'drill-report.json'), 'utf8')) as { ok: boolean; checks: Array<{ check: string; ok: boolean; detail: string }>; killedIn: string[] };
@@ -227,7 +232,8 @@ test('M2-0: a source-file change makes a run STALE; a scenario that crashes on i
   const r = await execute(dir, quiet);
   assert.equal(r.status, 'FAILED');
   assert.deepEqual(r.failed, ['s2']);
-  assert.match(readLog(dir, m.runId).records.find((x) => x.scenario === 's2' && x.kind === 'scenario.end')?.detail ?? '', /died by SIGABRT/);
+  // On Windows an abort is an exit code, not a signal; either way it is a failure.
+  assert.match(readLog(dir, m.runId).records.find((x) => x.scenario === 's2' && x.kind === 'scenario.end')?.detail ?? '', process.platform === 'win32' ? /exited \d+ without a result/ : /died by SIGABRT/);
   process.env['EO_CRASH_AT'] = '3';
   try {
     await assert.rejects(execute(dir, quiet), /EO_CRASH_AT is set/);

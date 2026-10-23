@@ -50,7 +50,7 @@ export const SUITES: Record<string, Suite> = {
       await sleep(num(p, 'sleepMs', 300));
       if (p['failAt'] === s.id) throw new Error(`scenario ${s.id} fails by request`);
       // A scenario that crashes on its own (not killed from outside).
-      if (p['abortAt'] === s.id) process.kill(process.pid, 'SIGABRT');
+      if (p['abortAt'] === s.id) process.abort();
       return `slept ${num(p, 'sleepMs', 300)} ms (seed ${s.seed})`;
     },
   },
