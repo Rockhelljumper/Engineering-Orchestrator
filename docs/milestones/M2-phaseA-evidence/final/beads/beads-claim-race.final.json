@@ -1,0 +1,48 @@
+{
+  "status": "PASSED",
+  "reasons": [],
+  "runId": "48828f45-35b6-41d6-b3e1-072d473c6204",
+  "suite": "claim-race",
+  "identity": {
+    "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+    "dirty": false,
+    "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+    "binaries": {
+      "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933",
+      "bd": "2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef"
+    },
+    "config": {
+      "suite": "claim-race",
+      "params": {
+        "store": "beads",
+        "rounds": 20,
+        "workers": 10
+      },
+      "env": {
+        "EO_TEST_STORE": "beads",
+        "EO_BD_BIN": "/opt/beads-9c6f6e1/bd",
+        "EO_REQUIRE_BD": "1",
+        "EO_REQUIRE_TRACE": null
+      }
+    },
+    "configSha256": "d437573c08d32738924b8620ff9eeb7e1788fed653c251b6b0984c693294f5f0",
+    "platform": {
+      "os": "linux",
+      "arch": "x64",
+      "node": "v22.22.0"
+    }
+  },
+  "declared": 20,
+  "passed": 20,
+  "failed": [],
+  "missing": [],
+  "interrupted": [],
+  "records": 42,
+  "chainHead": {
+    "seq": 42,
+    "hash": "ddddaadc38496a9a29b0d532326fa25e760798577ba790f7f4b9be03924446ac"
+  },
+  "integrityFailed": false,
+  "manifestChanged": false,
+  "heartbeatAgeS": 0.595
+}

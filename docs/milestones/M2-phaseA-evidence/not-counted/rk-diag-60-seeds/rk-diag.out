@@ -1,0 +1,51 @@
+{
+  "status": "FAILED",
+  "reasons": [
+    "failed: seed-21, seed-24, seed-59"
+  ],
+  "runId": "99263439-d297-4858-bde7-39d9b171821b",
+  "suite": "random-kills",
+  "identity": {
+    "commit": "1624fa4da916bd1d26267b127c3026471022ab79",
+    "dirty": true,
+    "testSourceSha256": "1abebb37122236ef4cd2a218546fbe104220a5ea19ed08cbc808791f34a9e6af",
+    "binaries": {
+      "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+    },
+    "config": {
+      "suite": "random-kills",
+      "params": {
+        "seeds": 60
+      },
+      "env": {
+        "EO_TEST_STORE": null,
+        "EO_BD_BIN": null,
+        "EO_REQUIRE_BD": null,
+        "EO_REQUIRE_TRACE": null
+      }
+    },
+    "configSha256": "6fb75830caa2bd30519bc9bf0b1c6eb070cbb33cbda7764ebf5b639bb16924d1",
+    "platform": {
+      "os": "linux",
+      "arch": "x64",
+      "node": "v22.22.0"
+    }
+  },
+  "declared": 60,
+  "passed": 57,
+  "failed": [
+    "seed-21",
+    "seed-24",
+    "seed-59"
+  ],
+  "missing": [],
+  "interrupted": [],
+  "records": 122,
+  "chainHead": {
+    "seq": 122,
+    "hash": "c3c3f225576f8f410592f217d5d3d4cd232363e627f861aebf51cd9591912e3b"
+  },
+  "integrityFailed": false,
+  "manifestChanged": false,
+  "heartbeatAgeS": 0.773
+}

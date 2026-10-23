@@ -1,0 +1,763 @@
+TAP version 13
+# Subtest: M1-7: the bd binary is the pinned build, and any other binary is refused
+ok 1 - M1-7: the bd binary is the pinned build, and any other binary is refused # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 1.050491
+  type: 'test'
+  ...
+# Subtest: M1-7: every bd spawn of a full controller run gets the metrics opt-out and a scrubbed environment
+ok 2 - M1-7: every bd spawn of a full controller run gets the metrics opt-out and a scrubbed environment # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.21076
+  type: 'test'
+  ...
+# Subtest: M1-7: the environment the bd process actually receives (wrapper records it, then runs the pinned bd)
+ok 3 - M1-7: the environment the bd process actually receives (wrapper records it, then runs the pinned bd) # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.323393
+  type: 'test'
+  ...
+# Subtest: M1-6: bd with metrics left on tries to reach the network (positive control for the detector)
+ok 4 - M1-6: bd with metrics left on tries to reach the network (positive control for the detector) # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.11567
+  type: 'test'
+  ...
+# Subtest: M1-6: no outbound connection from bd or the controller during crash, resume and run on beads
+ok 5 - M1-6: no outbound connection from bd or the controller during crash, resume and run on beads # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.169274
+  type: 'test'
+  ...
+# Subtest: changes made with bd directly, behind the controller, are refused
+ok 6 - changes made with bd directly, behind the controller, are refused # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.164393
+  type: 'test'
+  ...
+# Subtest: a state root cannot be switched to a different store kind, and read-only commands notice too
+ok 7 - a state root cannot be switched to a different store kind, and read-only commands notice too # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.184971
+  type: 'test'
+  ...
+# Subtest: bd never touches a git repository that encloses the state root
+ok 8 - bd never touches a git repository that encloses the state root # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.160995
+  type: 'test'
+  ...
+# Subtest: a bd init killed part-way is redone on the next open, and read-only opens refuse it
+ok 9 - a bd init killed part-way is redone on the next open, and read-only opens refuse it # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 2.220952
+  type: 'test'
+  ...
+# Subtest: the executed bd is a verified private entry: a swapped source path is never run, and a modified entry is refused at the next spawn
+ok 10 - the executed bd is a verified private entry: a swapped source path is never run, and a modified entry is refused at the next spawn # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.406765
+  type: 'test'
+  ...
+# Subtest: the store runs its own copy: links to, unlinks of and writes to the source file do not affect it
+ok 11 - the store runs its own copy: links to, unlinks of and writes to the source file do not affect it # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.184735
+  type: 'test'
+  ...
+# Subtest: a store entry that is stale or tampered with is replaced on the next open, even when read-only
+ok 12 - a store entry that is stale or tampered with is replaced on the next open, even when read-only # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.061291
+  type: 'test'
+  ...
+# Subtest: a store entry that is a symlink or a hard link is replaced by a private copy on the next open
+ok 13 - a store entry that is a symlink or a hard link is replaced by a private copy on the next open # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.04287
+  type: 'test'
+  ...
+# Subtest: a beads store whose directories others can write is refused
+ok 14 - a beads store whose directories others can write is refused # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.039477
+  type: 'test'
+  ...
+# Subtest: a beads store that lost its initialisation marker after plans were imported is refused, not re-initialised
+ok 15 - a beads store that lost its initialisation marker after plans were imported is refused, not re-initialised # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.039065
+  type: 'test'
+  ...
+# Subtest: a beads store that lost its marker is refused once evidence exists, even with an empty journal
+ok 16 - a beads store that lost its marker is refused once evidence exists, even with an empty journal # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.039178
+  type: 'test'
+  ...
+# Subtest: M2-0b: a beads store whose journal was emptied and whose marker was deleted, with no evidence yet, is refused, not re-initialised
+ok 17 - M2-0b: a beads store whose journal was emptied and whose marker was deleted, with no evidence yet, is refused, not re-initialised # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.036299
+  type: 'test'
+  ...
+# Subtest: M2-0b: an older copy of a whole beads state root is refused, and the real one carries on
+ok 18 - M2-0b: an older copy of a whole beads state root is refused, and the real one carries on # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.050363
+  type: 'test'
+  ...
+# Subtest: a state root bound to the fake store is refused before any beads files are written
+ok 19 - a state root bound to the fake store is refused before any beads files are written # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.044815
+  type: 'test'
+  ...
+# Subtest: eo init --store beads refuses an unpinned binary before writing anything
+ok 20 - eo init --store beads refuses an unpinned binary before writing anything # SKIP needs the pinned bd build (EO_BD_BIN)
+  ---
+  duration_ms: 0.03944
+  type: 'test'
+  ...
+# Subtest: eo init creates a state root and refuses to overwrite it
+ok 21 - eo init creates a state root and refuses to overwrite it
+  ---
+  duration_ms: 555.020884
+  type: 'test'
+  ...
+# Subtest: human gates refuse to run without an interactive terminal
+ok 22 - human gates refuse to run without an interactive terminal
+  ---
+  duration_ms: 1040.991659
+  type: 'test'
+  ...
+# Subtest: M1-10: eo run refuses an unapproved repository and launches nothing
+ok 23 - M1-10: eo run refuses an unapproved repository and launches nothing
+  ---
+  duration_ms: 348.280818
+  type: 'test'
+  ...
+# Subtest: eo run with the fake runner completes the sample epic; status and doctor agree
+ok 24 - eo run with the fake runner completes the sample epic; status and doctor agree
+  ---
+  duration_ms: 1895.580099
+  type: 'test'
+  ...
+# Subtest: M1-5: eo doctor detects an edited journal record and an altered evidence file
+ok 25 - M1-5: eo doctor detects an edited journal record and an altered evidence file
+  ---
+  duration_ms: 1604.041476
+  type: 'test'
+  ...
+# Subtest: eo doctor reports a store that is ahead of the journal, and resume refuses to rewind it
+ok 26 - eo doctor reports a store that is ahead of the journal, and resume refuses to rewind it
+  ---
+  duration_ms: 1029.096686
+  type: 'test'
+  ...
+# Subtest: eo init refuses a root left over from an earlier state root, even without policy.json
+ok 27 - eo init refuses a root left over from an earlier state root, even without policy.json
+  ---
+  duration_ms: 913.150323
+  type: 'test'
+  ...
+# Subtest: a state root that others can write is refused
+ok 28 - a state root that others can write is refused
+  ---
+  duration_ms: 1164.575951
+  type: 'test'
+  ...
+# Subtest: usage errors exit 2
+ok 29 - usage errors exit 2
+  ---
+  duration_ms: 937.415116
+  type: 'test'
+  ...
+# Subtest: sealed evidence tampered with after a crash is escalated, not silently rewritten
+ok 30 - sealed evidence tampered with after a crash is escalated, not silently rewritten
+  ---
+  duration_ms: 1674.434176
+  type: 'test'
+  ...
+# Subtest: eo policy accept refuses without an interactive terminal
+ok 31 - eo policy accept refuses without an interactive terminal
+  ---
+  duration_ms: 348.587415
+  type: 'test'
+  ...
+# progress {"ts":"2026-10-23T14:41:11.427Z","test":"M1-3 fake claim race","scenario":"","completed":0,"total":100,"activity":"started","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.431Z","test":"M1-3 fake claim race","scenario":"round 1","completed":0,"total":100,"activity":"begin","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.437Z","test":"M1-3 fake claim race","scenario":"round 1","completed":0,"total":100,"activity":"round 1 released to 20 workers","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.487Z","test":"M1-3 fake claim race","scenario":"round 1","completed":1,"total":100,"activity":"completed","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.487Z","test":"M1-3 fake claim race","scenario":"round 2","completed":1,"total":100,"activity":"begin","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.494Z","test":"M1-3 fake claim race","scenario":"round 2","completed":1,"total":100,"activity":"round 2 released to 20 workers","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.543Z","test":"M1-3 fake claim race","scenario":"round 2","completed":2,"total":100,"activity":"completed","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.543Z","test":"M1-3 fake claim race","scenario":"round 3","completed":2,"total":100,"activity":"begin","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.549Z","test":"M1-3 fake claim race","scenario":"round 3","completed":2,"total":100,"activity":"round 3 released to 20 workers","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.595Z","test":"M1-3 fake claim race","scenario":"round 3","completed":3,"total":100,"activity":"completed","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.595Z","test":"M1-3 fake claim race","scenario":"round 4","completed":3,"total":100,"activity":"begin","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.601Z","test":"M1-3 fake claim race","scenario":"round 4","completed":3,"total":100,"activity":"round 4 released to 20 workers","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.652Z","test":"M1-3 fake claim race","scenario":"round 4","completed":4,"total":100,"activity":"completed","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.652Z","test":"M1-3 fake claim race","scenario":"round 5","completed":4,"total":100,"activity":"begin","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.657Z","test":"M1-3 fake claim race","scenario":"round 5","completed":4,"total":100,"activity":"round 5 released to 20 workers","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.711Z","test":"M1-3 fake claim race","scenario":"round 5","completed":5,"total":100,"activity":"completed","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.711Z","test":"M1-3 fake claim race","scenario":"round 6","completed":5,"total":100,"activity":"begin","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.717Z","test":"M1-3 fake claim race","scenario":"round 6","completed":5,"total":100,"activity":"round 6 released to 20 workers","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.768Z","test":"M1-3 fake claim race","scenario":"round 6","completed":6,"total":100,"activity":"completed","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.768Z","test":"M1-3 fake claim race","scenario":"round 7","completed":6,"total":100,"activity":"begin","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.771Z","test":"M1-3 fake claim race","scenario":"round 7","completed":6,"total":100,"activity":"round 7 released to 20 workers","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.801Z","test":"M1-3 fake claim race","scenario":"round 7","completed":7,"total":100,"activity":"completed","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.801Z","test":"M1-3 fake claim race","scenario":"round 8","completed":7,"total":100,"activity":"begin","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.806Z","test":"M1-3 fake claim race","scenario":"round 8","completed":7,"total":100,"activity":"round 8 released to 20 workers","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.847Z","test":"M1-3 fake claim race","scenario":"round 8","completed":8,"total":100,"activity":"completed","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.848Z","test":"M1-3 fake claim race","scenario":"round 9","completed":8,"total":100,"activity":"begin","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.856Z","test":"M1-3 fake claim race","scenario":"round 9","completed":8,"total":100,"activity":"round 9 released to 20 workers","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.916Z","test":"M1-3 fake claim race","scenario":"round 9","completed":9,"total":100,"activity":"completed","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.916Z","test":"M1-3 fake claim race","scenario":"round 10","completed":9,"total":100,"activity":"begin","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.923Z","test":"M1-3 fake claim race","scenario":"round 10","completed":9,"total":100,"activity":"round 10 released to 20 workers","elapsedS":0}
+# progress {"ts":"2026-10-23T14:41:11.961Z","test":"M1-3 fake claim race","scenario":"round 10","completed":10,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:11.961Z","test":"M1-3 fake claim race","scenario":"round 11","completed":10,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:11.965Z","test":"M1-3 fake claim race","scenario":"round 11","completed":10,"total":100,"activity":"round 11 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.000Z","test":"M1-3 fake claim race","scenario":"round 11","completed":11,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.000Z","test":"M1-3 fake claim race","scenario":"round 12","completed":11,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.005Z","test":"M1-3 fake claim race","scenario":"round 12","completed":11,"total":100,"activity":"round 12 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.057Z","test":"M1-3 fake claim race","scenario":"round 12","completed":12,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.057Z","test":"M1-3 fake claim race","scenario":"round 13","completed":12,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.065Z","test":"M1-3 fake claim race","scenario":"round 13","completed":12,"total":100,"activity":"round 13 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.105Z","test":"M1-3 fake claim race","scenario":"round 13","completed":13,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.105Z","test":"M1-3 fake claim race","scenario":"round 14","completed":13,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.108Z","test":"M1-3 fake claim race","scenario":"round 14","completed":13,"total":100,"activity":"round 14 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.158Z","test":"M1-3 fake claim race","scenario":"round 14","completed":14,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.159Z","test":"M1-3 fake claim race","scenario":"round 15","completed":14,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.163Z","test":"M1-3 fake claim race","scenario":"round 15","completed":14,"total":100,"activity":"round 15 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.199Z","test":"M1-3 fake claim race","scenario":"round 15","completed":15,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.199Z","test":"M1-3 fake claim race","scenario":"round 16","completed":15,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.208Z","test":"M1-3 fake claim race","scenario":"round 16","completed":15,"total":100,"activity":"round 16 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.253Z","test":"M1-3 fake claim race","scenario":"round 16","completed":16,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.253Z","test":"M1-3 fake claim race","scenario":"round 17","completed":16,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.261Z","test":"M1-3 fake claim race","scenario":"round 17","completed":16,"total":100,"activity":"round 17 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.293Z","test":"M1-3 fake claim race","scenario":"round 17","completed":17,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.293Z","test":"M1-3 fake claim race","scenario":"round 18","completed":17,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.306Z","test":"M1-3 fake claim race","scenario":"round 18","completed":17,"total":100,"activity":"round 18 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.339Z","test":"M1-3 fake claim race","scenario":"round 18","completed":18,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.339Z","test":"M1-3 fake claim race","scenario":"round 19","completed":18,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.352Z","test":"M1-3 fake claim race","scenario":"round 19","completed":18,"total":100,"activity":"round 19 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.402Z","test":"M1-3 fake claim race","scenario":"round 19","completed":19,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.402Z","test":"M1-3 fake claim race","scenario":"round 20","completed":19,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.404Z","test":"M1-3 fake claim race","scenario":"round 20","completed":19,"total":100,"activity":"round 20 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.449Z","test":"M1-3 fake claim race","scenario":"round 20","completed":20,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.449Z","test":"M1-3 fake claim race","scenario":"round 21","completed":20,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.452Z","test":"M1-3 fake claim race","scenario":"round 21","completed":20,"total":100,"activity":"round 21 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.483Z","test":"M1-3 fake claim race","scenario":"round 21","completed":21,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.485Z","test":"M1-3 fake claim race","scenario":"round 22","completed":21,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.490Z","test":"M1-3 fake claim race","scenario":"round 22","completed":21,"total":100,"activity":"round 22 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.537Z","test":"M1-3 fake claim race","scenario":"round 22","completed":22,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.537Z","test":"M1-3 fake claim race","scenario":"round 23","completed":22,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.545Z","test":"M1-3 fake claim race","scenario":"round 23","completed":22,"total":100,"activity":"round 23 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.584Z","test":"M1-3 fake claim race","scenario":"round 23","completed":23,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.584Z","test":"M1-3 fake claim race","scenario":"round 24","completed":23,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.593Z","test":"M1-3 fake claim race","scenario":"round 24","completed":23,"total":100,"activity":"round 24 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.633Z","test":"M1-3 fake claim race","scenario":"round 24","completed":24,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.633Z","test":"M1-3 fake claim race","scenario":"round 25","completed":24,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.638Z","test":"M1-3 fake claim race","scenario":"round 25","completed":24,"total":100,"activity":"round 25 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.682Z","test":"M1-3 fake claim race","scenario":"round 25","completed":25,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.682Z","test":"M1-3 fake claim race","scenario":"round 26","completed":25,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.686Z","test":"M1-3 fake claim race","scenario":"round 26","completed":25,"total":100,"activity":"round 26 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.723Z","test":"M1-3 fake claim race","scenario":"round 26","completed":26,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.723Z","test":"M1-3 fake claim race","scenario":"round 27","completed":26,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.728Z","test":"M1-3 fake claim race","scenario":"round 27","completed":26,"total":100,"activity":"round 27 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.776Z","test":"M1-3 fake claim race","scenario":"round 27","completed":27,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.776Z","test":"M1-3 fake claim race","scenario":"round 28","completed":27,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.780Z","test":"M1-3 fake claim race","scenario":"round 28","completed":27,"total":100,"activity":"round 28 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.815Z","test":"M1-3 fake claim race","scenario":"round 28","completed":28,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.815Z","test":"M1-3 fake claim race","scenario":"round 29","completed":28,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.819Z","test":"M1-3 fake claim race","scenario":"round 29","completed":28,"total":100,"activity":"round 29 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.851Z","test":"M1-3 fake claim race","scenario":"round 29","completed":29,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.851Z","test":"M1-3 fake claim race","scenario":"round 30","completed":29,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.858Z","test":"M1-3 fake claim race","scenario":"round 30","completed":29,"total":100,"activity":"round 30 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.912Z","test":"M1-3 fake claim race","scenario":"round 30","completed":30,"total":100,"activity":"completed","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.912Z","test":"M1-3 fake claim race","scenario":"round 31","completed":30,"total":100,"activity":"begin","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.920Z","test":"M1-3 fake claim race","scenario":"round 31","completed":30,"total":100,"activity":"round 31 released to 20 workers","elapsedS":1}
+# progress {"ts":"2026-10-23T14:41:12.955Z","test":"M1-3 fake claim race","scenario":"round 31","completed":31,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:12.955Z","test":"M1-3 fake claim race","scenario":"round 32","completed":31,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:12.964Z","test":"M1-3 fake claim race","scenario":"round 32","completed":31,"total":100,"activity":"round 32 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.012Z","test":"M1-3 fake claim race","scenario":"round 32","completed":32,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.012Z","test":"M1-3 fake claim race","scenario":"round 33","completed":32,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.018Z","test":"M1-3 fake claim race","scenario":"round 33","completed":32,"total":100,"activity":"round 33 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.049Z","test":"M1-3 fake claim race","scenario":"round 33","completed":33,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.049Z","test":"M1-3 fake claim race","scenario":"round 34","completed":33,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.060Z","test":"M1-3 fake claim race","scenario":"round 34","completed":33,"total":100,"activity":"round 34 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.102Z","test":"M1-3 fake claim race","scenario":"round 34","completed":34,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.102Z","test":"M1-3 fake claim race","scenario":"round 35","completed":34,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.107Z","test":"M1-3 fake claim race","scenario":"round 35","completed":34,"total":100,"activity":"round 35 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.151Z","test":"M1-3 fake claim race","scenario":"round 35","completed":35,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.151Z","test":"M1-3 fake claim race","scenario":"round 36","completed":35,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.157Z","test":"M1-3 fake claim race","scenario":"round 36","completed":35,"total":100,"activity":"round 36 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.182Z","test":"M1-3 fake claim race","scenario":"round 36","completed":36,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.182Z","test":"M1-3 fake claim race","scenario":"round 37","completed":36,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.190Z","test":"M1-3 fake claim race","scenario":"round 37","completed":36,"total":100,"activity":"round 37 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.230Z","test":"M1-3 fake claim race","scenario":"round 37","completed":37,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.231Z","test":"M1-3 fake claim race","scenario":"round 38","completed":37,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.238Z","test":"M1-3 fake claim race","scenario":"round 38","completed":37,"total":100,"activity":"round 38 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.292Z","test":"M1-3 fake claim race","scenario":"round 38","completed":38,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.293Z","test":"M1-3 fake claim race","scenario":"round 39","completed":38,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.297Z","test":"M1-3 fake claim race","scenario":"round 39","completed":38,"total":100,"activity":"round 39 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.348Z","test":"M1-3 fake claim race","scenario":"round 39","completed":39,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.348Z","test":"M1-3 fake claim race","scenario":"round 40","completed":39,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.353Z","test":"M1-3 fake claim race","scenario":"round 40","completed":39,"total":100,"activity":"round 40 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.400Z","test":"M1-3 fake claim race","scenario":"round 40","completed":40,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.400Z","test":"M1-3 fake claim race","scenario":"round 41","completed":40,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.404Z","test":"M1-3 fake claim race","scenario":"round 41","completed":40,"total":100,"activity":"round 41 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.444Z","test":"M1-3 fake claim race","scenario":"round 41","completed":41,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.445Z","test":"M1-3 fake claim race","scenario":"round 42","completed":41,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.449Z","test":"M1-3 fake claim race","scenario":"round 42","completed":41,"total":100,"activity":"round 42 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.478Z","test":"M1-3 fake claim race","scenario":"round 42","completed":42,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.479Z","test":"M1-3 fake claim race","scenario":"round 43","completed":42,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.482Z","test":"M1-3 fake claim race","scenario":"round 43","completed":42,"total":100,"activity":"round 43 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.547Z","test":"M1-3 fake claim race","scenario":"round 43","completed":43,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.548Z","test":"M1-3 fake claim race","scenario":"round 44","completed":43,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.558Z","test":"M1-3 fake claim race","scenario":"round 44","completed":43,"total":100,"activity":"round 44 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.610Z","test":"M1-3 fake claim race","scenario":"round 44","completed":44,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.610Z","test":"M1-3 fake claim race","scenario":"round 45","completed":44,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.616Z","test":"M1-3 fake claim race","scenario":"round 45","completed":44,"total":100,"activity":"round 45 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.674Z","test":"M1-3 fake claim race","scenario":"round 45","completed":45,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.674Z","test":"M1-3 fake claim race","scenario":"round 46","completed":45,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.678Z","test":"M1-3 fake claim race","scenario":"round 46","completed":45,"total":100,"activity":"round 46 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.730Z","test":"M1-3 fake claim race","scenario":"round 46","completed":46,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.730Z","test":"M1-3 fake claim race","scenario":"round 47","completed":46,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.741Z","test":"M1-3 fake claim race","scenario":"round 47","completed":46,"total":100,"activity":"round 47 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.777Z","test":"M1-3 fake claim race","scenario":"round 47","completed":47,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.777Z","test":"M1-3 fake claim race","scenario":"round 48","completed":47,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.780Z","test":"M1-3 fake claim race","scenario":"round 48","completed":47,"total":100,"activity":"round 48 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.813Z","test":"M1-3 fake claim race","scenario":"round 48","completed":48,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.813Z","test":"M1-3 fake claim race","scenario":"round 49","completed":48,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.816Z","test":"M1-3 fake claim race","scenario":"round 49","completed":48,"total":100,"activity":"round 49 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.849Z","test":"M1-3 fake claim race","scenario":"round 49","completed":49,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.849Z","test":"M1-3 fake claim race","scenario":"round 50","completed":49,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.852Z","test":"M1-3 fake claim race","scenario":"round 50","completed":49,"total":100,"activity":"round 50 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.889Z","test":"M1-3 fake claim race","scenario":"round 50","completed":50,"total":100,"activity":"completed","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.889Z","test":"M1-3 fake claim race","scenario":"round 51","completed":50,"total":100,"activity":"begin","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.893Z","test":"M1-3 fake claim race","scenario":"round 51","completed":50,"total":100,"activity":"round 51 released to 20 workers","elapsedS":2}
+# progress {"ts":"2026-10-23T14:41:13.935Z","test":"M1-3 fake claim race","scenario":"round 51","completed":51,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:13.935Z","test":"M1-3 fake claim race","scenario":"round 52","completed":51,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:13.940Z","test":"M1-3 fake claim race","scenario":"round 52","completed":51,"total":100,"activity":"round 52 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:13.982Z","test":"M1-3 fake claim race","scenario":"round 52","completed":52,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:13.982Z","test":"M1-3 fake claim race","scenario":"round 53","completed":52,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:13.988Z","test":"M1-3 fake claim race","scenario":"round 53","completed":52,"total":100,"activity":"round 53 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.032Z","test":"M1-3 fake claim race","scenario":"round 53","completed":53,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.033Z","test":"M1-3 fake claim race","scenario":"round 54","completed":53,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.043Z","test":"M1-3 fake claim race","scenario":"round 54","completed":53,"total":100,"activity":"round 54 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.076Z","test":"M1-3 fake claim race","scenario":"round 54","completed":54,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.076Z","test":"M1-3 fake claim race","scenario":"round 55","completed":54,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.090Z","test":"M1-3 fake claim race","scenario":"round 55","completed":54,"total":100,"activity":"round 55 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.133Z","test":"M1-3 fake claim race","scenario":"round 55","completed":55,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.133Z","test":"M1-3 fake claim race","scenario":"round 56","completed":55,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.136Z","test":"M1-3 fake claim race","scenario":"round 56","completed":55,"total":100,"activity":"round 56 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.176Z","test":"M1-3 fake claim race","scenario":"round 56","completed":56,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.176Z","test":"M1-3 fake claim race","scenario":"round 57","completed":56,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.180Z","test":"M1-3 fake claim race","scenario":"round 57","completed":56,"total":100,"activity":"round 57 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.247Z","test":"M1-3 fake claim race","scenario":"round 57","completed":57,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.248Z","test":"M1-3 fake claim race","scenario":"round 58","completed":57,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.250Z","test":"M1-3 fake claim race","scenario":"round 58","completed":57,"total":100,"activity":"round 58 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.302Z","test":"M1-3 fake claim race","scenario":"round 58","completed":58,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.303Z","test":"M1-3 fake claim race","scenario":"round 59","completed":58,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.309Z","test":"M1-3 fake claim race","scenario":"round 59","completed":58,"total":100,"activity":"round 59 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.360Z","test":"M1-3 fake claim race","scenario":"round 59","completed":59,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.361Z","test":"M1-3 fake claim race","scenario":"round 60","completed":59,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.365Z","test":"M1-3 fake claim race","scenario":"round 60","completed":59,"total":100,"activity":"round 60 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.417Z","test":"M1-3 fake claim race","scenario":"round 60","completed":60,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.417Z","test":"M1-3 fake claim race","scenario":"round 61","completed":60,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.420Z","test":"M1-3 fake claim race","scenario":"round 61","completed":60,"total":100,"activity":"round 61 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.465Z","test":"M1-3 fake claim race","scenario":"round 61","completed":61,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.465Z","test":"M1-3 fake claim race","scenario":"round 62","completed":61,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.474Z","test":"M1-3 fake claim race","scenario":"round 62","completed":61,"total":100,"activity":"round 62 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.508Z","test":"M1-3 fake claim race","scenario":"round 62","completed":62,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.508Z","test":"M1-3 fake claim race","scenario":"round 63","completed":62,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.518Z","test":"M1-3 fake claim race","scenario":"round 63","completed":62,"total":100,"activity":"round 63 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.564Z","test":"M1-3 fake claim race","scenario":"round 63","completed":63,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.564Z","test":"M1-3 fake claim race","scenario":"round 64","completed":63,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.568Z","test":"M1-3 fake claim race","scenario":"round 64","completed":63,"total":100,"activity":"round 64 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.609Z","test":"M1-3 fake claim race","scenario":"round 64","completed":64,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.609Z","test":"M1-3 fake claim race","scenario":"round 65","completed":64,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.614Z","test":"M1-3 fake claim race","scenario":"round 65","completed":64,"total":100,"activity":"round 65 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.657Z","test":"M1-3 fake claim race","scenario":"round 65","completed":65,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.657Z","test":"M1-3 fake claim race","scenario":"round 66","completed":65,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.663Z","test":"M1-3 fake claim race","scenario":"round 66","completed":65,"total":100,"activity":"round 66 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.696Z","test":"M1-3 fake claim race","scenario":"round 66","completed":66,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.696Z","test":"M1-3 fake claim race","scenario":"round 67","completed":66,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.702Z","test":"M1-3 fake claim race","scenario":"round 67","completed":66,"total":100,"activity":"round 67 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.755Z","test":"M1-3 fake claim race","scenario":"round 67","completed":67,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.755Z","test":"M1-3 fake claim race","scenario":"round 68","completed":67,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.760Z","test":"M1-3 fake claim race","scenario":"round 68","completed":67,"total":100,"activity":"round 68 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.795Z","test":"M1-3 fake claim race","scenario":"round 68","completed":68,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.795Z","test":"M1-3 fake claim race","scenario":"round 69","completed":68,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.799Z","test":"M1-3 fake claim race","scenario":"round 69","completed":68,"total":100,"activity":"round 69 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.835Z","test":"M1-3 fake claim race","scenario":"round 69","completed":69,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.835Z","test":"M1-3 fake claim race","scenario":"round 70","completed":69,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.839Z","test":"M1-3 fake claim race","scenario":"round 70","completed":69,"total":100,"activity":"round 70 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.877Z","test":"M1-3 fake claim race","scenario":"round 70","completed":70,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.877Z","test":"M1-3 fake claim race","scenario":"round 71","completed":70,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.880Z","test":"M1-3 fake claim race","scenario":"round 71","completed":70,"total":100,"activity":"round 71 released to 20 workers","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.921Z","test":"M1-3 fake claim race","scenario":"round 71","completed":71,"total":100,"activity":"completed","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.922Z","test":"M1-3 fake claim race","scenario":"round 72","completed":71,"total":100,"activity":"begin","elapsedS":3}
+# progress {"ts":"2026-10-23T14:41:14.927Z","test":"M1-3 fake claim race","scenario":"round 72","completed":71,"total":100,"activity":"round 72 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:14.967Z","test":"M1-3 fake claim race","scenario":"round 72","completed":72,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:14.967Z","test":"M1-3 fake claim race","scenario":"round 73","completed":72,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:14.971Z","test":"M1-3 fake claim race","scenario":"round 73","completed":72,"total":100,"activity":"round 73 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.027Z","test":"M1-3 fake claim race","scenario":"round 73","completed":73,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.027Z","test":"M1-3 fake claim race","scenario":"round 74","completed":73,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.034Z","test":"M1-3 fake claim race","scenario":"round 74","completed":73,"total":100,"activity":"round 74 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.088Z","test":"M1-3 fake claim race","scenario":"round 74","completed":74,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.088Z","test":"M1-3 fake claim race","scenario":"round 75","completed":74,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.093Z","test":"M1-3 fake claim race","scenario":"round 75","completed":74,"total":100,"activity":"round 75 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.165Z","test":"M1-3 fake claim race","scenario":"round 75","completed":75,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.165Z","test":"M1-3 fake claim race","scenario":"round 76","completed":75,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.169Z","test":"M1-3 fake claim race","scenario":"round 76","completed":75,"total":100,"activity":"round 76 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.218Z","test":"M1-3 fake claim race","scenario":"round 76","completed":76,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.218Z","test":"M1-3 fake claim race","scenario":"round 77","completed":76,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.226Z","test":"M1-3 fake claim race","scenario":"round 77","completed":76,"total":100,"activity":"round 77 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.271Z","test":"M1-3 fake claim race","scenario":"round 77","completed":77,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.271Z","test":"M1-3 fake claim race","scenario":"round 78","completed":77,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.277Z","test":"M1-3 fake claim race","scenario":"round 78","completed":77,"total":100,"activity":"round 78 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.333Z","test":"M1-3 fake claim race","scenario":"round 78","completed":78,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.333Z","test":"M1-3 fake claim race","scenario":"round 79","completed":78,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.337Z","test":"M1-3 fake claim race","scenario":"round 79","completed":78,"total":100,"activity":"round 79 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.388Z","test":"M1-3 fake claim race","scenario":"round 79","completed":79,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.388Z","test":"M1-3 fake claim race","scenario":"round 80","completed":79,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.393Z","test":"M1-3 fake claim race","scenario":"round 80","completed":79,"total":100,"activity":"round 80 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.449Z","test":"M1-3 fake claim race","scenario":"round 80","completed":80,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.449Z","test":"M1-3 fake claim race","scenario":"round 81","completed":80,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.456Z","test":"M1-3 fake claim race","scenario":"round 81","completed":80,"total":100,"activity":"round 81 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.505Z","test":"M1-3 fake claim race","scenario":"round 81","completed":81,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.505Z","test":"M1-3 fake claim race","scenario":"round 82","completed":81,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.508Z","test":"M1-3 fake claim race","scenario":"round 82","completed":81,"total":100,"activity":"round 82 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.562Z","test":"M1-3 fake claim race","scenario":"round 82","completed":82,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.562Z","test":"M1-3 fake claim race","scenario":"round 83","completed":82,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.567Z","test":"M1-3 fake claim race","scenario":"round 83","completed":82,"total":100,"activity":"round 83 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.613Z","test":"M1-3 fake claim race","scenario":"round 83","completed":83,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.613Z","test":"M1-3 fake claim race","scenario":"round 84","completed":83,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.623Z","test":"M1-3 fake claim race","scenario":"round 84","completed":83,"total":100,"activity":"round 84 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.670Z","test":"M1-3 fake claim race","scenario":"round 84","completed":84,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.671Z","test":"M1-3 fake claim race","scenario":"round 85","completed":84,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.676Z","test":"M1-3 fake claim race","scenario":"round 85","completed":84,"total":100,"activity":"round 85 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.733Z","test":"M1-3 fake claim race","scenario":"round 85","completed":85,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.733Z","test":"M1-3 fake claim race","scenario":"round 86","completed":85,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.736Z","test":"M1-3 fake claim race","scenario":"round 86","completed":85,"total":100,"activity":"round 86 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.785Z","test":"M1-3 fake claim race","scenario":"round 86","completed":86,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.785Z","test":"M1-3 fake claim race","scenario":"round 87","completed":86,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.789Z","test":"M1-3 fake claim race","scenario":"round 87","completed":86,"total":100,"activity":"round 87 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.866Z","test":"M1-3 fake claim race","scenario":"round 87","completed":87,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.866Z","test":"M1-3 fake claim race","scenario":"round 88","completed":87,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.870Z","test":"M1-3 fake claim race","scenario":"round 88","completed":87,"total":100,"activity":"round 88 released to 20 workers","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.924Z","test":"M1-3 fake claim race","scenario":"round 88","completed":88,"total":100,"activity":"completed","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.925Z","test":"M1-3 fake claim race","scenario":"round 89","completed":88,"total":100,"activity":"begin","elapsedS":4}
+# progress {"ts":"2026-10-23T14:41:15.929Z","test":"M1-3 fake claim race","scenario":"round 89","completed":88,"total":100,"activity":"round 89 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:15.980Z","test":"M1-3 fake claim race","scenario":"round 89","completed":89,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:15.980Z","test":"M1-3 fake claim race","scenario":"round 90","completed":89,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:15.984Z","test":"M1-3 fake claim race","scenario":"round 90","completed":89,"total":100,"activity":"round 90 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.044Z","test":"M1-3 fake claim race","scenario":"round 90","completed":90,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.044Z","test":"M1-3 fake claim race","scenario":"round 91","completed":90,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.050Z","test":"M1-3 fake claim race","scenario":"round 91","completed":90,"total":100,"activity":"round 91 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.099Z","test":"M1-3 fake claim race","scenario":"round 91","completed":91,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.099Z","test":"M1-3 fake claim race","scenario":"round 92","completed":91,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.107Z","test":"M1-3 fake claim race","scenario":"round 92","completed":91,"total":100,"activity":"round 92 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.141Z","test":"M1-3 fake claim race","scenario":"round 92","completed":92,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.141Z","test":"M1-3 fake claim race","scenario":"round 93","completed":92,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.144Z","test":"M1-3 fake claim race","scenario":"round 93","completed":92,"total":100,"activity":"round 93 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.187Z","test":"M1-3 fake claim race","scenario":"round 93","completed":93,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.187Z","test":"M1-3 fake claim race","scenario":"round 94","completed":93,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.190Z","test":"M1-3 fake claim race","scenario":"round 94","completed":93,"total":100,"activity":"round 94 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.248Z","test":"M1-3 fake claim race","scenario":"round 94","completed":94,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.248Z","test":"M1-3 fake claim race","scenario":"round 95","completed":94,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.263Z","test":"M1-3 fake claim race","scenario":"round 95","completed":94,"total":100,"activity":"round 95 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.318Z","test":"M1-3 fake claim race","scenario":"round 95","completed":95,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.318Z","test":"M1-3 fake claim race","scenario":"round 96","completed":95,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.325Z","test":"M1-3 fake claim race","scenario":"round 96","completed":95,"total":100,"activity":"round 96 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.368Z","test":"M1-3 fake claim race","scenario":"round 96","completed":96,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.368Z","test":"M1-3 fake claim race","scenario":"round 97","completed":96,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.375Z","test":"M1-3 fake claim race","scenario":"round 97","completed":96,"total":100,"activity":"round 97 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.415Z","test":"M1-3 fake claim race","scenario":"round 97","completed":97,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.415Z","test":"M1-3 fake claim race","scenario":"round 98","completed":97,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.426Z","test":"M1-3 fake claim race","scenario":"round 98","completed":97,"total":100,"activity":"round 98 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.480Z","test":"M1-3 fake claim race","scenario":"round 98","completed":98,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.480Z","test":"M1-3 fake claim race","scenario":"round 99","completed":98,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.484Z","test":"M1-3 fake claim race","scenario":"round 99","completed":98,"total":100,"activity":"round 99 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.523Z","test":"M1-3 fake claim race","scenario":"round 99","completed":99,"total":100,"activity":"completed","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.523Z","test":"M1-3 fake claim race","scenario":"round 100","completed":99,"total":100,"activity":"begin","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.530Z","test":"M1-3 fake claim race","scenario":"round 100","completed":99,"total":100,"activity":"round 100 released to 20 workers","elapsedS":5}
+# progress {"ts":"2026-10-23T14:41:16.604Z","test":"M1-3 fake claim race","scenario":"round 100","completed":100,"total":100,"activity":"completed","elapsedS":5}
+# Subtest: M1-3 (fake): 20 processes race for one ready task, exactly one winner, 100 rounds in a row
+ok 32 - M1-3 (fake): 20 processes race for one ready task, exactly one winner, 100 rounds in a row
+  ---
+  duration_ms: 6930.157031
+  type: 'test'
+  ...
+# Subtest: a lock left by a killed process is taken over, and a live one is not
+ok 33 - a lock left by a killed process is taken over, and a live one is not
+  ---
+  duration_ms: 115.787784
+  type: 'test'
+  ...
+# Subtest: an empty lock (holder killed between creating and writing it) is stale after 2 s, not 30 s
+ok 34 - an empty lock (holder killed between creating and writing it) is stale after 2 s, not 30 s
+  ---
+  duration_ms: 1.469533
+  type: 'test'
+  ...
+# Subtest: a takeover breaker left by a kill blocks a dead lock for 10 s at most, and the first attempt after that takes it
+ok 35 - a takeover breaker left by a kill blocks a dead lock for 10 s at most, and the first attempt after that takes it
+  ---
+  duration_ms: 1.659965
+  type: 'test'
+  ...
+# Subtest: release removes only the lock this instance created
+ok 36 - release removes only the lock this instance created
+  ---
+  duration_ms: 0.808369
+  type: 'test'
+  ...
+# Subtest: M1-6: the preload detector catches a connection attempt (positive control)
+ok 37 - M1-6: the preload detector catches a connection attempt (positive control)
+  ---
+  duration_ms: 192.39001
+  type: 'test'
+  ...
+# Subtest: M1-6: no network API is used during crash, resume and run
+ok 38 - M1-6: no network API is used during crash, resume and run
+  ---
+  duration_ms: 1660.461233
+  type: 'test'
+  ...
+# Subtest: M1-6: strace detector sees a connect() inside the namespace (positive control)
+ok 39 - M1-6: strace detector sees a connect() inside the namespace (positive control)
+  ---
+  duration_ms: 77.233145
+  type: 'test'
+  ...
+# Subtest: M1-6: no connect() syscall to an IP address during crash, resume and run, in an isolated network namespace
+ok 40 - M1-6: no connect() syscall to an IP address during crash, resume and run, in an isolated network namespace
+  ---
+  duration_ms: 1910.757729
+  type: 'test'
+  ...
+# Subtest: TaskStore contract: FakeStore (memory)
+    # Subtest: create: new tasks are planned with zeroed counters; ids and deps are validated
+    ok 1 - create: new tasks are planned with zeroed counters; ids and deps are validated
+      ---
+      duration_ms: 3.394084
+      type: 'test'
+      ...
+    # Subtest: deps: dependencies are stored and returned
+    ok 2 - deps: dependencies are stored and returned
+      ---
+      duration_ms: 0.644139
+      type: 'test'
+      ...
+    # Subtest: compare-and-set changes state only from the expected state
+    ok 3 - compare-and-set changes state only from the expected state
+      ---
+      duration_ms: 0.318342
+      type: 'test'
+      ...
+    # Subtest: counters can be updated without a state change, and unknown fields are ignored
+    ok 4 - counters can be updated without a state change, and unknown fields are ignored
+      ---
+      duration_ms: 0.257728
+      type: 'test'
+      ...
+    # Subtest: ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+    ok 5 - ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+      ---
+      duration_ms: 2.430804
+      type: 'test'
+      ...
+    # Subtest: claim: exclusive while the lease is live; re-claim by the holder renews
+    ok 6 - claim: exclusive while the lease is live; re-claim by the holder renews
+      ---
+      duration_ms: 0.274127
+      type: 'test'
+      ...
+    # Subtest: heartbeat: extends only the live holder's lease
+    ok 7 - heartbeat: extends only the live holder's lease
+      ---
+      duration_ms: 0.203165
+      type: 'test'
+      ...
+    # Subtest: reclaim: expired claims are cleared and the task can be claimed again
+    ok 8 - reclaim: expired claims are cleared and the task can be claimed again
+      ---
+      duration_ms: 0.475432
+      type: 'test'
+      ...
+    # Subtest: release: only the holder can release
+    ok 9 - release: only the holder can release
+      ---
+      duration_ms: 0.374584
+      type: 'test'
+      ...
+    # Subtest: notes: appended in order
+    ok 10 - notes: appended in order
+      ---
+      duration_ms: 0.718255
+      type: 'test'
+      ...
+    # Subtest: close: a done task is never offered as ready
+    ok 11 - close: a done task is never offered as ready
+      ---
+      duration_ms: 0.210733
+      type: 'test'
+      ...
+    # Subtest: state changes do not depend on dependency states: ordering is the controller's job
+    ok 12 - state changes do not depend on dependency states: ordering is the controller's job
+      ---
+      duration_ms: 0.156348
+      type: 'test'
+      ...
+    # Subtest: returned records are copies: mutating them does not change the store
+    ok 13 - returned records are copies: mutating them does not change the store
+      ---
+      duration_ms: 0.126795
+      type: 'test'
+      ...
+    # Subtest: titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+    ok 14 - titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+      ---
+      duration_ms: 0.296332
+      type: 'test'
+      ...
+    # Subtest: notes keep their boundaries, including multi-line text
+    ok 15 - notes keep their boundaries, including multi-line text
+      ---
+      duration_ms: 6.349325
+      type: 'test'
+      ...
+    # Subtest: unknown tasks: reads return nothing, ownership operations return false, writes throw
+    ok 16 - unknown tasks: reads return nothing, ownership operations return false, writes throw
+      ---
+      duration_ms: 0.570726
+      type: 'test'
+      ...
+    1..16
+ok 41 - TaskStore contract: FakeStore (memory)
+  ---
+  duration_ms: 24.647624
+  type: 'suite'
+  ...
+# Subtest: TaskStore contract: FakeStore (file)
+    # Subtest: create: new tasks are planned with zeroed counters; ids and deps are validated
+    ok 1 - create: new tasks are planned with zeroed counters; ids and deps are validated
+      ---
+      duration_ms: 14.562022
+      type: 'test'
+      ...
+    # Subtest: deps: dependencies are stored and returned
+    ok 2 - deps: dependencies are stored and returned
+      ---
+      duration_ms: 10.073055
+      type: 'test'
+      ...
+    # Subtest: compare-and-set changes state only from the expected state
+    ok 3 - compare-and-set changes state only from the expected state
+      ---
+      duration_ms: 4.442358
+      type: 'test'
+      ...
+    # Subtest: counters can be updated without a state change, and unknown fields are ignored
+    ok 4 - counters can be updated without a state change, and unknown fields are ignored
+      ---
+      duration_ms: 6.548469
+      type: 'test'
+      ...
+    # Subtest: ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+    ok 5 - ready: claimReady takes only ready, unclaimed, non-excluded tasks, lowest id first
+      ---
+      duration_ms: 24.780167
+      type: 'test'
+      ...
+    # Subtest: claim: exclusive while the lease is live; re-claim by the holder renews
+    ok 6 - claim: exclusive while the lease is live; re-claim by the holder renews
+      ---
+      duration_ms: 5.168823
+      type: 'test'
+      ...
+    # Subtest: heartbeat: extends only the live holder's lease
+    ok 7 - heartbeat: extends only the live holder's lease
+      ---
+      duration_ms: 11.7157
+      type: 'test'
+      ...
+    # Subtest: reclaim: expired claims are cleared and the task can be claimed again
+    ok 8 - reclaim: expired claims are cleared and the task can be claimed again
+      ---
+      duration_ms: 20.644495
+      type: 'test'
+      ...
+    # Subtest: release: only the holder can release
+    ok 9 - release: only the holder can release
+      ---
+      duration_ms: 5.792777
+      type: 'test'
+      ...
+    # Subtest: notes: appended in order
+    ok 10 - notes: appended in order
+      ---
+      duration_ms: 4.788846
+      type: 'test'
+      ...
+    # Subtest: close: a done task is never offered as ready
+    ok 11 - close: a done task is never offered as ready
+      ---
+      duration_ms: 5.341051
+      type: 'test'
+      ...
+    # Subtest: state changes do not depend on dependency states: ordering is the controller's job
+    ok 12 - state changes do not depend on dependency states: ordering is the controller's job
+      ---
+      duration_ms: 5.549169
+      type: 'test'
+      ...
+    # Subtest: returned records are copies: mutating them does not change the store
+    ok 13 - returned records are copies: mutating them does not change the store
+      ---
+      duration_ms: 9.379921
+      type: 'test'
+      ...
+    # Subtest: titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+    ok 14 - titles: the longest allowed title is stored intact; empty, control-character and over-long titles are refused
+      ---
+      duration_ms: 3.643272
+      type: 'test'
+      ...
+    # Subtest: notes keep their boundaries, including multi-line text
+    ok 15 - notes keep their boundaries, including multi-line text
+      ---
+      duration_ms: 8.109631
+      type: 'test'
+      ...
+    # Subtest: unknown tasks: reads return nothing, ownership operations return false, writes throw
+    ok 16 - unknown tasks: reads return nothing, ownership operations return false, writes throw
+      ---
+      duration_ms: 3.424335
+      type: 'test'
+      ...
+    # Subtest: durability: a new instance on the same directory sees every change
+    ok 17 - durability: a new instance on the same directory sees every change
+      ---
+      duration_ms: 9.177775
+      type: 'test'
+      ...
+    1..17
+ok 42 - TaskStore contract: FakeStore (file)
+  ---
+  duration_ms: 153.984723
+  type: 'suite'
+  ...
+1..42
+# tests 73
+# suites 2
+# pass 53
+# fail 0
+# cancelled 0
+# skipped 20
+# todo 0
+# duration_ms 24110.382283

@@ -3,7 +3,10 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { initStateRoot, type StoreConfig } from '../../src/stateRoot.ts';
+import { initStateRoot, readJournalKey, statePaths, type StoreConfig } from '../../src/stateRoot.ts';
+import { canonicalRoot, keyIdOf, rootIdOf } from '../../src/anchor.ts';
+import { verifyJournalFile } from '../../src/journal.ts';
+import { canonicalJson, hmacHex } from '../../src/util/canonical.ts';
 import { Controller } from '../../src/controller.ts';
 import { loadPolicy, savePolicy, policyHash, type Policy } from '../../src/policy.ts';
 import type { Plan } from '../../src/plan.ts';
@@ -43,6 +46,10 @@ export function tmpDir(prefix = 'eo-test-'): string {
   made.push(d);
   return d;
 }
+
+// M2-0b: each test process anchors its state roots in its own directory, outside all of them,
+// unless the run sets EO_ANCHOR_DIR. Child processes (the CLI) inherit it.
+if (!process.env['EO_ANCHOR_DIR']) process.env['EO_ANCHOR_DIR'] = tmpDir('eo-anchor-');
 
 /** Remove a sandbox now (long sweeps create many). */
 export function disposeSandbox(sb: { dir: string }): void {
@@ -128,6 +135,24 @@ export function readExecLog(file: string): Array<{ taskId: string; attempt: numb
     .split('\n')
     .filter(Boolean)
     .map((l) => JSON.parse(l) as { taskId: string; attempt: number });
+}
+
+/**
+ * Test-only: move a state root's anchored head to record `seq` of its journal as it is now,
+ * as someone who controls the anchor as well as the state root could. The M1 checks inside
+ * the state root must still hold when the anchor is rolled back with it.
+ */
+export function setAnchorHead(root: string, seq: number): void {
+  const dir = process.env['EO_ANCHOR_DIR'] as string;
+  const meta = JSON.parse(fs.readFileSync(path.join(dir, 'anchor.json'), 'utf8')) as { id: string; key: string };
+  const p = statePaths(root);
+  const jkey = readJournalKey(p);
+  const rec = verifyJournalFile(p.journal, jkey).records[seq - 1];
+  if (!rec) throw new Error(`no journal record ${seq}`);
+  const rootId = rootIdOf(root);
+  const base = { rootId, anchorId: meta.id, keyId: keyIdOf(jkey), root: canonicalRoot(root), journalSeq: rec.seq, journalMac: rec.mac, ts: new Date().toISOString() };
+  const head = { ...base, mac: hmacHex(Buffer.from(meta.key, 'hex'), canonicalJson(base)) };
+  fs.writeFileSync(path.join(dir, 'heads', `${rootId}.json`), JSON.stringify(head) + '\n');
 }
 
 export { policyHash };

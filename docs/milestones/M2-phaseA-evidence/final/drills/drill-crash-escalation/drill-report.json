@@ -1,0 +1,260 @@
+{
+  "suite": "crash-escalation",
+  "params": [
+    "phase=anchor"
+  ],
+  "kills": 3,
+  "killedIn": [
+    "boundary-1",
+    "boundary-1",
+    "boundary-1"
+  ],
+  "runnerKills": [
+    {
+      "scenario": "boundary-1",
+      "invocation": "3825bede",
+      "attempt": 1
+    },
+    {
+      "scenario": "boundary-1",
+      "invocation": "6dd6e4ce",
+      "attempt": 2
+    },
+    {
+      "scenario": "boundary-1",
+      "invocation": "ea829f45",
+      "attempt": 3
+    }
+  ],
+  "workerKilled": "boundary-1",
+  "identity": {
+    "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+    "dirty": false,
+    "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+    "binaries": {
+      "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+    },
+    "config": {
+      "suite": "crash-escalation",
+      "params": {
+        "phase": "anchor"
+      },
+      "env": {
+        "EO_TEST_STORE": null,
+        "EO_BD_BIN": null,
+        "EO_REQUIRE_BD": null,
+        "EO_REQUIRE_TRACE": null
+      }
+    },
+    "configSha256": "c2fc0fb20cbda2ac4fe317f01fbb28599827156f588c68527957f30ba668e296",
+    "platform": {
+      "os": "linux",
+      "arch": "x64",
+      "node": "v22.22.0"
+    }
+  },
+  "uninterrupted": {
+    "status": "PASSED",
+    "reasons": [],
+    "runId": "ae9db441-ad67-44a0-96b0-be225dd6778c",
+    "suite": "crash-escalation",
+    "identity": {
+      "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+      "dirty": false,
+      "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+      "binaries": {
+        "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+      },
+      "config": {
+        "suite": "crash-escalation",
+        "params": {
+          "phase": "anchor"
+        },
+        "env": {
+          "EO_TEST_STORE": null,
+          "EO_BD_BIN": null,
+          "EO_REQUIRE_BD": null,
+          "EO_REQUIRE_TRACE": null
+        }
+      },
+      "configSha256": "c2fc0fb20cbda2ac4fe317f01fbb28599827156f588c68527957f30ba668e296",
+      "platform": {
+        "os": "linux",
+        "arch": "x64",
+        "node": "v22.22.0"
+      }
+    },
+    "declared": 37,
+    "passed": 37,
+    "failed": [],
+    "missing": [],
+    "interrupted": [],
+    "records": 76,
+    "chainHead": {
+      "seq": 76,
+      "hash": "5a3417a4290e3c00a6119f0c66f63be1ea18c05cc07a8b9931bfa7bc1e1e069b"
+    },
+    "integrityFailed": false,
+    "manifestChanged": false,
+    "heartbeatAgeS": 1.441
+  },
+  "interrupted": {
+    "status": "PASSED",
+    "reasons": [],
+    "runId": "ac44ae45-14dd-4c2e-ae36-7a4882acc062",
+    "suite": "crash-escalation",
+    "identity": {
+      "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+      "dirty": false,
+      "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+      "binaries": {
+        "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+      },
+      "config": {
+        "suite": "crash-escalation",
+        "params": {
+          "phase": "anchor"
+        },
+        "env": {
+          "EO_TEST_STORE": null,
+          "EO_BD_BIN": null,
+          "EO_REQUIRE_BD": null,
+          "EO_REQUIRE_TRACE": null
+        }
+      },
+      "configSha256": "c2fc0fb20cbda2ac4fe317f01fbb28599827156f588c68527957f30ba668e296",
+      "platform": {
+        "os": "linux",
+        "arch": "x64",
+        "node": "v22.22.0"
+      }
+    },
+    "declared": 37,
+    "passed": 37,
+    "failed": [],
+    "missing": [],
+    "interrupted": [],
+    "records": 86,
+    "chainHead": {
+      "seq": 86,
+      "hash": "195e7c2823c4d111497be929f1250cdb7f7cb2025bc513526bdf8e1ae147af6d"
+    },
+    "integrityFailed": false,
+    "manifestChanged": false,
+    "heartbeatAgeS": 0.268
+  },
+  "checks": [
+    {
+      "check": "uninterrupted run PASSED",
+      "ok": true,
+      "detail": "37/37"
+    },
+    {
+      "check": "the worker kill landed on a running scenario process",
+      "ok": true,
+      "detail": "boundary-1"
+    },
+    {
+      "check": "a run whose runner vanished reads as RUNNING within the stall window, never PASSED",
+      "ok": true,
+      "detail": "RUNNING"
+    },
+    {
+      "check": "after the stall window it is INTERRUPTED",
+      "ok": true,
+      "detail": "INTERRUPTED: no heartbeat for 7 s (stall window 5 s); 37 scenarios not finished"
+    },
+    {
+      "check": "interrupted run PASSED after resuming",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "same scenarios passed as the uninterrupted run",
+      "ok": true,
+      "detail": "37/37 vs 37/37"
+    },
+    {
+      "check": "no scenario counted twice",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "check": "every interrupted scenario was rerun from scratch (a later attempt passed)",
+      "ok": true,
+      "detail": "boundary-1"
+    },
+    {
+      "check": "the log records each resume",
+      "ok": true,
+      "detail": "4 resumes"
+    },
+    {
+      "check": "each of the 3 runner kills landed mid-scenario, in 3 different runners",
+      "ok": true,
+      "detail": "[{\"scenario\":\"boundary-1\",\"invocation\":\"3825bede\",\"attempt\":1},{\"scenario\":\"boundary-1\",\"invocation\":\"6dd6e4ce\",\"attempt\":2},{\"scenario\":\"boundary-1\",\"invocation\":\"ea829f45\",\"attempt\":3}]"
+    },
+    {
+      "check": "a different commit reads STALE",
+      "ok": true,
+      "detail": "the run's identity differs from the checkout under review in: commit"
+    },
+    {
+      "check": "resuming under a different configuration is refused as STALE (exit 3)",
+      "ok": true,
+      "detail": "durable: run ac44ae45-14dd-4c2e-ae36-7a4882acc062 is STALE: the run's identity differs from the checkout under review in: config, configSha256. Its results do not apply to this checkout; start a new run."
+    },
+    {
+      "check": "a truncated log is detected",
+      "ok": true,
+      "detail": "log truncated: 84 records, head says 86"
+    },
+    {
+      "check": "an edited record is detected",
+      "ok": true,
+      "detail": "line 44: hash mismatch (record edited)"
+    },
+    {
+      "check": "reordered records are detected",
+      "ok": true,
+      "detail": "line 1: seq 2, expected 1; line 1: chain broken"
+    },
+    {
+      "check": "a missing manifest is NOT_VERIFIED",
+      "ok": true,
+      "detail": "manifest.json: ENOENT: no such file or directory, open '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/ev/drill-crash-escalation/damaged-no-manifest/manifest.json'"
+    },
+    {
+      "check": "resuming a damaged log keeps it in forensics/ and reruns every scenario",
+      "ok": true,
+      "detail": "PASSED, forensics 2026-10-23T14-29-36-645Z-49fe0445"
+    }
+  ],
+  "events": [
+    "2026-10-23T14:27:09.898Z uninterrupted run of crash-escalation phase=anchor",
+    "2026-10-23T14:28:07.963Z PASS uninterrupted run PASSED: 37/37",
+    "2026-10-23T14:28:10.580Z kill 1: SIGKILL to the runner's process group with boundary-1 attempt 1 in flight (runner 3825bede)",
+    "2026-10-23T14:28:18.506Z kill 2: SIGKILL to the runner's process group with boundary-1 attempt 2 in flight (runner 6dd6e4ce)",
+    "2026-10-23T14:28:25.772Z kill 3: SIGKILL to the runner's process group with boundary-1 attempt 3 in flight (runner ea829f45)",
+    "2026-10-23T14:28:32.549Z worker kill: SIGKILL to scenario process 15063 (boundary-1) only; the runner lives",
+    "2026-10-23T14:28:32.549Z PASS the worker kill landed on a running scenario process: boundary-1",
+    "2026-10-23T14:28:32.610Z container restart: every process killed with boundary-1 attempt 5 in flight (runner b226f1eb)",
+    "2026-10-23T14:28:33.156Z PASS a run whose runner vanished reads as RUNNING within the stall window, never PASSED: RUNNING",
+    "2026-10-23T14:28:39.092Z PASS after the stall window it is INTERRUPTED: INTERRUPTED: no heartbeat for 7 s (stall window 5 s); 37 scenarios not finished",
+    "2026-10-23T14:29:34.652Z resumed from the copy: PASSED 37/37",
+    "2026-10-23T14:29:34.652Z PASS interrupted run PASSED after resuming",
+    "2026-10-23T14:29:34.652Z PASS same scenarios passed as the uninterrupted run: 37/37 vs 37/37",
+    "2026-10-23T14:29:34.658Z PASS no scenario counted twice: []",
+    "2026-10-23T14:29:34.658Z PASS every interrupted scenario was rerun from scratch (a later attempt passed): boundary-1",
+    "2026-10-23T14:29:34.658Z PASS the log records each resume: 4 resumes",
+    "2026-10-23T14:29:34.658Z PASS each of the 3 runner kills landed mid-scenario, in 3 different runners: [{\"scenario\":\"boundary-1\",\"invocation\":\"3825bede\",\"attempt\":1},{\"scenario\":\"boundary-1\",\"invocation\":\"6dd6e4ce\",\"attempt\":2},{\"scenario\":\"boundary-1\",\"invocation\":\"ea829f45\",\"attempt\":3}]",
+    "2026-10-23T14:29:34.878Z PASS a different commit reads STALE: the run's identity differs from the checkout under review in: commit",
+    "2026-10-23T14:29:35.400Z PASS resuming under a different configuration is refused as STALE (exit 3): durable: run ac44ae45-14dd-4c2e-ae36-7a4882acc062 is STALE: the run's identity differs from the checkout under review in: config, configSha256. Its results do not apply to this checkout; start a new run.",
+    "2026-10-23T14:29:35.421Z PASS a truncated log is detected: log truncated: 84 records, head says 86",
+    "2026-10-23T14:29:35.429Z PASS an edited record is detected: line 44: hash mismatch (record edited)",
+    "2026-10-23T14:29:35.433Z PASS reordered records are detected: line 1: seq 2, expected 1; line 1: chain broken",
+    "2026-10-23T14:29:35.437Z PASS a missing manifest is NOT_VERIFIED: manifest.json: ENOENT: no such file or directory, open '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/ev/drill-crash-escalation/damaged-no-manifest/manifest.json'",
+    "2026-10-23T14:30:30.267Z PASS resuming a damaged log keeps it in forensics/ and reruns every scenario: PASSED, forensics 2026-10-23T14-29-36-645Z-49fe0445"
+  ],
+  "ok": true
+}

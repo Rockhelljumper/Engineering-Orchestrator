@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "runId": "efbbed06-d6e5-40f0-a77e-2c92d971483a",
+  "suite": "claim-race",
+  "params": {
+    "store": "fake",
+    "rounds": 30,
+    "workers": 10
+  },
+  "derived": {},
+  "scenarios": [
+    {
+      "id": "round-1",
+      "seed": 1
+    },
+    {
+      "id": "round-2",
+      "seed": 2
+    },
+    {
+      "id": "round-3",
+      "seed": 3
+    },
+    {
+      "id": "round-4",
+      "seed": 4
+    },
+    {
+      "id": "round-5",
+      "seed": 5
+    },
+    {
+      "id": "round-6",
+      "seed": 6
+    },
+    {
+      "id": "round-7",
+      "seed": 7
+    },
+    {
+      "id": "round-8",
+      "seed": 8
+    },
+    {
+      "id": "round-9",
+      "seed": 9
+    },
+    {
+      "id": "round-10",
+      "seed": 10
+    },
+    {
+      "id": "round-11",
+      "seed": 11
+    },
+    {
+      "id": "round-12",
+      "seed": 12
+    },
+    {
+      "id": "round-13",
+      "seed": 13
+    },
+    {
+      "id": "round-14",
+      "seed": 14
+    },
+    {
+      "id": "round-15",
+      "seed": 15
+    },
+    {
+      "id": "round-16",
+      "seed": 16
+    },
+    {
+      "id": "round-17",
+      "seed": 17
+    },
+    {
+      "id": "round-18",
+      "seed": 18
+    },
+    {
+      "id": "round-19",
+      "seed": 19
+    },
+    {
+      "id": "round-20",
+      "seed": 20
+    },
+    {
+      "id": "round-21",
+      "seed": 21
+    },
+    {
+      "id": "round-22",
+      "seed": 22
+    },
+    {
+      "id": "round-23",
+      "seed": 23
+    },
+    {
+      "id": "round-24",
+      "seed": 24
+    },
+    {
+      "id": "round-25",
+      "seed": 25
+    },
+    {
+      "id": "round-26",
+      "seed": 26
+    },
+    {
+      "id": "round-27",
+      "seed": 27
+    },
+    {
+      "id": "round-28",
+      "seed": 28
+    },
+    {
+      "id": "round-29",
+      "seed": 29
+    },
+    {
+      "id": "round-30",
+      "seed": 30
+    }
+  ],
+  "identity": {
+    "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+    "dirty": false,
+    "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+    "binaries": {
+      "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+    },
+    "config": {
+      "suite": "claim-race",
+      "params": {
+        "store": "fake",
+        "rounds": 30,
+        "workers": 10
+      },
+      "env": {
+        "EO_TEST_STORE": null,
+        "EO_BD_BIN": null,
+        "EO_REQUIRE_BD": null,
+        "EO_REQUIRE_TRACE": null
+      }
+    },
+    "configSha256": "ffa4dd6ee3498e54a64eedce85793b0becba87d09b4675cea2bf474b07ad7b0f",
+    "platform": {
+      "os": "linux",
+      "arch": "x64",
+      "node": "v22.22.0"
+    }
+  },
+  "createdAt": "2026-10-23T14:30:30.847Z",
+  "stallWindowS": 120
+}

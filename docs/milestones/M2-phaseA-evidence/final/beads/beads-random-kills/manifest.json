@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "runId": "7ac8a126-8163-446f-a087-aa6ca35c827b",
+  "suite": "random-kills",
+  "params": {
+    "seeds": 8
+  },
+  "derived": {
+    "baseline": {
+      "T1": "done",
+      "T2": "done",
+      "T3": "done",
+      "T4": "done",
+      "T5": "done"
+    },
+    "durationMs": 67108
+  },
+  "scenarios": [
+    {
+      "id": "seed-1",
+      "seed": 1
+    },
+    {
+      "id": "seed-2",
+      "seed": 2
+    },
+    {
+      "id": "seed-3",
+      "seed": 3
+    },
+    {
+      "id": "seed-4",
+      "seed": 4
+    },
+    {
+      "id": "seed-5",
+      "seed": 5
+    },
+    {
+      "id": "seed-6",
+      "seed": 6
+    },
+    {
+      "id": "seed-7",
+      "seed": 7
+    },
+    {
+      "id": "seed-8",
+      "seed": 8
+    }
+  ],
+  "identity": {
+    "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+    "dirty": false,
+    "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+    "binaries": {
+      "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933",
+      "bd": "2589f95d65136897a5228cb829b7b3bbf755468b26689b764b6816d4d07697ef"
+    },
+    "config": {
+      "suite": "random-kills",
+      "params": {
+        "seeds": 8
+      },
+      "env": {
+        "EO_TEST_STORE": "beads",
+        "EO_BD_BIN": "/opt/beads-9c6f6e1/bd",
+        "EO_REQUIRE_BD": "1",
+        "EO_REQUIRE_TRACE": null
+      }
+    },
+    "configSha256": "6007f45d65ecaf0edfa69bf63c5bb7453b79e92c00a5c3b220c2aac1e1a850e2",
+    "platform": {
+      "os": "linux",
+      "arch": "x64",
+      "node": "v22.22.0"
+    }
+  },
+  "createdAt": "2026-10-23T16:55:59.013Z",
+  "stallWindowS": 120
+}

@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "runId": "8c220e03-258b-4648-94c8-695374402757",
+  "suite": "crash-escalation",
+  "params": {
+    "phase": "journal"
+  },
+  "derived": {
+    "baseline": {
+      "A": "blocked",
+      "B": "planned",
+      "C": "done"
+    },
+    "escalations": [
+      "A:attempts"
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "boundary-1",
+      "seed": 1
+    },
+    {
+      "id": "boundary-2",
+      "seed": 2
+    },
+    {
+      "id": "boundary-3",
+      "seed": 3
+    },
+    {
+      "id": "boundary-4",
+      "seed": 4
+    },
+    {
+      "id": "boundary-5",
+      "seed": 5
+    },
+    {
+      "id": "boundary-6",
+      "seed": 6
+    },
+    {
+      "id": "boundary-7",
+      "seed": 7
+    },
+    {
+      "id": "boundary-8",
+      "seed": 8
+    },
+    {
+      "id": "boundary-9",
+      "seed": 9
+    },
+    {
+      "id": "boundary-10",
+      "seed": 10
+    },
+    {
+      "id": "boundary-11",
+      "seed": 11
+    },
+    {
+      "id": "boundary-12",
+      "seed": 12
+    },
+    {
+      "id": "boundary-13",
+      "seed": 13
+    },
+    {
+      "id": "boundary-14",
+      "seed": 14
+    },
+    {
+      "id": "boundary-15",
+      "seed": 15
+    },
+    {
+      "id": "boundary-16",
+      "seed": 16
+    },
+    {
+      "id": "boundary-17",
+      "seed": 17
+    },
+    {
+      "id": "boundary-18",
+      "seed": 18
+    },
+    {
+      "id": "boundary-19",
+      "seed": 19
+    },
+    {
+      "id": "boundary-20",
+      "seed": 20
+    },
+    {
+      "id": "boundary-21",
+      "seed": 21
+    },
+    {
+      "id": "boundary-22",
+      "seed": 22
+    },
+    {
+      "id": "boundary-23",
+      "seed": 23
+    },
+    {
+      "id": "boundary-24",
+      "seed": 24
+    },
+    {
+      "id": "boundary-25",
+      "seed": 25
+    },
+    {
+      "id": "boundary-26",
+      "seed": 26
+    },
+    {
+      "id": "boundary-27",
+      "seed": 27
+    },
+    {
+      "id": "boundary-28",
+      "seed": 28
+    },
+    {
+      "id": "boundary-29",
+      "seed": 29
+    },
+    {
+      "id": "boundary-30",
+      "seed": 30
+    },
+    {
+      "id": "boundary-31",
+      "seed": 31
+    },
+    {
+      "id": "boundary-32",
+      "seed": 32
+    },
+    {
+      "id": "boundary-33",
+      "seed": 33
+    },
+    {
+      "id": "boundary-34",
+      "seed": 34
+    },
+    {
+      "id": "boundary-35",
+      "seed": 35
+    },
+    {
+      "id": "boundary-36",
+      "seed": 36
+    },
+    {
+      "id": "boundary-37",
+      "seed": 37
+    }
+  ],
+  "identity": {
+    "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+    "dirty": false,
+    "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+    "binaries": {
+      "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+    },
+    "config": {
+      "suite": "crash-escalation",
+      "params": {
+        "phase": "journal"
+      },
+      "env": {
+        "EO_TEST_STORE": null,
+        "EO_BD_BIN": null,
+        "EO_REQUIRE_BD": null,
+        "EO_REQUIRE_TRACE": null
+      }
+    },
+    "configSha256": "e6315e3ef20cf4ad62cac44f265be4e2fd8fa09683a2913ea02dc79a9601da50",
+    "platform": {
+      "os": "linux",
+      "arch": "x64",
+      "node": "v22.22.0"
+    }
+  },
+  "createdAt": "2026-10-23T14:29:21.166Z",
+  "stallWindowS": 120
+}

@@ -1,0 +1,8 @@
+durable: seed-1 attempt 1: pass
+durable: seed-2 attempt 1: pass
+durable: seed-3 attempt 1: pass
+durable: seed-4 attempt 1: fail (AssertionError [ERR_ASSERTION]: kill seed 4: resume: eo: another controller holds /tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/ev/random-kills/work/seed-4/1-b76de4ef/eo-test-rbK39s/state/locks/controller.lock)
+durable: seed-5 attempt 1: pass
+durable: seed-6 attempt 1: pass
+durable: seed-7 attempt 1: pass
+durable: seed-8 attempt 1: pass

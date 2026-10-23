@@ -1,0 +1,5 @@
+KILLED  lock: an expired breaker is cleared but the takeover waits for another attempt  [src/util/lock.ts]  # fail 1  (tests/integration/concurrent-claims.test.ts)
+KILLED  lock: a breaker left by a kill is never cleared  [src/util/lock.ts]  # fail 1  (tests/integration/concurrent-claims.test.ts)
+KILLED  lock: the refusal does not say the holder is not running  [src/util/lock.ts]  # fail 1  (tests/integration/concurrent-claims.test.ts)
+KILLED  lock: an empty lock left by a kill is held for 30 s  [src/util/lock.ts]  # fail 1  (tests/integration/concurrent-claims.test.ts)
+ALL KILLED

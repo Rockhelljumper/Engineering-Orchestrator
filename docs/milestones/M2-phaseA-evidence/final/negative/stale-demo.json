@@ -1,0 +1,47 @@
+{
+  "status": "STALE",
+  "reasons": [
+    "the run's identity differs from the checkout under review in: commit, testSourceSha256"
+  ],
+  "runId": "8adc0733-bdc1-4d15-9371-88782c1bae09",
+  "suite": "crash-sample",
+  "identity": {
+    "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+    "dirty": false,
+    "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+    "binaries": {
+      "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+    },
+    "config": {
+      "suite": "crash-sample",
+      "params": {
+        "phase": "journal"
+      },
+      "env": {
+        "EO_TEST_STORE": null,
+        "EO_BD_BIN": null,
+        "EO_REQUIRE_BD": null,
+        "EO_REQUIRE_TRACE": null
+      }
+    },
+    "configSha256": "42319cf4d60410ad41b32180d4e20ec914575bf59e63324067e666d40a61deb5",
+    "platform": {
+      "os": "linux",
+      "arch": "x64",
+      "node": "v22.22.0"
+    }
+  },
+  "declared": 70,
+  "passed": 0,
+  "failed": [],
+  "missing": [],
+  "interrupted": [],
+  "records": 142,
+  "chainHead": {
+    "seq": 142,
+    "hash": "e76631e60ea2bbe0c564ef3324818da380f69cd28c32c271c9ebf794b9fbe4ef"
+  },
+  "integrityFailed": false,
+  "manifestChanged": false,
+  "heartbeatAgeS": 247.886
+}

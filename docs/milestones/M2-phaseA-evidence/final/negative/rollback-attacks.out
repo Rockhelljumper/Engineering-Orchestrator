@@ -1,0 +1,9 @@
+== wt-main 9007d5398b89c0002b43a9b019db5933366ddb85
+{"attack":"older copy of the whole state root restored","executionsBefore":2,"executionsAfter":4,"verdict":"VULNERABLE","refused":null}
+{"attack":"older copy restored and re-signed with a new journal key, binding stripped","executionsBefore":2,"executionsAfter":4,"verdict":"VULNERABLE","refused":null}
+== wt-prefix 7286274ef06a40d94333e9152e3bbbaee1d19fe2
+{"attack":"older copy of the whole state root restored","executionsBefore":2,"executionsAfter":2,"verdict":"DEFENDED","refused":"refusing to open: the journal ends at seq 6, behind its anchored head at seq 31: the state root was rolled back or the journal truncated. Nothing was changed; a human must investigate. Forensic record"}
+{"attack":"older copy restored and re-signed with a new journal key, binding stripped","executionsBefore":2,"executionsAfter":4,"verdict":"VULNERABLE","refused":null}
+== wt-final 61a5d0d4e55bf568f18ab7db1414b0f8c8be7b95
+{"attack":"older copy of the whole state root restored","executionsBefore":2,"executionsAfter":2,"verdict":"DEFENDED","refused":"refusing to open: the journal ends at seq 6, behind its anchored head at seq 31: the state root was rolled back or the journal truncated. Nothing was changed; a human must investigate. Forensic record"}
+{"attack":"older copy restored and re-signed with a new journal key, binding stripped","executionsBefore":2,"executionsAfter":2,"verdict":"DEFENDED","refused":"refusing to open: the journal key differs from the one this state root was anchored under (1958c338becefd3711799079d67b3723, now 9d0f9de1a76656b6640016b6cdcd3317): an older copy re-signed with a new k"}

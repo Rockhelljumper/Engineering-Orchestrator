@@ -6,7 +6,7 @@ import { Controller, ControllerError, RecoveryRefusedError, type EscalationRecor
 import { FakeRunner, type FakeScript } from '../../src/runner/fake.ts';
 import { PolicyError, canonicalRepoPath, loadPolicy, policyHash } from '../../src/policy.ts';
 import { doctor } from '../../src/doctor.ts';
-import { readExecLog, samplePlan, sandbox, TEST_STORE, tmpDir, type Sandbox } from '../support/helpers.ts';
+import { readExecLog, samplePlan, sandbox, setAnchorHead, TEST_STORE, tmpDir, type Sandbox } from '../support/helpers.ts';
 import { planHash, type Plan } from '../../src/plan.ts';
 import { statePaths } from '../../src/stateRoot.ts';
 import { openStore } from '../../src/store/open.ts';
@@ -467,7 +467,9 @@ test('restoring any older valid journal never rewinds finished tasks, attempts o
   const forensics = path.join(sb.root, 'forensics');
   // Every earlier point of the journal (a valid prefix: its HMAC chain verifies, so it is
   // exactly what restoring an older copy gives), including the policy records written while
-  // the sandbox was set up. On beads every third point.
+  // the sandbox was set up. On beads every third point. The rollback anchor (M2-0b) refuses
+  // each of these on its own; here it is rolled back too, as by someone who controls both, so
+  // the checks inside the state root are what is tested.
   const start = 1;
   const stride = TEST_STORE === 'beads' ? 3 : 1;
   let refused = 0;
@@ -475,6 +477,7 @@ test('restoring any older valid journal never rewinds finished tasks, attempts o
   for (let k = start; k < lines.length; k += stride) {
     const prefix = Buffer.from(lines.slice(0, k).join('\n') + '\n');
     fs.writeFileSync(jf, prefix);
+    setAnchorHead(sb.root, k);
     const reports = fs.existsSync(forensics) ? fs.readdirSync(forensics).length : 0;
     // Opening is where the controller refuses, before any command could write.
     let ck: Controller | undefined;
@@ -524,8 +527,10 @@ test('restoring any older valid journal never rewinds finished tasks, attempts o
   // Doctor names the same inconsistency.
   const lastTransition = lines.map((l) => l.includes('"type":"task.transition"')).lastIndexOf(true);
   fs.writeFileSync(jf, lines.slice(0, lastTransition).join('\n') + '\n');
+  setAnchorHead(sb.root, lastTransition);
   assert.ok(doctor(sb.root).problems.some((p) => /T5 is done at journal seq \d+, journal says \w+ at seq \d+ .*resume refuses/.test(p)));
   fs.writeFileSync(jf, full);
+  setAnchorHead(sb.root, lines.length);
 });
 
 test('a journal cut back past a repeated block cannot undo the block by passing for a crash', async () => {
@@ -549,6 +554,8 @@ test('a journal cut back past a repeated block cannot undo the block by passing 
   const lines = fs.readFileSync(jf, 'utf8').split('\n').filter(Boolean);
   const unblocked = lines.findIndex((l) => l.includes('"type":"task.transition"') && l.includes('"from":"blocked"'));
   fs.writeFileSync(jf, lines.slice(0, unblocked + 1).join('\n') + '\n');
+  // With the anchor rolled back too (the anchor alone refuses this cut).
+  setAnchorHead(sb.root, unblocked + 1);
   assert.throws(() => Controller.open(sb.root), /Z is blocked at journal seq \d+, journal says ready at seq \d+ \(or blocked at seq \d+ after a crash\)/);
   assert.equal(storeSnapshot(sb.root).find((t) => t.id === 'Z')?.state, 'blocked', 'the block stands');
 });
@@ -770,29 +777,8 @@ test('a legitimate crash between the journal append and the store update is reco
   assert.deepEqual(doctor(sb.root).problems, []);
 });
 
-test('known limit (M2-0b): restoring the journal and the store together to an older consistent snapshot is not detected', { skip: TEST_STORE === 'beads' && 'copies the FakeStore state root' }, async () => {
-  // Without a checkpoint outside the state root, an older copy of the whole state root is
-  // internally consistent and looks like a state root that simply stopped there. Recording
-  // the journal head somewhere a rollback of the state root cannot reach is M2-0b.
-  const sb = sandbox();
-  let c = Controller.open(sb.root);
-  c.importPlan(twoIndependent, sb.repo, 'h');
-  c.close();
-  const snapshot = path.join(sb.dir, 'snapshot');
-  fs.cpSync(sb.root, snapshot, { recursive: true });
-  c = Controller.open(sb.root);
-  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
-  c.close();
-  fs.rmSync(sb.root, { recursive: true });
-  fs.cpSync(snapshot, sb.root, { recursive: true });
-  c = Controller.open(sb.root);
-  try {
-    c.resume();
-    assert.deepEqual(c.store.list().map((t) => t.state), ['planned', 'planned'], 'the rollback went unnoticed');
-  } finally {
-    c.close();
-  }
-});
+// The M1 "known limit (M2-0b)" test (an older copy of the whole state root went unnoticed) is
+// replaced by the M2-0b tests in tests/unit/anchor.test.ts, which require it to be refused.
 
 test('the run summary reports tasks stalled behind a blocked dependency', async () => {
   const { c, summary } = await runPlan(samplePlan(), { default: { behaviour: 'pass' }, tasks: { T1: [{ behaviour: 'verify-fail', signature: 'z' }, { behaviour: 'verify-fail', signature: 'z' }] } });

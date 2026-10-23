@@ -1,0 +1,268 @@
+{
+  "suite": "claim-race",
+  "params": [
+    "store=fake",
+    "rounds=30",
+    "workers=10"
+  ],
+  "kills": 3,
+  "killedIn": [
+    "round-3",
+    "round-3",
+    "round-3"
+  ],
+  "runnerKills": [
+    {
+      "scenario": "round-3",
+      "invocation": "c612a46d",
+      "attempt": 1
+    },
+    {
+      "scenario": "round-3",
+      "invocation": "4820ddd4",
+      "attempt": 2
+    },
+    {
+      "scenario": "round-3",
+      "invocation": "ddf5aa6d",
+      "attempt": 3
+    }
+  ],
+  "workerKilled": "round-3",
+  "identity": {
+    "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+    "dirty": false,
+    "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+    "binaries": {
+      "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+    },
+    "config": {
+      "suite": "claim-race",
+      "params": {
+        "store": "fake",
+        "rounds": 30,
+        "workers": 10
+      },
+      "env": {
+        "EO_TEST_STORE": null,
+        "EO_BD_BIN": null,
+        "EO_REQUIRE_BD": null,
+        "EO_REQUIRE_TRACE": null
+      }
+    },
+    "configSha256": "ffa4dd6ee3498e54a64eedce85793b0becba87d09b4675cea2bf474b07ad7b0f",
+    "platform": {
+      "os": "linux",
+      "arch": "x64",
+      "node": "v22.22.0"
+    }
+  },
+  "uninterrupted": {
+    "status": "PASSED",
+    "reasons": [],
+    "runId": "efbbed06-d6e5-40f0-a77e-2c92d971483a",
+    "suite": "claim-race",
+    "identity": {
+      "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+      "dirty": false,
+      "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+      "binaries": {
+        "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+      },
+      "config": {
+        "suite": "claim-race",
+        "params": {
+          "store": "fake",
+          "rounds": 30,
+          "workers": 10
+        },
+        "env": {
+          "EO_TEST_STORE": null,
+          "EO_BD_BIN": null,
+          "EO_REQUIRE_BD": null,
+          "EO_REQUIRE_TRACE": null
+        }
+      },
+      "configSha256": "ffa4dd6ee3498e54a64eedce85793b0becba87d09b4675cea2bf474b07ad7b0f",
+      "platform": {
+        "os": "linux",
+        "arch": "x64",
+        "node": "v22.22.0"
+      }
+    },
+    "declared": 30,
+    "passed": 30,
+    "failed": [],
+    "missing": [],
+    "interrupted": [],
+    "records": 62,
+    "chainHead": {
+      "seq": 62,
+      "hash": "fd1ec9087c2167b7765f45c5ed10cdee687b79d364159737caca7ca5abc91913"
+    },
+    "integrityFailed": false,
+    "manifestChanged": false,
+    "heartbeatAgeS": 0.681
+  },
+  "interrupted": {
+    "status": "PASSED",
+    "reasons": [],
+    "runId": "b4206ebd-bb5d-4ba5-83e1-b1b567623551",
+    "suite": "claim-race",
+    "identity": {
+      "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+      "dirty": false,
+      "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+      "binaries": {
+        "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+      },
+      "config": {
+        "suite": "claim-race",
+        "params": {
+          "store": "fake",
+          "rounds": 30,
+          "workers": 10
+        },
+        "env": {
+          "EO_TEST_STORE": null,
+          "EO_BD_BIN": null,
+          "EO_REQUIRE_BD": null,
+          "EO_REQUIRE_TRACE": null
+        }
+      },
+      "configSha256": "ffa4dd6ee3498e54a64eedce85793b0becba87d09b4675cea2bf474b07ad7b0f",
+      "platform": {
+        "os": "linux",
+        "arch": "x64",
+        "node": "v22.22.0"
+      }
+    },
+    "declared": 30,
+    "passed": 30,
+    "failed": [],
+    "missing": [],
+    "interrupted": [],
+    "records": 72,
+    "chainHead": {
+      "seq": 72,
+      "hash": "2b06a53ec657f1f73032061f53d5f254cc28fac0058dd20fb64fd4994b9050dc"
+    },
+    "integrityFailed": false,
+    "manifestChanged": false,
+    "heartbeatAgeS": 1.344
+  },
+  "checks": [
+    {
+      "check": "uninterrupted run PASSED",
+      "ok": true,
+      "detail": "30/30"
+    },
+    {
+      "check": "the worker kill landed on a running scenario process",
+      "ok": true,
+      "detail": "round-3"
+    },
+    {
+      "check": "a run whose runner vanished reads as RUNNING within the stall window, never PASSED",
+      "ok": true,
+      "detail": "RUNNING"
+    },
+    {
+      "check": "after the stall window it is INTERRUPTED",
+      "ok": true,
+      "detail": "INTERRUPTED: no heartbeat for 6 s (stall window 5 s); 28 scenarios not finished"
+    },
+    {
+      "check": "interrupted run PASSED after resuming",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "same scenarios passed as the uninterrupted run",
+      "ok": true,
+      "detail": "30/30 vs 30/30"
+    },
+    {
+      "check": "no scenario counted twice",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "check": "every interrupted scenario was rerun from scratch (a later attempt passed)",
+      "ok": true,
+      "detail": "round-3"
+    },
+    {
+      "check": "the log records each resume",
+      "ok": true,
+      "detail": "4 resumes"
+    },
+    {
+      "check": "each of the 3 runner kills landed mid-scenario, in 3 different runners",
+      "ok": true,
+      "detail": "[{\"scenario\":\"round-3\",\"invocation\":\"c612a46d\",\"attempt\":1},{\"scenario\":\"round-3\",\"invocation\":\"4820ddd4\",\"attempt\":2},{\"scenario\":\"round-3\",\"invocation\":\"ddf5aa6d\",\"attempt\":3}]"
+    },
+    {
+      "check": "a different commit reads STALE",
+      "ok": true,
+      "detail": "the run's identity differs from the checkout under review in: commit"
+    },
+    {
+      "check": "resuming under a different configuration is refused as STALE (exit 3)",
+      "ok": true,
+      "detail": "durable: run b4206ebd-bb5d-4ba5-83e1-b1b567623551 is STALE: the run's identity differs from the checkout under review in: config, configSha256. Its results do not apply to this checkout; start a new run."
+    },
+    {
+      "check": "a truncated log is detected",
+      "ok": true,
+      "detail": "log truncated: 70 records, head says 72"
+    },
+    {
+      "check": "an edited record is detected",
+      "ok": true,
+      "detail": "line 37: hash mismatch (record edited)"
+    },
+    {
+      "check": "reordered records are detected",
+      "ok": true,
+      "detail": "line 1: seq 2, expected 1; line 1: chain broken"
+    },
+    {
+      "check": "a missing manifest is NOT_VERIFIED",
+      "ok": true,
+      "detail": "manifest.json: ENOENT: no such file or directory, open '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/ev/drill-claim-race/damaged-no-manifest/manifest.json'"
+    },
+    {
+      "check": "resuming a damaged log keeps it in forensics/ and reruns every scenario",
+      "ok": true,
+      "detail": "PASSED, forensics 2026-10-23T14-32-09-248Z-883d85f6"
+    }
+  ],
+  "events": [
+    "2026-10-23T14:30:30.451Z uninterrupted run of claim-race store=fake rounds=30 workers=10",
+    "2026-10-23T14:30:56.566Z PASS uninterrupted run PASSED: 30/30",
+    "2026-10-23T14:30:59.911Z kill 1: SIGKILL to the runner's process group with round-3 attempt 1 in flight (runner c612a46d)",
+    "2026-10-23T14:31:06.945Z kill 2: SIGKILL to the runner's process group with round-3 attempt 2 in flight (runner 4820ddd4)",
+    "2026-10-23T14:31:13.318Z kill 3: SIGKILL to the runner's process group with round-3 attempt 3 in flight (runner ddf5aa6d)",
+    "2026-10-23T14:31:20.051Z worker kill: SIGKILL to scenario process 28206 (round-3) only; the runner lives",
+    "2026-10-23T14:31:20.051Z PASS the worker kill landed on a running scenario process: round-3",
+    "2026-10-23T14:31:20.433Z container restart: every process killed with round-3 attempt 5 in flight (runner 19a3150b)",
+    "2026-10-23T14:31:20.859Z PASS a run whose runner vanished reads as RUNNING within the stall window, never PASSED: RUNNING",
+    "2026-10-23T14:31:26.820Z PASS after the stall window it is INTERRUPTED: INTERRUPTED: no heartbeat for 6 s (stall window 5 s); 28 scenarios not finished",
+    "2026-10-23T14:32:07.626Z resumed from the copy: PASSED 30/30",
+    "2026-10-23T14:32:07.626Z PASS interrupted run PASSED after resuming",
+    "2026-10-23T14:32:07.626Z PASS same scenarios passed as the uninterrupted run: 30/30 vs 30/30",
+    "2026-10-23T14:32:07.629Z PASS no scenario counted twice: []",
+    "2026-10-23T14:32:07.629Z PASS every interrupted scenario was rerun from scratch (a later attempt passed): round-3",
+    "2026-10-23T14:32:07.629Z PASS the log records each resume: 4 resumes",
+    "2026-10-23T14:32:07.629Z PASS each of the 3 runner kills landed mid-scenario, in 3 different runners: [{\"scenario\":\"round-3\",\"invocation\":\"c612a46d\",\"attempt\":1},{\"scenario\":\"round-3\",\"invocation\":\"4820ddd4\",\"attempt\":2},{\"scenario\":\"round-3\",\"invocation\":\"ddf5aa6d\",\"attempt\":3}]",
+    "2026-10-23T14:32:07.893Z PASS a different commit reads STALE: the run's identity differs from the checkout under review in: commit",
+    "2026-10-23T14:32:08.464Z PASS resuming under a different configuration is refused as STALE (exit 3): durable: run b4206ebd-bb5d-4ba5-83e1-b1b567623551 is STALE: the run's identity differs from the checkout under review in: config, configSha256. Its results do not apply to this checkout; start a new run.",
+    "2026-10-23T14:32:08.482Z PASS a truncated log is detected: log truncated: 70 records, head says 72",
+    "2026-10-23T14:32:08.493Z PASS an edited record is detected: line 37: hash mismatch (record edited)",
+    "2026-10-23T14:32:08.502Z PASS reordered records are detected: line 1: seq 2, expected 1; line 1: chain broken",
+    "2026-10-23T14:32:08.512Z PASS a missing manifest is NOT_VERIFIED: manifest.json: ENOENT: no such file or directory, open '/tmp/claude-0/-home-claude-Engineering-Orchestrator/1994d459-4dcf-5bd8-a13c-602ea0e44623/scratchpad/ev/drill-claim-race/damaged-no-manifest/manifest.json'",
+    "2026-10-23T14:32:47.504Z PASS resuming a damaged log keeps it in forensics/ and reruns every scenario: PASSED, forensics 2026-10-23T14-32-09-248Z-883d85f6"
+  ],
+  "ok": true
+}
