@@ -8,7 +8,7 @@ import { BeadsStore } from '../../../src/store/beads.ts';
 import type { TaskStore } from '../../../src/store/types.ts';
 import { sleepSync } from '../../../src/util/lock.ts';
 import { BD_BIN, REPO_ROOT, tmpDir } from '../helpers.ts';
-import { assertExpectedBaseline, baselineRun, escalationBoundary, randomKillSeed, sampleBoundary, type CrashPhase } from '../crash-scenarios.ts';
+import { assertExpectedBaseline, baselineRun, escalationBoundary, lockRetries, randomKillSeed, sampleBoundary, type CrashPhase } from '../crash-scenarios.ts';
 
 /**
  * Suites the durable runner (M2-0) can run, each split into scenarios that run one per
@@ -91,7 +91,7 @@ export const SUITES: Record<string, Suite> = {
     async run(s, _p, d) {
       const killed = await randomKillSeed(Number(s.seed), Number(d['durationMs']), d['baseline'] as Record<string, string>);
       assert.ok(killed >= 1, `seed ${s.seed}: no kill landed; the scenario did not exercise recovery`);
-      return `seed ${s.seed}: ${killed} SIGKILLs delivered, recovered to the baseline`;
+      return `seed ${s.seed}: ${killed} SIGKILLs delivered, recovered to the baseline${lockRetries.length > 0 ? `; resume retried after a kill left the lock unusable: ${lockRetries.join(' | ')}` : ''}`;
     },
   },
 

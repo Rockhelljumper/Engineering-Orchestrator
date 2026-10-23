@@ -95,7 +95,7 @@ export class FileLock {
    * So removal happens only while holding a short-lived breaker lock, after re-checking.
    * Returns true if the caller should retry acquiring.
    */
-  private removeIfStale(): boolean {
+  private removeIfStale(retried = false): boolean {
     if (!fs.existsSync(this.file)) return true; // released between our create and this check
     if (!isStale(this.file)) return false;
     const breaker = `${this.file}.break`;
@@ -106,13 +106,18 @@ export class FileLock {
       const code = (err as NodeJS.ErrnoException).code;
       if (process.platform === 'win32' && (code === 'EPERM' || code === 'EACCES')) return false; // delete pending
       if (code !== 'EEXIST') throw err;
-      // A breaker left by a process killed in this tiny window is cleared after 10s.
+      // A breaker left by a process killed in this tiny window is cleared after 10s, and the
+      // takeover goes ahead at once (it used to need a second attempt).
+      let expired = false;
       try {
-        if (Date.now() - fs.statSync(breaker).mtimeMs > 10_000) fs.unlinkSync(breaker);
+        if (Date.now() - fs.statSync(breaker).mtimeMs > 10_000) {
+          fs.unlinkSync(breaker);
+          expired = true;
+        }
       } catch {
         // gone already
       }
-      return false;
+      return expired && !retried ? this.removeIfStale(true) : false;
     }
     fs.closeSync(fd);
     try {
@@ -153,6 +158,33 @@ function isStale(file: string): boolean {
   // whose pid was reused.
   if (info.pid === process.pid) return !heldHere.has(file);
   return !isProcessAlive(info.pid);
+}
+
+/**
+ * Who holds a lock, for an error message: the holder and whether it is alive, or why nobody
+ * may take it yet (an empty lock still being written, or a takeover's breaker left by a kill).
+ */
+export function describeLock(file: string): string {
+  let body: string;
+  try {
+    body = fs.readFileSync(file, 'utf8');
+  } catch {
+    return 'the lock is gone';
+  }
+  const parts: string[] = [];
+  try {
+    const info = JSON.parse(body) as LockInfo;
+    parts.push(`held by ${info.owner} (pid ${info.pid}, ${isProcessAlive(info.pid) ? 'running' : 'not running'})`);
+  } catch {
+    parts.push('the lock file is empty or partial (its holder may have been killed while writing it; it is taken over after 2 s)');
+  }
+  try {
+    const age = Date.now() - fs.statSync(`${file}.break`).mtimeMs;
+    parts.push(`a takeover is in progress or was cut short by a kill (${file}.break, ${Math.round(age / 1000)} s old; cleared after 10 s)`);
+  } catch {
+    // no breaker
+  }
+  return parts.join('; ');
 }
 
 function describe(file: string): string {

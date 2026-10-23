@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { FakeStore } from '../../src/store/fake.ts';
 import { BeadsStore } from '../../src/store/beads.ts';
 import type { TaskStore } from '../../src/store/types.ts';
-import { FileLock, sleepSync } from '../../src/util/lock.ts';
+import { describeLock, FileLock, sleepSync } from '../../src/util/lock.ts';
 import { BD_BIN, REPO_ROOT, tmpDir } from '../support/helpers.ts';
 import { Progress } from '../support/progress.ts';
 
@@ -111,6 +111,20 @@ test('an empty lock (holder killed between creating and writing it) is stale aft
   fs.writeFileSync(f2, '{"pid":');
   fs.utimesSync(f2, old, old);
   assert.equal(new FileLock(f2, 'b').tryAcquire(), false);
+});
+
+test('a takeover breaker left by a kill blocks a dead lock for 10 s at most, and the first attempt after that takes it', () => {
+  const file = path.join(tmpDir(), 'x.lock');
+  fs.writeFileSync(file, JSON.stringify({ pid: 2 ** 22 + 12345, owner: 'dead', acquiredAt: new Date().toISOString(), nonce: 'x' }));
+  fs.writeFileSync(`${file}.break`, '');
+  assert.equal(new FileLock(file, 'a').tryAcquire(), false, 'a fresh breaker: a takeover may be in progress');
+  assert.match(describeLock(file), /held by dead \(pid \d+, not running\); a takeover is in progress or was cut short by a kill/);
+  const old = (Date.now() - 11_000) / 1000;
+  fs.utimesSync(`${file}.break`, old, old);
+  const l = new FileLock(file, 'a');
+  assert.equal(l.tryAcquire(), true, 'an expired breaker is cleared and the dead lock taken over in one attempt');
+  assert.equal(fs.existsSync(`${file}.break`), false);
+  l.release();
 });
 
 test('release removes only the lock this instance created', () => {

@@ -12,7 +12,7 @@ import { assertTransition, type TaskState } from './states.ts';
 import { openStore } from './store/open.ts';
 import type { TaskCounters, TaskRecord, TaskStore } from './store/types.ts';
 import { planHash, topoOrder, validatePlan, type Plan } from './plan.ts';
-import { FileLock } from './util/lock.ts';
+import { describeLock, FileLock } from './util/lock.ts';
 import { assertPrivateDir, fsyncDir, writeAll, writeFileAtomic } from './util/fsx.ts';
 import type { RunResult, Runner } from './runner/types.ts';
 
@@ -297,7 +297,7 @@ export class Controller {
     }
     fs.mkdirSync(paths.locks, { recursive: true });
     const lock = new FileLock(paths.controllerLock, `controller:${process.pid}`);
-    if (!lock.tryAcquire()) throw new ControllerError(`another controller holds ${paths.controllerLock}`);
+    if (!lock.tryAcquire()) throw new ControllerError(`another controller holds ${paths.controllerLock}: ${describeLock(paths.controllerLock)}. If no controller is running, retry in a few seconds`);
     try {
       return new Controller(paths, lock, opts);
     } catch (err) {

@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { Controller } from '../../src/controller.ts';
 import { verifyJournalFile } from '../../src/journal.ts';
 import { readJournalKey, statePaths } from '../../src/stateRoot.ts';
+import { isProcessAlive } from '../../src/util/fsx.ts';
 import { CLI, disposeSandbox, readExecLog, runCli, samplePlan, sandbox, writeJson, type Sandbox } from './helpers.ts';
 import type { Progress } from './progress.ts';
 import type { Policy } from '../../src/policy.ts';
@@ -115,6 +116,32 @@ export function checkRecovered(s: Scenario, baseline: Record<string, string>, la
   assert.deepEqual(rep.warnings.filter((w) => w.includes('reservation')), [], `${label}: open reservations`);
 }
 
+/** Resumes retried because a kill left the controller lock unusable for a few seconds (for the evidence report). */
+export const lockRetries: string[] = [];
+
+/** The controller lock as found, for a failure message: holder, whether it is alive, and any breaker file. */
+export function lockState(root: string): string {
+  const f = path.join(root, 'locks', 'controller.lock');
+  const parts: string[] = [];
+  for (const file of [f, `${f}.break`]) {
+    try {
+      const st = fs.statSync(file);
+      const body = fs.readFileSync(file, 'utf8');
+      let alive = '';
+      try {
+        const pid = (JSON.parse(body) as { pid: number }).pid;
+        alive = ` holder pid ${pid} ${isProcessAlive(pid) ? 'alive' : 'dead'}`;
+      } catch {
+        // empty or partial
+      }
+      parts.push(`${path.basename(file)}: ${st.size} bytes, ${Math.round(Date.now() - st.mtimeMs)} ms old${alive}`);
+    } catch {
+      parts.push(`${path.basename(file)}: absent`);
+    }
+  }
+  return parts.join('; ');
+}
+
 export function recover(s: Scenario, label: string, crashAt?: number, progress?: Progress, phase: CrashPhase = 'journal'): void {
   if (crashAt !== undefined) {
     // A second crash, this time during recovery.
@@ -123,15 +150,18 @@ export function recover(s: Scenario, label: string, crashAt?: number, progress?:
     progress?.step(`second crash during recovery at append ${crashAt} (exit ${r.status})`);
   }
   let res = runCli(['resume', '--state-root', s.sb.root]);
-  // A SIGKILL between creating the controller lock and writing it leaves an empty lock, which
-  // counts as held for 2 s (src/util/lock.ts); an operator retries, and so does this.
-  const lockFile = path.join(s.sb.root, 'locks', 'controller.lock');
-  if (res.status !== 0 && /another controller holds/.test(res.stderr) && fs.existsSync(lockFile) && fs.statSync(lockFile).size === 0) {
-    progress?.step('empty controller lock left by the kill; retrying resume after 2.5 s');
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2_500);
+  // A SIGKILL can leave the controller lock in a state nobody may take over at once: empty
+  // (killed between creating and writing it; taken over after 2 s) or with a takeover's breaker
+  // (killed while taking over the lock of a controller killed before it; cleared after 10 s).
+  // Its holder is gone, so an operator retries once those have passed, and so does this.
+  if (res.status !== 0 && /another controller holds/.test(res.stderr) && !/\(pid \d+, running\)/.test(res.stderr)) {
+    const state = lockState(s.sb.root);
+    lockRetries.push(`${label}: ${state}`);
+    progress?.step(`controller lock left by a kill (${state}); retrying resume after 10.5 s`);
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10_500);
     res = runCli(['resume', '--state-root', s.sb.root]);
   }
-  assert.equal(res.status, 0, `${label}: resume: ${res.stderr}`);
+  assert.equal(res.status, 0, `${label}: resume: ${res.stderr} [${lockState(s.sb.root)}]`);
   progress?.step('resume finished');
   const run = runCli(runArgs(s));
   assert.equal(run.status, 0, `${label}: run: ${run.stderr}`);
