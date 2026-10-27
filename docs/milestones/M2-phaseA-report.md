@@ -1,6 +1,6 @@
 # M2 Phase A report — durable test checkpointing (M2-0) and whole-root rollback detection (M2-0b)
 
-Scope: the work Kyle approved on 2026-10-23 12:55 UTC, limited to M2-0 (durable long-running test checkpointing and recovery), M2-0b (whole-state-root rollback detection with an independently protected checkpoint), and the FakeRunner tests, deterministic integration tests, documentation and evidence that support them. It uses the approved Node/TypeScript architecture, the existing `FakeStore`/`BeadsStore` interfaces and dependencies already present.
+Scope: the work the owner approved on 2026-10-23 12:55 UTC, limited to M2-0 (durable long-running test checkpointing and recovery), M2-0b (whole-state-root rollback detection with an independently protected checkpoint), and the FakeRunner tests, deterministic integration tests, documentation and evidence that support them. It uses the approved Node/TypeScript architecture, the existing `FakeStore`/`BeadsStore` interfaces and dependencies already present.
 
 No model was invoked and no API credit was spent. Nothing was installed and no system configuration was changed. No VM or container was created, no Proxmox host or production system was touched, nothing ran unattended, and nothing was merged. Telemetry is off on every `bd` spawn. Phase B and C work is limited to the separate proposal document.
 
@@ -8,7 +8,7 @@ No model was invoked and no API credit was spent. Nothing was installed and no s
 
 **Final source commit: `3c99dbf4d0bccc9b7947f4572df5a761643241c5` (`3c99dbf`)** on `claude/m2-phase-a` (draft PR #3). Every counted run below tested this commit with a clean tree. Later commits on the PR change only `docs/` (this report and the evidence); `git diff 3c99dbf HEAD -- src tests scripts deps.lock.json .github package.json tsconfig.json` is empty.
 
-**All eight acceptance requirements are PASSED at `3c99dbf`.** One placement question is a documented residual for Phase B: the anchor's default directory is outside the state root but owned by the same OS account (see [Residuals](#residuals)).
+**All eight acceptance requirements are PASSED at `3c99dbf`.** The owner accepted Phase A at this implementation commit on 2026-10-27; merging waits for the final release check. One placement question is a documented residual for Phase B: the anchor's default directory is outside the state root but owned by the same OS account (see [Residuals](#residuals)).
 
 Result states used here: **PASSED**, **FAILED**, **RUNNING**, **INTERRUPTED**, **INCOMPLETE**, **STALE**, **NOT VERIFIED**.
 
