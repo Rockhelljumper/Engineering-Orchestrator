@@ -133,6 +133,12 @@ jobs:
       - name: Self-test under PowerShell 7
         shell: pwsh
         run: .\infra\l2\host\tests\selftest.ps1 -KeyDir "$env:RUNNER_TEMP\keys"
+      - name: Real firewall rules match their spec, and altered ones fail (Windows PowerShell 5.1)
+        shell: powershell
+        run: .\infra\l2\host\tests\live-rules.ps1
+      - name: Real firewall rules match their spec, and altered ones fail (PowerShell 7)
+        shell: pwsh
+        run: .\infra\l2\host\tests\live-rules.ps1
       - name: Guest scripts keep LF endings in a Windows checkout
         shell: powershell
         run: |

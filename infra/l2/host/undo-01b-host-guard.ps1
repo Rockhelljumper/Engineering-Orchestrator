@@ -24,7 +24,7 @@ try {
         "Instance $($state.instanceId), made $($state.createdAt) on $($state.computer)"
         "Remove firewall rules: $(if ($rules.Count) { ($rules | ForEach-Object Name) -join ', ' } else { 'none present' })"
         $(if ($cur.Adapter) { "NetBIOS over TCP/IP on '$($EO.HostIf)' (GUID $($cur.Adapter.InterfaceGuid)): $($cur.Adapter.Netbios) -> $restore, the recorded value" } else { "Switch and adapter are gone; NetBIOS needs no change" })
-        "Close the record: rename $($EO.GuardState) to host-guard-state.undone-$stamp.json"
+        "Close the record: move $($EO.GuardState) to the evidence folder as host-guard-state.undone-$stamp.json, and remove $($EO.GuardDir) if it is then empty"
     )
     $before = Save-EoSnapshot $stamp 'before'
     $rules | Remove-NetFirewallRule
@@ -36,6 +36,7 @@ try {
     }
     if (@(Get-NetFirewallRule -Group $EO.FwGroup -ErrorAction SilentlyContinue | Where-Object Name -in $EO.GuardRules).Count) { throw 'Host guard rules still present; the record is kept.' }
     Move-Item -LiteralPath $EO.GuardState -Destination (Join-Path $EO.Evidence "host-guard-state.undone-$stamp.json")
+    if (-not @(Get-ChildItem -LiteralPath $EO.GuardDir -Force).Count) { Remove-Item -LiteralPath $EO.GuardDir }
     $after = Save-EoSnapshot $stamp 'after'
     Compare-EoSnapshot $before $after
     Write-Host 'UNDO 01b DONE: host guard removed and NetBIOS restored to its recorded value.'

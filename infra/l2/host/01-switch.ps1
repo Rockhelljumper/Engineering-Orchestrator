@@ -38,9 +38,7 @@ try {
     Get-NetIPAddress -InterfaceAlias $EO.HostIf -AddressFamily IPv4 -ErrorAction SilentlyContinue | Remove-NetIPAddress -Confirm:$false
     New-NetIPAddress -InterfaceAlias $EO.HostIf -IPAddress $EO.HostIp -PrefixLength $EO.PrefixLength -SkipAsSource $false | Format-List IPAddress, PrefixLength, InterfaceAlias
 
-    $fw = @{ Group = $EO.FwGroup; Direction = 'Inbound'; Action = 'Block'; Profile = 'Any'; Enabled = 'True' }
-    New-NetFirewallRule @fw -Name 'eo-l2-block-guest-subnet' -DisplayName 'eo-l2: block inbound from guest subnet' -RemoteAddress "$($EO.SubnetLow)/$($EO.PrefixLength)" | Format-List Name, Action, Direction, Profile
-    New-NetFirewallRule @fw -Name 'eo-l2-block-interface' -DisplayName 'eo-l2: block all inbound on eo-l2-int' -InterfaceAlias $EO.HostIf | Format-List Name, Action, Direction, Profile
+    New-EoInboundRules
 
     # Verify what was made, and fail if anything is not as planned.
     $ip = @(Get-NetIPAddress -InterfaceAlias $EO.HostIf)
@@ -61,7 +59,7 @@ try {
     $after = Save-EoSnapshot $stamp 'after'
     Compare-EoSnapshot $before $after
     if ($problems.Count) { throw "Verification failed: $($problems -join '; '). Run undo-01-switch.ps1." }
-    & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly
+    & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly -BeforeGuard
     if ($LASTEXITCODE -ne 0) { throw 'Host-side switch verification failed. Run undo-01-switch.ps1.' }
     Write-Host 'STEP 01 DONE: eo-l2-int created and verified.'
 } catch {

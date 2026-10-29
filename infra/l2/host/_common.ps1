@@ -48,7 +48,8 @@ $EO = [ordered]@{
     # the host vNIC, and the host may send the guest nothing but SSH.
     GuardRules   = @('eo-l2-out-block-tcp', 'eo-l2-out-block-udp', 'eo-l2-out-block-icmp')
     # What 01b changed, written before it changes anything; the undo needs it.
-    GuardState   = Join-Path $env:USERPROFILE 'eo-l2-evidence\host-guard-state.json'
+    GuardDir     = Join-Path $env:ProgramData 'eo-l2'
+    GuardState   = Join-Path $env:ProgramData 'eo-l2\host-guard-state.json'
 }
 
 . (Join-Path $PSScriptRoot '_guard.ps1')

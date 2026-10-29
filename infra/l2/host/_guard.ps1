@@ -6,22 +6,47 @@
 # A value set in one canonical form: lower case, sorted, comma-joined.
 function ConvertTo-EoCanon($Values) { (@($Values) | ForEach-Object { "$_".Trim().ToLowerInvariant() } | Sort-Object) -join ',' }
 
-# The exact shape of each eo-l2 rule. Each filter lists the accepted canonical
-# forms (Windows may write 192.168.250.0/29 as 192.168.250.0/255.255.255.248).
-function Get-EoRuleSpecs {
+# The exact shape of each eo-l2 rule. Every filter Windows can use to narrow a
+# rule is listed, so a rule that has been limited to one program, package, user,
+# machine, port, address or interface fails. Each filter lists its accepted
+# canonical forms (Windows may write 192.168.250.0/29 as 192.168.250.0/255.255.255.248;
+# '' is an empty value). -HostIf lets the CI test check real rules on another adapter.
+function Get-EoRuleSpecs([string]$HostIf = $EO.HostIf) {
     $any = @('any')
-    $common = @{ Enabled = @('true'); Action = @('block'); Profile = $any; Program = $any; Service = $any; InterfaceType = $any; LocalAddress = $any; LocalPort = $any }
-    $hostIf = @((ConvertTo-EoCanon $EO.HostIf))
+    $common = @{
+        Enabled = @('true'); Action = @('block'); Profile = $any; Owner = @(''); Platform = @('')
+        EdgeTraversalPolicy = @('block'); LooseSourceMapping = @('false'); LocalOnlyMapping = @('false')
+        Program = $any; Package = @('', 'any'); Service = $any; InterfaceType = $any
+        LocalAddress = $any; LocalPort = $any; DynamicTarget = $any
+        Authentication = @('notrequired'); Encryption = @('notrequired'); OverrideBlockRules = @('false')
+        LocalUser = $any; RemoteUser = $any; RemoteMachine = $any
+    }
+    $if = @((ConvertTo-EoCanon $HostIf))
     $inbound = [ordered]@{
         'eo-l2-block-guest-subnet' = $common + @{ Direction = @('inbound'); Protocol = $any; RemotePort = $any; IcmpType = $any; InterfaceAlias = $any; RemoteAddress = @('192.168.250.0/29', '192.168.250.0/255.255.255.248') }
-        'eo-l2-block-interface'    = $common + @{ Direction = @('inbound'); Protocol = $any; RemotePort = $any; IcmpType = $any; InterfaceAlias = $hostIf; RemoteAddress = $any }
+        'eo-l2-block-interface'    = $common + @{ Direction = @('inbound'); Protocol = $any; RemotePort = $any; IcmpType = $any; InterfaceAlias = $if; RemoteAddress = $any }
     }
     $guard = [ordered]@{
-        'eo-l2-out-block-tcp'  = $common + @{ Direction = @('outbound'); Protocol = @('tcp'); RemotePort = @((ConvertTo-EoCanon @('1-21', '23-65535'))); IcmpType = $any; InterfaceAlias = $hostIf; RemoteAddress = $any }
-        'eo-l2-out-block-udp'  = $common + @{ Direction = @('outbound'); Protocol = @('udp'); RemotePort = $any; IcmpType = $any; InterfaceAlias = $hostIf; RemoteAddress = $any }
-        'eo-l2-out-block-icmp' = $common + @{ Direction = @('outbound'); Protocol = @('icmpv4'); RemotePort = $any; IcmpType = $any; InterfaceAlias = $hostIf; RemoteAddress = $any }
+        'eo-l2-out-block-tcp'  = $common + @{ Direction = @('outbound'); Protocol = @('tcp'); RemotePort = @((ConvertTo-EoCanon @('1-21', '23-65535'))); IcmpType = $any; InterfaceAlias = $if; RemoteAddress = $any }
+        'eo-l2-out-block-udp'  = $common + @{ Direction = @('outbound'); Protocol = @('udp'); RemotePort = $any; IcmpType = $any; InterfaceAlias = $if; RemoteAddress = $any }
+        'eo-l2-out-block-icmp' = $common + @{ Direction = @('outbound'); Protocol = @('icmpv4'); RemotePort = $any; IcmpType = $any; InterfaceAlias = $if; RemoteAddress = $any }
     }
     return @{ Inbound = $inbound; Guard = $guard }
+}
+
+# Creates the two inbound rules of step 01 (and of the CI live test, with a prefix and group).
+function New-EoInboundRules([string]$HostIf = $EO.HostIf, [string]$Prefix = '', [string]$Group = $EO.FwGroup) {
+    $fw = @{ Group = $Group; Direction = 'Inbound'; Action = 'Block'; Profile = 'Any'; Enabled = 'True' }
+    New-NetFirewallRule @fw -Name "${Prefix}eo-l2-block-guest-subnet" -DisplayName "${Prefix}eo-l2: block inbound from guest subnet" -RemoteAddress "$($EO.SubnetLow)/$($EO.PrefixLength)" | Format-List Name, Action, Direction, Profile
+    New-NetFirewallRule @fw -Name "${Prefix}eo-l2-block-interface" -DisplayName "${Prefix}eo-l2: block all inbound on eo-l2-int" -InterfaceAlias $HostIf | Format-List Name, Action, Direction, Profile
+}
+
+# Creates the three outbound rules of step 01b, tagged with its instance.
+function New-EoGuardRules([string]$Tag, [string]$HostIf = $EO.HostIf, [string]$Prefix = '', [string]$Group = $EO.FwGroup) {
+    $out = @{ Group = $Group; Direction = 'Outbound'; Action = 'Block'; Profile = 'Any'; Enabled = 'True'; InterfaceAlias = $HostIf; Description = $Tag }
+    New-NetFirewallRule @out -Name "${Prefix}eo-l2-out-block-tcp" -DisplayName "${Prefix}eo-l2: host sends the guest only SSH (TCP)" -Protocol TCP -RemotePort '1-21', '23-65535' | Format-List Name, Action, Direction
+    New-NetFirewallRule @out -Name "${Prefix}eo-l2-out-block-udp" -DisplayName "${Prefix}eo-l2: host sends the guest no UDP" -Protocol UDP | Format-List Name, Action, Direction
+    New-NetFirewallRule @out -Name "${Prefix}eo-l2-out-block-icmp" -DisplayName "${Prefix}eo-l2: host sends the guest no ICMPv4" -Protocol ICMPv4 | Format-List Name, Action, Direction
 }
 
 # Problems with one rule's facts against its spec. Facts come from Get-EoRuleFacts
@@ -30,6 +55,7 @@ function Test-EoRuleFacts([string]$Name, $Facts, $Spec, [switch]$Active) {
     $p = New-Object System.Collections.Generic.List[string]
     if (-not $Facts -or -not $Facts.Present) { $p.Add("${Name}: missing"); return $p }
     foreach ($k in $Spec.Keys) {
+        if (-not $Facts.ContainsKey($k)) { $p.Add("${Name}: $k was not read"); continue }
         $have = ConvertTo-EoCanon $Facts[$k]
         if ($have -notin @($Spec[$k])) { $p.Add("${Name}: $k is '$have', want '$(@($Spec[$k]) -join "' or '")'") }
     }
@@ -43,15 +69,21 @@ function Get-EoRuleFacts([string]$Name, [string]$Store) {
     if (-not $r) { return @{ Present = $false } }
     $pf = $r | Get-NetFirewallPortFilter
     $af = $r | Get-NetFirewallAddressFilter
+    $ap = $r | Get-NetFirewallApplicationFilter
+    $sf = $r | Get-NetFirewallSecurityFilter
     return @{
         Present = $true; Enabled = "$($r.Enabled)"; Action = "$($r.Action)"; Direction = "$($r.Direction)"; Profile = "$($r.Profile)"
-        PrimaryStatus = "$($r.PrimaryStatus)"; Description = "$($r.Description)"
-        Protocol = "$($pf.Protocol)"; LocalPort = @($pf.LocalPort); RemotePort = @($pf.RemotePort); IcmpType = @($pf.IcmpType)
+        PrimaryStatus = "$($r.PrimaryStatus)"; EnforcementStatus = "$($r.EnforcementStatus)"; Description = "$($r.Description)"
+        Owner = "$($r.Owner)"; Platform = @($r.Platform); EdgeTraversalPolicy = "$($r.EdgeTraversalPolicy)"
+        LooseSourceMapping = "$($r.LooseSourceMapping)"; LocalOnlyMapping = "$($r.LocalOnlyMapping)"
+        Protocol = "$($pf.Protocol)"; LocalPort = @($pf.LocalPort); RemotePort = @($pf.RemotePort); IcmpType = @($pf.IcmpType); DynamicTarget = "$($pf.DynamicTarget)"
         RemoteAddress = @($af.RemoteAddress); LocalAddress = @($af.LocalAddress)
         InterfaceAlias = @(($r | Get-NetFirewallInterfaceFilter).InterfaceAlias)
         InterfaceType = "$(($r | Get-NetFirewallInterfaceTypeFilter).InterfaceType)"
-        Program = "$(($r | Get-NetFirewallApplicationFilter).Program)"
+        Program = "$($ap.Program)"; Package = "$($ap.Package)"
         Service = "$(($r | Get-NetFirewallServiceFilter).Service)"
+        Authentication = "$($sf.Authentication)"; Encryption = "$($sf.Encryption)"; OverrideBlockRules = "$($sf.OverrideBlockRules)"
+        LocalUser = "$($sf.LocalUser)"; RemoteUser = "$($sf.RemoteUser)"; RemoteMachine = "$($sf.RemoteMachine)"
     }
 }
 
@@ -80,13 +112,16 @@ function Test-EoGuardState($State, $Current) {
     $names = @($State.PSObject.Properties.Name)
     foreach ($k in 'schema', 'instanceId', 'computer', 'switchId', 'adapter', 'netbiosBefore', 'rules') { if ($k -notin $names) { $p.Add("state record has no '$k'") } }
     if ($p.Count) { return $p }
-    if ($State.schema -ne $EoGuardSchema) { $p.Add("state record schema is '$($State.schema)', want '$EoGuardSchema'") }
-    if ("$($State.instanceId)" -notmatch '^[0-9a-f]{32}$') { $p.Add("state record instanceId '$($State.instanceId)' is malformed") }
+    foreach ($k in 'schema', 'instanceId', 'computer', 'switchId') { if ($State.$k -isnot [string]) { $p.Add("state record $k is not a single string") } }
+    if ($p.Count) { return $p }
+    if ($State.schema -cne $EoGuardSchema) { $p.Add("state record schema is '$($State.schema)', want '$EoGuardSchema'") }
+    if ($State.instanceId -cnotmatch '\A[0-9a-f]{32}\z') { $p.Add("state record instanceId '$($State.instanceId)' is malformed") }
+    if ((ConvertTo-EoCanon $State.rules) -cne (ConvertTo-EoCanon $EO.GuardRules)) { $p.Add("state record rules are '$(@($State.rules) -join ',')', want '$($EO.GuardRules -join ',')'") }
     $nb = $State.netbiosBefore
     if (-not ($nb -is [int] -or $nb -is [long]) -or $nb -lt 0 -or $nb -gt 2) { $p.Add("state record netbiosBefore '$nb' is not 0, 1 or 2") }
     if ($State.computer -ne $Current.Computer) { $p.Add("state record is for computer '$($State.computer)', this is '$($Current.Computer)'") }
     $a = $State.adapter
-    foreach ($k in 'interfaceGuid', 'macAddress', 'settingId') { if (-not "$(Get-EoProp $a $k)") { $p.Add("state record adapter has no $k") } }
+    foreach ($k in 'interfaceGuid', 'macAddress', 'settingId') { $v = Get-EoProp $a $k; if ($v -isnot [string] -or -not $v) { $p.Add("state record adapter has no $k") } }
     if ($Current.Adapter) {
         if ("$($State.switchId)" -ne "$($Current.SwitchId)") { $p.Add("switch id is $($Current.SwitchId), the record has $($State.switchId): another provisioning instance") }
         foreach ($k in 'InterfaceGuid', 'MacAddress', 'SettingId') {

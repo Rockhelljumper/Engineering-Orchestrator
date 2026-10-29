@@ -82,7 +82,9 @@ foreach ($n in $allSpecs.Keys) {
 $hostIf = $EO.HostIf
 $realTcp = @{ Present = $true; PrimaryStatus = 'OK'; Enabled = 'True'; Action = 'Block'; Direction = 'Outbound'; Profile = 'Any'; Protocol = 'TCP'
     LocalPort = @('Any'); RemotePort = @('23-65535', '1-21'); IcmpType = @('Any'); RemoteAddress = @('Any'); LocalAddress = @('Any')
-    InterfaceAlias = @($hostIf); InterfaceType = 'Any'; Program = 'Any'; Service = 'Any' }
+    InterfaceAlias = @($hostIf); InterfaceType = 'Any'; Program = 'Any'; Service = 'Any'
+    Owner = ''; Platform = @(); EdgeTraversalPolicy = 'Block'; LooseSourceMapping = 'False'; LocalOnlyMapping = 'False'; DynamicTarget = 'Any'; Package = ''
+    Authentication = 'NotRequired'; Encryption = 'NotRequired'; OverrideBlockRules = 'False'; LocalUser = 'Any'; RemoteUser = 'Any'; RemoteMachine = 'Any' }
 $tcpSpec = $specs.Guard['eo-l2-out-block-tcp']
 Expect 'rules: TCP guard as reported passes (port order ignored)' (@(Test-EoRuleFacts 'tcp' $realTcp $tcpSpec -Active).Count) 0
 $variants = [ordered]@{
@@ -102,9 +104,20 @@ $variants = [ordered]@{
     'turned into an allow rule'      = @{ Action = 'Allow' }
     'made inbound'                   = @{ Direction = 'Inbound' }
     'only the Public profile'        = @{ Profile = 'Public' }
+    'limited to an app container'    = @{ Package = 'S-1-15-2-1430448594-2639229838-973813799-439329657-1197984847-4069523365-2491785580' }
+    'owned by one user'              = @{ Owner = 'S-1-5-21-1-2-3-1001' }
+    'limited to one Windows version' = @{ Platform = @('10.0') }
+    'limited to a dynamic target'    = @{ DynamicTarget = 'ProximityApps' }
+    'limited to one local user'      = @{ LocalUser = 'O:LSD:(A;;CC;;;S-1-5-21-1-2-3-1001)' }
+    'limited to one remote user'     = @{ RemoteUser = 'O:LSD:(A;;CC;;;S-1-5-21-1-2-3-1002)' }
+    'limited to one remote machine'  = @{ RemoteMachine = 'O:LSD:(A;;CC;;;S-1-5-21-1-2-3-1003)' }
+    'only for authenticated traffic' = @{ Authentication = 'Required' }
+    'only for encrypted traffic'     = @{ Encryption = 'Required' }
+    'overridable by IPsec'           = @{ OverrideBlockRules = 'True' }
+    'a filter that was not read'     = @{ Package = $null }
 }
 foreach ($v in $variants.Keys) {
-    $f = $realTcp.Clone(); foreach ($k in $variants[$v].Keys) { $f[$k] = $variants[$v][$k] }
+    $f = $realTcp.Clone(); foreach ($k in $variants[$v].Keys) { if ($null -eq $variants[$v][$k]) { $f.Remove($k) } else { $f[$k] = $variants[$v][$k] } }
     Expect "rules: TCP guard $v fails" (@(Test-EoRuleFacts 'tcp' $f $tcpSpec).Count -gt 0) $true
 }
 $icmpSpec = $specs.Guard['eo-l2-out-block-icmp']
@@ -146,30 +159,36 @@ Expect 'guard state: matching record passes' (@(Test-EoGuardState ($goodJson | C
 foreach ($nb in 1, 2) { Expect "guard state: netbiosBefore $nb passes" (@(Test-EoGuardState (StateWith '"netbiosBefore": 0' """netbiosBefore"": $nb") (Cur @{})).Count) 0 }
 Expect 'guard state: switch and adapter already gone passes (nothing to restore)' (@(Test-EoGuardState ($goodJson | ConvertFrom-Json) (Cur @{ SwitchId = $null; Adapter = $null; RuleDescriptions = @{} })).Count) 0
 $bad = [ordered]@{
-    'no record'                            = @($null, (Cur @{}))
-    'record without netbiosBefore'         = @((StateWith '"netbiosBefore": 0, ' ''), (Cur @{}))
-    'netbiosBefore as a string'            = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": "0"'), (Cur @{}))
-    'netbiosBefore null'                   = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": null'), (Cur @{}))
-    'netbiosBefore 3'                      = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": 3'), (Cur @{}))
-    'netbiosBefore -1'                     = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": -1'), (Cur @{}))
-    'netbiosBefore 1.5'                    = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": 1.5'), (Cur @{}))
-    'netbiosBefore as a list'              = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": [0, 2]'), (Cur @{}))
-    'another schema'                       = @((StateWith 'eo-l2-host-guard/1' 'eo-l2-host-guard/0'), (Cur @{}))
-    'malformed instance id'                = @((StateWith '0123456789abcdef0123456789abcdef' 'not-an-id'), (Cur @{}))
-    'another computer'                     = @((StateWith """computer"": ""$env:COMPUTERNAME""" '"computer": "OTHER-PC"'), (Cur @{}))
-    'another provisioning (switch id)'     = @(($goodJson | ConvertFrom-Json), (Cur @{ SwitchId = '99999999-2222-3333-4444-555555555555' }))
-    'another adapter (GUID)'               = @(($goodJson | ConvertFrom-Json), (Cur @{ Adapter = @{ InterfaceGuid = '{00000000-0000-4000-8000-000000000001}'; MacAddress = '00-15-5D-AA-BB-CC'; SettingId = $guid } }))
-    'another adapter (MAC)'                = @(($goodJson | ConvertFrom-Json), (Cur @{ Adapter = @{ InterfaceGuid = $guid; MacAddress = '00-15-5D-00-00-01'; SettingId = $guid } }))
-    'another adapter (setting id)'         = @(($goodJson | ConvertFrom-Json), (Cur @{ Adapter = @{ InterfaceGuid = $guid; MacAddress = '00-15-5D-AA-BB-CC'; SettingId = '{00000000-0000-4000-8000-000000000002}' } }))
-    'record without the adapter GUID'      = @((StateWith """interfaceGuid"": ""$guid"", " ''), (Cur @{}))
-    'switch present, adapter missing'      = @(($goodJson | ConvertFrom-Json), (Cur @{ Adapter = $null }))
-    'rule from another instance'           = @(($goodJson | ConvertFrom-Json), (Cur @{ RuleDescriptions = @{ 'eo-l2-out-block-tcp' = (Get-EoGuardInstanceTag 'ffffffffffffffffffffffffffffffff') } }))
-    'rule with no instance tag'            = @(($goodJson | ConvertFrom-Json), (Cur @{ RuleDescriptions = @{ 'eo-l2-out-block-udp' = '' } }))
+    'no record'                            = @($null, (Cur @{}), 'no host guard state record')
+    'record without netbiosBefore'         = @((StateWith '"netbiosBefore": 0, ' ''), (Cur @{}), "no 'netbiosBefore'")
+    'netbiosBefore as a string'            = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": "0"'), (Cur @{}), 'netbiosBefore')
+    'netbiosBefore null'                   = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": null'), (Cur @{}), 'netbiosBefore')
+    'netbiosBefore 3'                      = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": 3'), (Cur @{}), 'netbiosBefore')
+    'netbiosBefore -1'                     = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": -1'), (Cur @{}), 'netbiosBefore')
+    'netbiosBefore 1.5'                    = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": 1.5'), (Cur @{}), 'netbiosBefore')
+    'netbiosBefore as a list'              = @((StateWith '"netbiosBefore": 0' '"netbiosBefore": [0, 2]'), (Cur @{}), 'netbiosBefore')
+    'another schema'                       = @((StateWith 'eo-l2-host-guard/1' 'eo-l2-host-guard/0'), (Cur @{}), 'schema is')
+    'schema as a list'                     = @((StateWith '"schema": "eo-l2-host-guard/1"' '"schema": ["eo-l2-host-guard/1"]'), (Cur @{}), 'schema is not a single string')
+    'computer as a list'                   = @((StateWith """computer"": ""$env:COMPUTERNAME""" """computer"": [""$env:COMPUTERNAME""]"), (Cur @{}), 'computer is not a single string')
+    'malformed instance id'                = @((StateWith '"instanceId": "0123456789abcdef0123456789abcdef"' '"instanceId": "not-an-id"'), (Cur @{ RuleDescriptions = @{} }), 'instanceId')
+    'upper-case instance id'               = @((StateWith '"instanceId": "0123456789abcdef0123456789abcdef"' '"instanceId": "0123456789ABCDEF0123456789ABCDEF"'), (Cur @{ RuleDescriptions = @{} }), 'instanceId')
+    'other rule list'                      = @((StateWith '"eo-l2-out-block-icmp"]' '"eo-l2-out-block-icmpv6"]'), (Cur @{}), 'rules are')
+    'another computer'                     = @((StateWith """computer"": ""$env:COMPUTERNAME""" '"computer": "OTHER-PC"'), (Cur @{}), 'is for computer')
+    'another provisioning (switch id)'     = @(($goodJson | ConvertFrom-Json), (Cur @{ SwitchId = '99999999-2222-3333-4444-555555555555' }), 'another provisioning instance')
+    'another adapter (GUID)'               = @(($goodJson | ConvertFrom-Json), (Cur @{ Adapter = @{ InterfaceGuid = '{00000000-0000-4000-8000-000000000001}'; MacAddress = '00-15-5D-AA-BB-CC'; SettingId = $guid } }), 'adapter InterfaceGuid')
+    'another adapter (MAC)'                = @(($goodJson | ConvertFrom-Json), (Cur @{ Adapter = @{ InterfaceGuid = $guid; MacAddress = '00-15-5D-00-00-01'; SettingId = $guid } }), 'adapter MacAddress')
+    'another adapter (setting id)'         = @(($goodJson | ConvertFrom-Json), (Cur @{ Adapter = @{ InterfaceGuid = $guid; MacAddress = '00-15-5D-AA-BB-CC'; SettingId = '{00000000-0000-4000-8000-000000000002}' } }), 'adapter SettingId')
+    'record without the adapter GUID'      = @((StateWith """interfaceGuid"": ""$guid"", " ''), (Cur @{}), 'adapter has no interfaceGuid')
+    'switch present, adapter missing'      = @(($goodJson | ConvertFrom-Json), (Cur @{ Adapter = $null }), 'cannot tell which adapter')
+    'rule from another instance'           = @(($goodJson | ConvertFrom-Json), (Cur @{ RuleDescriptions = @{ 'eo-l2-out-block-tcp' = (Get-EoGuardInstanceTag 'ffffffffffffffffffffffffffffffff') } }), 'belongs to another instance')
+    'rule with no instance tag'            = @(($goodJson | ConvertFrom-Json), (Cur @{ RuleDescriptions = @{ 'eo-l2-out-block-udp' = '' } }), 'belongs to another instance')
 }
 foreach ($k in $bad.Keys) {
-    $threw = $false; $n = 0
-    try { $n = @(Test-EoGuardState $bad[$k][0] $bad[$k][1]).Count } catch { $threw = $true }
-    Expect "guard state: $k refused" ($n -gt 0 -and -not $threw) $true
+    $threw = $false; $msgs = @()
+    try { $msgs = @(Test-EoGuardState $bad[$k][0] $bad[$k][1]) } catch { $threw = $true; $msgs = @("threw: $($_.Exception.Message)") }
+    $hit = @($msgs | Where-Object { $_.Contains($bad[$k][2]) })
+    Expect "guard state: $k refused for its own reason" ($hit.Count -gt 0 -and -not $threw) $true
+    if (-not $hit.Count) { $msgs | ForEach-Object { Write-Host "     $_" } }
 }
 
 if ($failures.Count) { Write-Host "$($failures.Count) failure(s)"; exit 1 }

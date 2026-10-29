@@ -18,8 +18,10 @@ $before = $null
 try {
     $nic = Get-NetAdapter -Name $EO.HostIf -ErrorAction SilentlyContinue
     if (-not $nic) { throw "Host interface '$($EO.HostIf)' is missing; run 01-switch.ps1 first." }
-    $existing = @(Get-NetFirewallRule -Group $EO.FwGroup -ErrorAction SilentlyContinue | Where-Object Name -in $EO.GuardRules)
-    if ($existing.Count) { throw "Host guard rules already exist: $(($existing | ForEach-Object Name) -join ', '); stopping." }
+    # By name, in any group: a rule already holding one of these names would make
+    # New-NetFirewallRule fail after NetBIOS was changed.
+    $existing = @($EO.GuardRules | ForEach-Object { Get-NetFirewallRule -Name $_ -ErrorAction SilentlyContinue })
+    if ($existing.Count) { throw "Rules with the host guard names already exist: $(($existing | ForEach-Object { "$($_.Name) (group '$($_.Group)')" }) -join ', '); stopping before any change." }
     if (Test-Path -LiteralPath $EO.GuardState) { throw "$($EO.GuardState) exists: an earlier 01b was not undone. Run undo-01b-host-guard.ps1 first." }
     $cur = Get-EoGuardCurrent
     if (-not $cur.SwitchId -or -not $cur.Adapter) { throw "Switch $($EO.SwitchName) or its host adapter is missing; run 01-switch.ps1 first." }
@@ -34,6 +36,7 @@ try {
         "Firewall (group $($EO.FwGroup)): block outbound TCP to remote ports 1-21 and 23-65535 on '$($EO.HostIf)', all profiles"
         "Firewall (group $($EO.FwGroup)): block outbound UDP on '$($EO.HostIf)', all profiles"
         "Firewall (group $($EO.FwGroup)): block outbound ICMPv4 on '$($EO.HostIf)', all profiles"
+        "Create $($EO.GuardDir) (Administrators and SYSTEM only) if absent"
         "First, record the NetBIOS value ($nbBefore), this adapter (GUID $($cur.Adapter.InterfaceGuid), MAC $($cur.Adapter.MacAddress)), the switch id and instance $instance in $($EO.GuardState); the undo restores only from that record"
         'SSH from the host to 192.168.250.2:22 keeps working; nothing else on the host changes'
     )
@@ -43,6 +46,12 @@ try {
         switchId = $cur.SwitchId
         adapter = [ordered]@{ name = $EO.HostIf; interfaceGuid = $cur.Adapter.InterfaceGuid; macAddress = $cur.Adapter.MacAddress; settingId = $cur.Adapter.SettingId }
         netbiosBefore = $nbBefore; rules = $EO.GuardRules
+    }
+    # Kept under %ProgramData% with an Administrators-and-SYSTEM-only ACL, so a
+    # standard-user process cannot edit the value the elevated undo will restore.
+    if (-not (Test-Path -LiteralPath $EO.GuardDir)) {
+        New-Item -ItemType Directory -Path $EO.GuardDir | Out-Null
+        Invoke-EoNative icacls.exe @($EO.GuardDir, '/inheritance:r', '/grant:r', '*S-1-5-32-544:(OI)(CI)F', '*S-1-5-18:(OI)(CI)F') | Write-Host
     }
     # Written whole to a temporary file, then moved into place, so a crash leaves no half record.
     $tmp = "$($EO.GuardState).tmp"
@@ -54,10 +63,7 @@ try {
 
     $r = Invoke-CimMethod -InputObject $cfg -MethodName SetTcpipNetbios -Arguments @{ TcpipNetbiosOptions = [uint32]2 }
     if ($r.ReturnValue -ne 0) { throw "SetTcpipNetbios returned $($r.ReturnValue)" }
-    $out = @{ Group = $EO.FwGroup; Direction = 'Outbound'; Action = 'Block'; Profile = 'Any'; Enabled = 'True'; InterfaceAlias = $EO.HostIf; Description = $tag }
-    New-NetFirewallRule @out -Name 'eo-l2-out-block-tcp' -DisplayName 'eo-l2: host sends the guest only SSH (TCP)' -Protocol TCP -RemotePort '1-21', '23-65535' | Format-List Name, Action, Direction
-    New-NetFirewallRule @out -Name 'eo-l2-out-block-udp' -DisplayName 'eo-l2: host sends the guest no UDP' -Protocol UDP | Format-List Name, Action, Direction
-    New-NetFirewallRule @out -Name 'eo-l2-out-block-icmp' -DisplayName 'eo-l2: host sends the guest no ICMPv4' -Protocol ICMPv4 | Format-List Name, Action, Direction
+    New-EoGuardRules $tag
 
     $after = Save-EoSnapshot $stamp 'after'
     Compare-EoSnapshot $before $after

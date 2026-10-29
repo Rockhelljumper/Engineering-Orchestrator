@@ -6,8 +6,9 @@
 #   eo-l2-int has no NAT, no default route, forwarding off, and the eo-l2 rules are
 #   in the active policy with their address and interface filters, with Windows
 #   Firewall on and applying local rules. -SwitchOnly runs only the switch and host
-#   checks (used by 01 and 01b, before the VM exists).
-param([switch]$NoLog, [switch]$SwitchOnly)
+#   checks (used by 01 and 01b, before the VM exists). The host guard (01b) is
+#   required; only 01-switch.ps1, which runs before 01b, passes -BeforeGuard.
+param([switch]$NoLog, [switch]$SwitchOnly, [switch]$BeforeGuard)
 
 . (Join-Path $PSScriptRoot '_common.ps1')
 Assert-EoAdmin
@@ -42,7 +43,9 @@ try {
     $present = @($EO.GuardRules | Where-Object { Get-NetFirewallRule -PolicyStore PersistentStore -Name $_ -ErrorAction SilentlyContinue })
     $gstate = $null; $gerr = $null
     try { $gstate = Read-EoGuardState } catch { $gerr = $_.Exception.Message }
-    if ($present.Count -or $gstate -or $gerr) {
+    if ($BeforeGuard -and ($present.Count -or $gstate -or $gerr)) {
+        Row 'Host guard not present yet (-BeforeGuard)' $false ("present: $($present -join ', '); state record: $([bool]$gstate)")
+    } elseif (-not $BeforeGuard) {
         Row 'Host guard: all three rules present (none or all)' ($present.Count -eq $EO.GuardRules.Count) ("present: " + ($present -join ', '))
         foreach ($n in $specs.Guard.Keys) {
             $bad = @(Test-EoRuleFacts $n (Get-EoRuleFacts $n 'PersistentStore') $specs.Guard[$n]) + @(Test-EoRuleFacts $n (Get-EoRuleFacts $n 'ActiveStore') $specs.Guard[$n] -Active)
@@ -54,7 +57,7 @@ try {
         $nb = if ($gcur.Adapter) { $gcur.Adapter.Netbios } else { $null }
         Row 'Host guard: NetBIOS over TCP/IP off on eo-l2-int' ("$nb" -eq '2') "TcpipNetbiosOptions=$nb"
     } else {
-        Write-Host 'Host guard (01b) not present.'
+        Write-Host 'Host guard (01b) not checked: -BeforeGuard (step 01 only).'
     }
     $known = @($specs.Inbound.Keys) + @($specs.Guard.Keys)
     $unexpected = @(Get-NetFirewallRule -PolicyStore ActiveStore -Group $EO.FwGroup -ErrorAction SilentlyContinue | Where-Object { $_.Name -notin $known })
