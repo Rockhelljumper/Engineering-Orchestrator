@@ -4,7 +4,7 @@
 # from the persistent store and the active policy and checks them against the
 # spec. Then it alters one filter at a time with the firewall cmdlets and checks
 # that each alteration fails. Every rule it made is removed at the end.
-param([string]$Alias = (Get-NetAdapter | Where-Object Status -eq 'Up' | Sort-Object ifIndex | Select-Object -First 1).Name)
+param([string]$Alias)
 
 $hostDir = Split-Path $PSScriptRoot
 . (Join-Path $hostDir '_common.ps1')
@@ -29,6 +29,18 @@ function Problems([string]$Base) {
     return @($p + $a)
 }
 
+# The first interface the firewall accepts as an InterfaceAlias (runner adapters vary).
+if (-not $Alias) {
+    $cands = @(@(Get-NetIPInterface -AddressFamily IPv4 | Where-Object InterfaceAlias -notlike 'Loopback*' | Sort-Object InterfaceMetric | ForEach-Object InterfaceAlias) + @(Get-NetAdapter -IncludeHidden | ForEach-Object Name) | Select-Object -Unique)
+    Write-Host "candidate interfaces: $($cands -join ', ')"
+    foreach ($c in $cands) {
+        try {
+            New-NetFirewallRule -Name "${prefix}probe" -DisplayName "${prefix}probe" -Group $group -Direction Outbound -Action Block -Enabled False -InterfaceAlias $c -ErrorAction Stop | Out-Null
+            $Alias = $c; break
+        } catch { Write-Host "  not usable: $c ($($_.Exception.Message))" } finally { Remove-CiRules }
+    }
+    if (-not $Alias) { throw 'No interface the firewall accepts as an InterfaceAlias.' }
+}
 Write-Host "PowerShell $($PSVersionTable.PSVersion); adapter '$Alias'"
 try {
     Make
