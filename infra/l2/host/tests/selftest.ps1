@@ -39,7 +39,7 @@ Expect 'network: /32' (Get-EoNetwork '10.1.2.3' 32) '10.1.2.3/32'
 Expect 'network: /0' (Get-EoNetwork '10.1.2.3' 0) '0.0.0.0/0'
 
 $out = Invoke-EoNative cmd.exe @('/c', 'echo to-stdout & echo to-stderr 1>&2 & exit 0')
-Expect 'native: stdout kept' (@($out) -contains 'to-stdout') $true
+Expect 'native: stdout kept' (@($out | ForEach-Object { $_.Trim() }) -contains 'to-stdout') $true
 Expect 'native: stderr kept, not thrown' (@($out | ForEach-Object { $_.Trim() }) -contains 'to-stderr') $true
 $filtered = @(Invoke-EoNative cmd.exe @('/c', 'echo alpha & echo beta') | Where-Object { $_ -match '^beta' })
 Expect 'native: a pipeline filter sees single lines' ($filtered.Count) 1
