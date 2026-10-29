@@ -46,8 +46,10 @@ mkfs.ext4 -q -L eo-anchor /dev/eo-anchor/anchor
 lvcreate -y -n eo-state -L 32G eo-sys
 mkfs.ext4 -q -L eo-state /dev/eo-sys/eo-state
 
-FREE=$(vgs --noheadings --units g --nosuffix -o vg_free eo-sys | tr -d ' ' | cut -d. -f1)
-POOL=$(( FREE - 8 ))
+# Bytes, so the arithmetic does not depend on the locale's decimal mark.
+FREE_B=$(vgs --noheadings --units b --nosuffix -o vg_free eo-sys | tr -d ' ')
+POOL=$(( FREE_B / 1073741824 - 8 ))
+(( POOL >= 32 )) || eo_die "only $(( FREE_B / 1073741824 )) GiB free in eo-sys; expected about 110"
 lvcreate -y --type thin-pool -n eo-work -L "${POOL}G" eo-sys
 lvchange --monitor y eo-sys/eo-work
 # Not over-provisioned: the thin LV is no larger than its pool.
@@ -72,7 +74,6 @@ mount /srv/eo-anchor
 tmp=$(mktemp -d); cp -a /home/eo-worker/. "$tmp"/
 mount /home/eo-worker
 cp -a "$tmp"/. /home/eo-worker/; rm -rf "$tmp"
-rm -rf /srv/eo/lost+found /srv/eo-anchor/lost+found /home/eo-worker/lost+found
 chown eo:eo /srv/eo; chmod 0700 /srv/eo
 chown eo-anchor:eo-anchor /srv/eo-anchor; chmod 0700 /srv/eo-anchor
 chown eo-worker:eo-worker /home/eo-worker; chmod 0750 /home/eo-worker

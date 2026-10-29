@@ -101,6 +101,101 @@ class ProbeTests(unittest.TestCase):
         self.assertTrue(res[0]["reachable"])
 
 
+def eth(src, etype, payload=b""):
+    return bytes(6) + bytes.fromhex(src.replace(":", "")) + struct.pack(">H", etype) + payload
+
+
+def ipv4(proto, src, dst, l4=b""):
+    hdr = struct.pack(">BBHHHBBH4s4s", 0x45, 0, 20 + len(l4), 0, 0, 64, proto, 0, socket.inet_aton(src), socket.inet_aton(dst))
+    return hdr + l4
+
+
+HOST_MAC = "00:15:5d:aa:bb:cc"
+
+
+class ClassifyTests(unittest.TestCase):
+    def test_arp_ssh_and_own_frames_are_fine(self):
+        self.assertIsNone(b9.classify(eth(HOST_MAC, 0x0806, bytes(28)), HOST_MAC))
+        ssh = ipv4(6, "192.168.250.1", "192.168.250.2", struct.pack(">HH", 50000, 22) + bytes(16))
+        self.assertIsNone(b9.classify(eth(HOST_MAC, 0x0800, ssh), HOST_MAC))
+        self.assertIsNone(b9.classify(eth(b9.INT_MAC, 0x0800, ipv4(1, "192.168.250.2", "192.168.250.1")), HOST_MAC))
+
+    def test_host_reply_that_is_not_ssh_is_host_traffic(self):
+        rst = ipv4(6, "192.168.250.1", "192.168.250.2", struct.pack(">HH", 445, 40000) + bytes(16))
+        self.assertEqual(b9.classify(eth(HOST_MAC, 0x0800, rst), HOST_MAC)["kind"], "hostTraffic")
+        unreach = ipv4(1, "192.168.250.1", "192.168.250.2", bytes(8))
+        self.assertEqual(b9.classify(eth(HOST_MAC, 0x0800, unreach), HOST_MAC)["kind"], "hostTraffic")
+        self.assertEqual(b9.classify(eth(HOST_MAC, 0x86DD, bytes(40)), HOST_MAC)["kind"], "hostTraffic")
+
+    def test_host_multicast_is_information_and_other_macs_are_foreign(self):
+        llmnr = ipv4(17, "192.168.250.1", "224.0.0.252", struct.pack(">HH", 55000, 5355) + bytes(4))
+        self.assertEqual(b9.classify(eth(HOST_MAC, 0x0800, llmnr), HOST_MAC)["kind"], "hostQuery")
+        nb = ipv4(17, "192.168.250.1", "192.168.250.7", struct.pack(">HH", 137, 137) + bytes(4))
+        self.assertEqual(b9.classify(eth(HOST_MAC, 0x0800, nb), HOST_MAC)["kind"], "hostQuery")
+        self.assertEqual(b9.classify(eth("02:00:00:00:00:01", 0x0806, bytes(28)), HOST_MAC)["kind"], "foreign")
+
+
+class AddressTests(unittest.TestCase):
+    def test_pick_avoids_host_addresses_and_tiny_prefixes(self):
+        self.assertEqual(b9.pick_address("192.168.1.0/24", ["192.168.1.254"]), "192.168.1.253")
+        self.assertEqual(b9.pick_address("192.168.1.0/24", []), "192.168.1.254")
+        self.assertIsNone(b9.pick_address("10.2.0.2/32", []))
+        self.assertIsNone(b9.pick_address("10.2.0.2/31", []))
+        self.assertEqual(b9.pick_address("10.2.0.0/30", ["10.2.0.2"]), "10.2.0.1")
+        self.assertEqual(b9.pick_address("10.0.0.0/8", []), "10.255.255.254")
+
+    def test_bad_targets(self):
+        for ip in ("0.0.0.0", "127.0.0.1", "192.168.250.2"):
+            self.assertIsNotNone(b9.bad_target_ip(ip), ip)
+        self.assertIsNone(b9.bad_target_ip("192.168.250.1"))
+
+
+class SpecTests(unittest.TestCase):
+    def write(self, doc):
+        f = tempfile.NamedTemporaryFile("wb", suffix=".json", delete=False)
+        f.write(b"\xef\xbb\xbf" + json.dumps(doc).encode())
+        f.close()
+        self.addCleanup(os.unlink, f.name)
+        return f.name
+
+    def test_stale_or_bad_targets_file_is_refused(self):
+        import datetime
+        now = datetime.datetime(2026, 10, 29, 12, tzinfo=datetime.timezone.utc)
+        ok = {"generatedAt": "2026-10-29T10:00:00.0000000Z", "positive": [], "negative": [{"name": "h", "ip": "10.0.0.5", "checks": []}]}
+        self.assertEqual(b9.load_spec(self.write(ok), 6, now)["negative"][0]["ip"], "10.0.0.5")
+        with self.assertRaises(SystemExit):
+            b9.load_spec(self.write(dict(ok, generatedAt="2026-10-28T10:00:00Z")), 6, now)
+        with self.assertRaises(SystemExit):
+            b9.load_spec(self.write(dict(ok, positive=[{"name": "LAN gateway", "ip": "0.0.0.0", "checks": []}])), 6, now)
+
+
+class UdpTests(unittest.TestCase):
+    def test_any_udp_answer_is_reachable(self):
+        srv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        srv.bind(("127.0.0.1", 0))
+        port = srv.getsockname()[1]
+
+        def answer():
+            _, addr = srv.recvfrom(2048)
+            srv.sendto(b"x", addr)
+        threading.Thread(target=answer, daemon=True).start()
+        ok, why = b9.udp("127.0.0.1", port)
+        srv.close()
+        self.assertTrue(ok, why)
+
+    def test_mismatched_dns_id_still_counts(self):
+        srv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        srv.bind(("127.0.0.1", 0))
+
+        def answer():
+            _, addr = srv.recvfrom(512)
+            srv.sendto(struct.pack(">HHHHHH", 0xFFFF, 0x8180, 0, 0, 0, 0), addr)
+        threading.Thread(target=answer, daemon=True).start()
+        ok, _ = b9.dns("127.0.0.1", srv.getsockname()[1])
+        srv.close()
+        self.assertTrue(ok)
+
+
 if __name__ == "__main__":
     r = unittest.main(exit=False, verbosity=2).result
     sys.exit(0 if r.wasSuccessful() else 1)

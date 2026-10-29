@@ -38,6 +38,7 @@ try {
     # Existing resources with our names
     Check "No VM switch named $($EO.SwitchName)" { $x = Get-VMSwitch -Name $EO.SwitchName -ErrorAction SilentlyContinue; @{ ok = -not $x; detail = $(if ($x) { 'exists' } else { 'absent' }) } }
     Check "No VM named $($EO.VmName)" { $x = Get-VM -Name $EO.VmName -ErrorAction SilentlyContinue; @{ ok = -not $x; detail = $(if ($x) { 'exists' } else { 'absent' }) } }
+    Info 'C:\Hyper-V exists (02 creates it when absent)' { Test-Path 'C:\Hyper-V' }
     Check "No folder $($EO.Root)" { @{ ok = -not (Test-Path $EO.Root); detail = $(if (Test-Path $EO.Root) { 'exists' } else { 'absent' }) } }
     Check "No firewall rules in group $($EO.FwGroup)" { $x = @(Get-NetFirewallRule -Group $EO.FwGroup -ErrorAction SilentlyContinue); @{ ok = $x.Count -eq 0; detail = "$($x.Count) rules" } }
     Check "No host interface named $($EO.HostIf)" { $x = Get-NetAdapter -Name $EO.HostIf -ErrorAction SilentlyContinue; @{ ok = -not $x; detail = $(if ($x) { 'exists' } else { 'absent' }) } }
@@ -53,20 +54,43 @@ try {
         $x = @(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { Test-EoOverlap $_.IPAddress 32 })
         @{ ok = $x.Count -eq 0; detail = ($x | ForEach-Object { "$($_.InterfaceAlias)=$($_.IPAddress)" }) -join ', ' }
     }
-    Check 'No route overlapping 192.168.250.0/29 (default and multicast routes excepted)' {
-        $x = @(Get-NetRoute -AddressFamily IPv4 | Where-Object {
-                $p, $l = $_.DestinationPrefix -split '/'
-                [int]$l -gt 0 -and $p -ne '255.255.255.255' -and -not $p.StartsWith('224.') -and (Test-EoOverlap $p ([int]$l))
-            })
+    # A route as specific as the /29 (or more) would compete with it; a broader one,
+    # such as a VPN's 0.0.0.0/1 + 128.0.0.0/1 pair, loses to the connected /29.
+    $overlapping = @(Get-NetRoute -AddressFamily IPv4 | Where-Object {
+            $p, $l = $_.DestinationPrefix -split '/'
+            [int]$l -gt 0 -and $p -ne '255.255.255.255' -and -not $p.StartsWith('224.') -and (Test-EoOverlap $p ([int]$l))
+        })
+    Check 'No route as specific as 192.168.250.0/29 overlapping it' {
+        $x = @($overlapping | Where-Object { [int](($_.DestinationPrefix -split '/')[1]) -ge $EO.PrefixLength })
         @{ ok = $x.Count -eq 0; detail = ($x | ForEach-Object { "$($_.DestinationPrefix) via $($_.InterfaceAlias)" }) -join ', ' }
     }
+    Info 'Broader routes covering 192.168.250.0/29 (the /29 wins over them)' { (@($overlapping | Where-Object { [int](($_.DestinationPrefix -split '/')[1]) -lt $EO.PrefixLength }) | ForEach-Object { "$($_.DestinationPrefix) via $($_.InterfaceAlias)" }) -join ', ' }
     Check 'No NetNat prefix overlapping 192.168.250.0/29' {
         $x = @(Get-NetNat -ErrorAction SilentlyContinue | Where-Object { $p, $l = $_.InternalIPInterfaceAddressPrefix -split '/'; Test-EoOverlap $p ([int]$l) })
         @{ ok = $x.Count -eq 0; detail = "$($x.Count) overlapping" }
     }
     Info 'NetNat instances (unchanged by eo-l2)' { (@(Get-NetNat -ErrorAction SilentlyContinue) | ForEach-Object { "$($_.Name)=$($_.InternalIPInterfaceAddressPrefix)" }) -join ', ' }
     Info 'Interfaces with IP forwarding enabled (unchanged by eo-l2)' { (@(Get-NetIPInterface | Where-Object Forwarding -eq 'Enabled') | ForEach-Object { "$($_.InterfaceAlias)/$($_.AddressFamily)" }) -join ', ' }
-    Info 'Host-wide IPEnableRouter' { (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters' -Name IPEnableRouter -ErrorAction SilentlyContinue).IPEnableRouter }
+    Check 'Host-wide IP routing off (IPEnableRouter absent or 0)' {
+        $v = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters' -Name IPEnableRouter -ErrorAction SilentlyContinue).IPEnableRouter
+        @{ ok = (-not $v); detail = "IPEnableRouter=$v" }
+    }
+
+    # The eo-l2 rules only matter if Windows Firewall is the firewall in force and applies local rules.
+    Check 'Windows Firewall on for every profile, inbound default Block, local rules applied (active policy)' {
+        $p = @(Get-NetFirewallProfile -PolicyStore ActiveStore)
+        $bad = @($p | Where-Object { "$($_.Enabled)" -ne 'True' -or "$($_.DefaultInboundAction)" -notin @('Block', 'NotConfigured') -or "$($_.AllowLocalFirewallRules)" -eq 'False' })
+        @{ ok = ($p.Count -eq 3 -and $bad.Count -eq 0); detail = ($p | ForEach-Object { "$($_.Name): enabled=$($_.Enabled) inbound=$($_.DefaultInboundAction) localRules=$($_.AllowLocalFirewallRules)" }) -join '; ' }
+    }
+    Check 'No third-party firewall registered with Windows Security' {
+        $x = @(Get-CimInstance -Namespace root/SecurityCenter2 -ClassName FirewallProduct -ErrorAction SilentlyContinue)
+        @{ ok = $x.Count -eq 0; detail = $(if ($x.Count) { ($x | ForEach-Object displayName) -join ', ' } else { 'none' }) }
+    }
+    Check 'WSL not in mirrored networking mode' {
+        $f = Join-Path $env:USERPROFILE '.wslconfig'
+        $mode = if (Test-Path $f) { (Select-String -Path $f -Pattern '^\s*networkingMode\s*=\s*(\S+)' | Select-Object -First 1 | ForEach-Object { $_.Matches[0].Groups[1].Value }) } else { $null }
+        @{ ok = ("$mode" -ne 'mirrored'); detail = $(if ($mode) { "networkingMode=$mode" } elseif (Test-Path $f) { '.wslconfig without networkingMode (NAT)' } else { 'no .wslconfig (NAT)' }) }
+    }
     Info 'VPN adapters' { (@(Get-NetAdapter -IncludeHidden | Where-Object { $_.InterfaceDescription -match 'OpenVPN|TAP|PIA|WireGuard|Wintun' }) | ForEach-Object { "$($_.Name)=$($_.Status)" }) -join ', ' }
 
     # Capacity

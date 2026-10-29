@@ -8,6 +8,7 @@
 Assert-EoAdmin
 
 $stamp = Start-EoLog 'vm'
+$before = $null
 try {
     if (Get-VM -Name $EO.VmName -ErrorAction SilentlyContinue) { throw "VM $($EO.VmName) already exists; stopping." }
     if (Test-Path $EO.Root) { throw "$($EO.Root) already exists; stopping." }
@@ -17,6 +18,12 @@ try {
     $v = Get-Content $verified -Raw | ConvertFrom-Json
     $srcIso = Join-Path $EO.Download $v.iso
     if ((Get-FileHash -Algorithm SHA256 $srcIso).Hash.ToLower() -ne $v.sha256) { throw 'Downloaded ISO no longer matches its verified hash; stopping.' }
+    # verified.json sits in a folder the standard user can write, so check its claim
+    # again here against the signed SHA256SUMS that 03 verified and kept.
+    $sums = Join-Path $EO.Download 'SHA256SUMS'
+    $sumLine = @(Get-Content $sums | Where-Object { $_ -match "^([0-9a-f]{64})\s+\*?$([regex]::Escape($v.iso))$" })
+    if ($sumLine.Count -ne 1 -or ($sumLine[0] -split '\s+')[0] -ne $v.sha256) { throw "SHA256SUMS does not list $($v.iso) with hash $($v.sha256); stopping." }
+    Assert-EoDebianSignature $sums (Join-Path $EO.Download 'SHA256SUMS.sign') (Join-Path $EO.Download 'debian-cd-key.asc')
     $free = (Get-Volume -DriveLetter C).SizeRemaining
     if ($free -lt 200GB) { throw "Only $([math]::Round($free / 1GB)) GB free on C:; stopping." }
     $os = Get-CimInstance Win32_OperatingSystem
@@ -24,8 +31,10 @@ try {
 
     $iso = Join-Path $EO.IsoDir $v.iso
     Confirm-EoPlan 'vm' @(
+        $(if (-not (Test-Path 'C:\Hyper-V')) { 'Create C:\Hyper-V (absent now; inherits the C:\ ACL)' } else { 'C:\Hyper-V exists; unchanged' })
         "Create $($EO.Root) and $($EO.IsoDir); ACL: inheritance off, full control for Administrators (S-1-5-32-544) and SYSTEM (S-1-5-18) only"
-        "Copy $($v.iso) (sha256 $($v.sha256)) to $($EO.IsoDir) and re-check the hash"
+        "Copy $($v.iso) (sha256 $($v.sha256), listed in SHA256SUMS signed by $($EO.DebianCdKeys -join ', ')) to $($EO.IsoDir) and re-check the hash"
+        "Compare that hash with https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/SHA256SUMS before typing 'vm'"
         "New-VHD $($EO.SystemVhd) 160 GB dynamic; New-VHD $($EO.AnchorVhd) 4 GB fixed (4 GB written now)"
         "New-VM $($EO.VmName): Generation 2, 16 GB static memory, 8 vCPU, config under $($EO.Root)"
         'Checkpoints disabled, automatic checkpoints off, automatic start Nothing, automatic stop ShutDown, nested virtualization off'
@@ -59,14 +68,8 @@ try {
     Add-VMHardDiskDrive -VMName $EO.VmName -ControllerType SCSI -ControllerNumber 0 -ControllerLocation 1 -Path $EO.AnchorVhd
     Add-VMDvdDrive -VMName $EO.VmName -ControllerNumber 0 -ControllerLocation 2 -Path $iso
     Set-VMFirmware -VMName $EO.VmName -EnableSecureBoot On -SecureBootTemplate MicrosoftUEFICertificateAuthority -FirstBootDevice (Get-VMDvdDrive -VMName $EO.VmName)
-    # Names are the English ones; on a localized Windows the check below fails and
-    # the step stops rather than guess.
-    $offNames = 'Guest Service Interface', 'Key-Value Pair Exchange', 'VSS'
-    $present = @(Get-VMIntegrationService -VMName $EO.VmName | ForEach-Object Name)
-    foreach ($n in $offNames + @('Heartbeat', 'Shutdown', 'Time Synchronization')) { if ($n -notin $present) { throw "Integration service '$n' not found (names: $($present -join ', ')). Run undo-02-vm.ps1." } }
-    foreach ($svc in Get-VMIntegrationService -VMName $EO.VmName) {
-        if ($svc.Name -in $offNames) { Disable-VMIntegrationService -VMName $EO.VmName -Name $svc.Name } else { Enable-VMIntegrationService -VMName $EO.VmName -Name $svc.Name }
-    }
+    foreach ($k in $EO.IcsOff.Keys) { Get-EoIntegrationService $EO.VmName $k $EO.IcsOff[$k] | Disable-VMIntegrationService }
+    foreach ($k in $EO.IcsOn.Keys) { Get-EoIntegrationService $EO.VmName $k $EO.IcsOn[$k] | Enable-VMIntegrationService }
     foreach ($port in 1, 2) { Set-VMComPort -VMName $EO.VmName -Number $port -Path '' -ErrorAction SilentlyContinue }
 
     # Verify every planned setting and fail if any differs.
@@ -87,8 +90,9 @@ try {
     if ($disks.Count -ne 2) { $problems += 'disk count' }
     if ("$($fw.SecureBoot)" -ne 'On' -or $fw.SecureBootTemplate -ne 'MicrosoftUEFICertificateAuthority') { $problems += 'secure boot' }
     if ((Get-VMSecurity -VMName $EO.VmName).TpmEnabled) { $problems += 'vTPM enabled' }
-    foreach ($svc in $ics) { Write-Host ("integration service: {0} = {1}" -f $svc.Name, $svc.Enabled) }
-    if (@($ics | Where-Object { $_.Enabled -and ($_.Name -in $offNames) }).Count) { $problems += 'integration services' }
+    foreach ($svc in $ics) { Write-Host ("integration service: {0} ({1}) = {2}" -f $svc.Name, $svc.Id, $svc.Enabled) }
+    foreach ($k in $EO.IcsOff.Keys) { if ((Get-EoIntegrationService $EO.VmName $k $EO.IcsOff[$k]).Enabled) { $problems += "integration service $k on" } }
+    foreach ($k in $EO.IcsOn.Keys) { if (-not (Get-EoIntegrationService $EO.VmName $k $EO.IcsOn[$k]).Enabled) { $problems += "integration service $k off" } }
     if (@(Get-VMSnapshot -VMName $EO.VmName).Count) { $problems += 'checkpoint exists' }
 
     $vm | Format-List Name, State, Generation, ProcessorCount, MemoryStartup, CheckpointType, AutomaticCheckpointsEnabled, AutomaticStartAction, AutomaticStopAction, Path | Out-String | Write-Host
@@ -102,6 +106,10 @@ try {
     Compare-EoSnapshot $before $after
     if ($problems.Count) { throw "Verification failed: $($problems -join ', '). Run undo-02-vm.ps1." }
     Write-Host 'STEP 02 DONE: VM eo-l2 created, verified, and left off.'
+} catch {
+    Write-Host "STEP 02 STOPPED: $($_.Exception.Message)"
+    if ($before) { Write-Host 'Changes may be partly made. Run undo-02-vm.ps1 to remove the VM and its folder, then fix the cause and rerun.' }
+    throw
 } finally {
     Stop-EoLog
 }

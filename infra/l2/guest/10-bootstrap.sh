@@ -43,7 +43,7 @@ eo_confirm bootstrap \
   "Node.js $EO_NODE_VERSION from nodejs.org into /opt/node, sha256 $EO_NODE_SHA256" \
   "Worker base image: debootstrap --variant=minbase trixie into /var/lib/eo-build, saved as a tar with its sha256" \
   "Interface names by MAC: eoint ($EO_INT_MAC) static $EO_GUEST_IP/$EO_PREFIX, no gateway; eosetup ($EO_SETUP_MAC) DHCP until step 20" \
-  "Kernel: ipv6.disable=1; blacklist hv_sock, vsock and bluetooth modules; sysctl hardening" \
+  "Kernel: ipv6.disable=1; blacklist hv_sock, vsock and bluetooth modules and delete the vsock module files; sysctl hardening" \
   "nftables: inbound only SSH from $EO_HOST_IP on eoint; outbound only replies, plus eosetup until step 20" \
   "Accounts: eo, eo-anchor, eo-worker (no login shell, no sudo); eo-worker subuid/subgid range and lingering" \
   "sshd: listen on $EO_GUEST_IP only, key only, only eo-admin from $EO_HOST_IP, no agent/X11/remote/stream forwarding" \
@@ -142,8 +142,19 @@ install vmw_vsock_vmci_transport /bin/false
 install bluetooth /bin/false
 install btusb /bin/false
 EOF
+# The blacklist only stops modprobe; root could still insmod the (Debian-signed)
+# module file. Remove the host-guest socket modules from the system and keep dpkg
+# from installing them again with a kernel update.
+cat >/etc/dpkg/dpkg.cfg.d/90-eo-l2-no-vsock <<'EOF'
+path-exclude=/usr/lib/modules/*/kernel/net/vmw_vsock/*
+path-exclude=/lib/modules/*/kernel/net/vmw_vsock/*
+EOF
+find /usr/lib/modules /lib/modules -path '*/kernel/net/vmw_vsock/*' -name '*.ko*' -print -delete 2>/dev/null || true
+for k in /usr/lib/modules/*; do depmod -a "$(basename "$k")"; done
 cat >/etc/sysctl.d/90-eo-l2.conf <<'EOF'
 net.ipv4.ip_forward = 0
+# sshd binds 192.168.250.2 even if eoint comes up after it.
+net.ipv4.ip_nonlocal_bind = 1
 net.ipv4.conf.all.accept_redirects = 0
 net.ipv4.conf.all.send_redirects = 0
 net.ipv4.conf.all.accept_source_route = 0
@@ -176,7 +187,7 @@ table inet eo {
         ct state established,related accept
         iifname "eoint" ip saddr $EO_HOST_IP ip daddr $EO_GUEST_IP tcp dport 22 accept
         include "/etc/nftables.d/*-input.nft"
-        log prefix "eo-drop-in " level info limit rate 10/second drop
+        limit rate 10/second log prefix "eo-drop-in " level info
     }
     chain forward {
         type filter hook forward priority 0; policy drop;
@@ -186,7 +197,7 @@ table inet eo {
         oif lo accept
         ct state established,related accept
         include "/etc/nftables.d/*-output.nft"
-        log prefix "eo-drop-out " level info limit rate 10/second drop
+        limit rate 10/second log prefix "eo-drop-out " level info
     }
 }
 EOF
@@ -244,7 +255,7 @@ PermitUserEnvironment no
 # VS Code Remote-SSH talks to its server through a local (host-initiated)
 # forward to the guest's loopback; nothing else may be forwarded.
 AllowTcpForwarding local
-PermitOpen 127.0.0.1:*
+PermitOpen 127.0.0.1:* localhost:*
 MaxAuthTries 3
 LoginGraceTime 30
 EOF

@@ -133,6 +133,20 @@ jobs:
       - name: Self-test under PowerShell 7
         shell: pwsh
         run: .\infra\l2\host\tests\selftest.ps1 -KeyDir "$env:RUNNER_TEMP\keys"
+      - name: Guest scripts keep LF endings in a Windows checkout
+        shell: powershell
+        run: |
+          git config --get core.autocrlf
+          $crlf = @(Get-ChildItem -Recurse -File infra\l2\guest, services | Where-Object { [IO.File]::ReadAllText($_.FullName).Contains("`r") })
+          if ($crlf.Count) { throw "CRLF in: $($crlf.FullName -join ', ')" }
+          Write-Host "no CR in $(@(Get-ChildItem -Recurse -File infra\l2\guest, services).Count) files"
+      - name: PSScriptAnalyzer (errors)
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) { Write-Host 'PSScriptAnalyzer is not on this runner image; skipped'; exit 0 }
+          $r = @(Invoke-ScriptAnalyzer -Path infra\l2\host -Recurse -Severity Error)
+          $r | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
+          if ($r.Count) { throw "$($r.Count) PSScriptAnalyzer error(s)" }
 
   infra-guest-scripts:
     runs-on: ubuntu-24.04

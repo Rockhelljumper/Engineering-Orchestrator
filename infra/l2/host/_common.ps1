@@ -40,10 +40,28 @@ $EO = [ordered]@{
     # Debian CD signing key (https://www.debian.org/CD/verify). The signature on
     # SHA256SUMS must come from one of these primary key fingerprints.
     DebianCdKeys = @('DF9B9C49EAA9298432589D76DA87E80D6294BE9B')
+    # Hyper-V integration services by their fixed service GUIDs (the last part of
+    # each Get-VMIntegrationService Id), so the steps also work on a localized Windows.
+    IcsOff       = [ordered]@{ 'Guest Service Interface' = '6C09BB55-D683-4DA0-8931-C9BF705F6480'; 'Key-Value Pair Exchange' = '2A34B1C2-FD73-4043-8A5B-DD2159BC743F'; 'VSS' = '5CED1297-4598-4915-A5FC-AD21BB4D02A4' }
+    IcsOn        = [ordered]@{ 'Heartbeat' = '84EAAE65-2F2E-45F5-9BB5-0E857DC8EB47'; 'Shutdown' = '9F8233AC-BE49-4C79-8EE3-E7E1985B2077'; 'Time Synchronization' = '2497F4DE-E9FA-4204-80E4-4B75C46419C0' }
+    # Optional host guard (only with the owner's approval; see README): NetBIOS off on
+    # the host vNIC, and the host may send the guest nothing but SSH.
+    GuardRules   = @('eo-l2-out-block-tcp', 'eo-l2-out-block-udp', 'eo-l2-out-block-icmp')
+}
+
+# The VM's integration service with this GUID, matched on the Id's GUID part and
+# falling back to the English name. Throws when neither matches.
+function Get-EoIntegrationService([string]$VmName, [string]$Name, [string]$Guid) {
+    $all = @(Get-VMIntegrationService -VMName $VmName)
+    $hit = @($all | Where-Object { "$($_.Id)" -match "$([regex]::Escape($Guid))$" })
+    if (-not $hit.Count) { $hit = @($all | Where-Object Name -eq $Name) }
+    if ($hit.Count -ne 1) { throw "Integration service '$Name' ($Guid) not found on $VmName (found: $(($all | ForEach-Object { "$($_.Name)=$($_.Id)" }) -join ', '))" }
+    return $hit[0]
 }
 
 # Runs a native program without letting Windows PowerShell 5.1 turn its stderr
-# into a terminating error. Returns all output lines as strings; throws on a
+# into a terminating error. Writes each output line to the pipeline as a string,
+# so a filter after it sees lines; wrap the call in @() for an array. Throws on a
 # non-zero exit code unless -AllowFail.
 function Invoke-EoNative([string]$Exe, [string[]]$Arguments, [switch]$AllowFail) {
     $old = $ErrorActionPreference
@@ -55,7 +73,44 @@ function Invoke-EoNative([string]$Exe, [string[]]$Arguments, [switch]$AllowFail)
         $ErrorActionPreference = $old
     }
     if ($code -ne 0 -and -not $AllowFail) { throw "$Exe exited with $code`n$($out -join "`n")" }
-    return ,$out
+    $out
+}
+
+# Verifies that $Sign is a good signature over $Sums by a key whose primary
+# fingerprint is in $EO.DebianCdKeys, using only the key in $KeyFile, in a
+# throwaway gpg home that is removed afterwards. Returns the primary fingerprint;
+# throws otherwise. Used by 03 (after download) and again by 02 (elevated).
+function Assert-EoDebianSignature([string]$Sums, [string]$Sign, [string]$KeyFile) {
+    $gpg = 'C:\Program Files\Git\usr\bin\gpg.exe'
+    $gpgconf = 'C:\Program Files\Git\usr\bin\gpgconf.exe'
+    if (-not (Test-Path $gpg)) { throw "gpg not found at $gpg" }
+    $home_ = Join-Path ([IO.Path]::GetTempPath()) ("eo-l2-gnupg-" + [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $home_ | Out-Null
+    # gpg from Git for Windows takes MSYS-style paths.
+    $msys = { param($p) $p -replace '^([A-Za-z]):', '/$1' -replace '\\', '/' }
+    $gh = & $msys $home_
+    $statusFile = Join-Path $home_ 'status.txt'
+    try {
+        Invoke-EoNative $gpg @('--homedir', $gh, '--batch', '--quiet', '--import', (& $msys $KeyFile)) | Write-Host
+        $fprs = @(Invoke-EoNative $gpg @('--homedir', $gh, '--batch', '--with-colons', '--fingerprint') | Where-Object { $_ -like 'fpr:*' } | ForEach-Object { ($_ -split ':')[9] })
+        Write-Host "imported fingerprints: $($fprs -join ', ')"
+        Invoke-EoNative $gpg @('--homedir', $gh, '--batch', '--status-file', (& $msys $statusFile), '--verify', (& $msys $Sign), (& $msys $Sums)) -AllowFail | Write-Host
+        $status = @(Get-Content $statusFile)
+        $status | Write-Host
+        $valid = @($status | Where-Object { $_ -match '^\[GNUPG:\] VALIDSIG ' })
+        if ($valid.Count -ne 1) { throw 'SHA256SUMS signature did not verify (no single VALIDSIG).' }
+        # VALIDSIG <signing-key-fpr> ... <primary-key-fpr>: the primary is the last field.
+        $primary = ($valid[0] -split ' ')[-1]
+        if ($primary -notin $EO.DebianCdKeys) { throw "Signature is valid but from $primary, which is not an expected Debian CD key. Compare with https://www.debian.org/CD/verify before going on." }
+        if (-not ($status | Where-Object { $_ -match '^\[GNUPG:\] GOODSIG ' })) { throw 'No GOODSIG status.' }
+        Write-Host "SIGNATURE OK: primary key $primary"
+        return $primary
+    } finally {
+        # gpg 2.4 may leave an agent or keyboxd running in the home; stop them first.
+        if (Test-Path $gpgconf) { Invoke-EoNative $gpgconf @('--homedir', $gh, '--kill', 'all') -AllowFail | Out-Null }
+        Remove-Item -Recurse -Force $home_ -ErrorAction SilentlyContinue
+        if (Test-Path $home_) { Write-Host "note: could not remove $home_; delete it by hand" }
+    }
 }
 
 function Test-EoAdmin {
@@ -98,7 +153,9 @@ function Confirm-EoPlan([string]$Step, [string[]]$Lines) {
 }
 
 # A JSON snapshot of the host state the steps must not disturb. Taken before and
-# after every changing step; Compare-EoSnapshot reports every difference.
+# after every changing host step (01, 01b, 02, 04a, 04b and the undos; 03 and 05
+# change only files in the user profile); Compare-EoSnapshot prints every
+# difference for the operator to read.
 function Get-EoSnapshot {
     $s = [ordered]@{}
     $s.vmSwitches   = @(Get-VMSwitch | Sort-Object Name | ForEach-Object { [ordered]@{ name = $_.Name; type = "$($_.SwitchType)"; adapter = $_.NetAdapterInterfaceDescription } })
@@ -106,6 +163,7 @@ function Get-EoSnapshot {
     $s.vmAdapters   = @(Get-VMNetworkAdapter -All | Sort-Object VMName, Name | ForEach-Object { [ordered]@{ vm = $_.VMName; name = $_.Name; switch = $_.SwitchName; mac = $_.MacAddress; managementOs = $_.IsManagementOs } })
     $s.netAdapters  = @(Get-NetAdapter -IncludeHidden | Sort-Object Name | ForEach-Object { [ordered]@{ name = $_.Name; description = $_.InterfaceDescription; mac = $_.MacAddress } })
     $s.ipAddresses  = @(Get-NetIPAddress | Sort-Object InterfaceAlias, IPAddress | ForEach-Object { [ordered]@{ if = $_.InterfaceAlias; ip = $_.IPAddress; prefix = $_.PrefixLength } })
+    $s.routes       = @(Get-NetRoute -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.DestinationPrefix -notlike '224.*' -and $_.DestinationPrefix -ne '255.255.255.255/32' } | Sort-Object DestinationPrefix, InterfaceAlias | ForEach-Object { "$($_.DestinationPrefix) via $($_.NextHop) on $($_.InterfaceAlias)" })
     $s.forwarding   = @(Get-NetIPInterface | Where-Object Forwarding -eq 'Enabled' | Sort-Object InterfaceAlias, AddressFamily | ForEach-Object { "$($_.InterfaceAlias)/$($_.AddressFamily)" })
     $s.nat          = @(Get-NetNat -ErrorAction SilentlyContinue | Sort-Object Name | ForEach-Object { [ordered]@{ name = $_.Name; prefix = $_.InternalIPInterfaceAddressPrefix } })
     $rules          = @(Get-NetFirewallRule | Sort-Object Name | ForEach-Object { "$($_.Name)|$($_.Enabled)|$($_.Action)|$($_.Direction)|$($_.Profile)" })

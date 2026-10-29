@@ -8,8 +8,10 @@
 Assert-EoAdmin
 
 $stamp = Start-EoLog 'switch'
+$before = $null
 try {
     if (Get-VMSwitch -Name $EO.SwitchName -ErrorAction SilentlyContinue) { throw "Switch $($EO.SwitchName) already exists; stopping." }
+    if (Get-NetAdapter -Name $EO.HostIf -IncludeHidden -ErrorAction SilentlyContinue) { throw "A (possibly hidden) adapter named '$($EO.HostIf)' already exists; remove it in Device Manager (View > Show hidden devices) and rerun." }
     if (@(Get-NetFirewallRule -Group $EO.FwGroup -ErrorAction SilentlyContinue).Count) { throw "Firewall group $($EO.FwGroup) already has rules; stopping." }
     if (@(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { Test-EoOverlap $_.IPAddress 32 }).Count) { throw 'An address inside 192.168.250.0/29 is already in use; stopping.' }
 
@@ -59,7 +61,13 @@ try {
     $after = Save-EoSnapshot $stamp 'after'
     Compare-EoSnapshot $before $after
     if ($problems.Count) { throw "Verification failed: $($problems -join '; '). Run undo-01-switch.ps1." }
+    & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly
+    if ($LASTEXITCODE -ne 0) { throw 'Host-side switch verification failed. Run undo-01-switch.ps1.' }
     Write-Host 'STEP 01 DONE: eo-l2-int created and verified.'
+} catch {
+    Write-Host "STEP 01 STOPPED: $($_.Exception.Message)"
+    if ($before) { Write-Host 'Changes may be partly made. Run undo-01-switch.ps1 to remove the switch and the eo-l2 rules, then fix the cause and rerun.' }
+    throw
 } finally {
     Stop-EoLog
 }

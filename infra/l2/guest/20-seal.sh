@@ -7,7 +7,10 @@ source "$(dirname "$0")/_lib.sh"
 eo_need_root
 eo_log_start seal
 
-[[ -z $(ls -A /srv/eo 2>/dev/null) ]] || eo_die "/srv/eo is not empty: eo code or data arrived before sealing"
+[[ -z $(find /srv/eo -mindepth 1 -maxdepth 1 ! -name lost+found 2>/dev/null) ]] || eo_die "/srv/eo is not empty: eo code or data arrived before sealing"
+# The positive control cannot run after sealing, so it must have passed first.
+python3 -I -c 'import json,sys; sys.exit(0 if json.load(open("/var/log/eo-l2/b9-setup.json")).get("passed") is True else 1)' \
+    || eo_die "B9 positive control has not passed (/var/log/eo-l2/b9-setup.json); run b9-probe.py setup first"
 [[ ! -e /opt/eo ]] || eo_die "/opt/eo exists before sealing"
 mountpoint -q /srv/eo-anchor || eo_die "run 11-storage.sh first"
 
@@ -17,6 +20,8 @@ eo_confirm seal \
   "Empty /etc/resolv.conf; mask apt-daily timers (there is no network to update from)" \
   "Record the sealed configuration, then power off so the host can remove the setup NIC"
 
+# Stop DHCP on the setup NIC while its stanza still exists, then remove it.
+ifdown --force eosetup 2>/dev/null || true
 python3 - <<'EOF'
 import re
 p = '/etc/network/interfaces'
@@ -26,7 +31,8 @@ assert 'eosetup' not in s, s
 open(p, 'w').write(s)
 EOF
 rm -f /etc/systemd/network/11-eosetup.link /etc/nftables.d/50-setup-input.nft /etc/nftables.d/50-setup-output.nft
-ifdown --force eosetup 2>/dev/null || true
+pkill -f 'dhclient.*eosetup' 2>/dev/null || true
+apt-get clean
 : >/etc/resolv.conf
 rm -f /etc/dhcp/dhclient-exit-hooks.d/eo-* 2>/dev/null || true
 systemctl mask --now apt-daily.timer apt-daily-upgrade.timer >/dev/null 2>&1 || true
