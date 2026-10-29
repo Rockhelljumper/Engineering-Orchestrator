@@ -1,0 +1,15 @@
+# eo-anchor admin socket: root only (eo-anchorctl through sudo).
+[Unit]
+Description=eo rollback-anchor admin socket
+
+[Socket]
+ListenStream=/run/eo-anchor-admin/admin.sock
+FileDescriptorName=admin
+SocketUser=root
+SocketGroup=root
+SocketMode=0600
+DirectoryMode=0700
+Service=eo-anchor.service
+
+[Install]
+WantedBy=sockets.target
