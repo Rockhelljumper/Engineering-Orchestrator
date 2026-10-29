@@ -45,6 +45,11 @@ try {
         "First, record the NetBIOS value ($nbBefore), this adapter (GUID $($cur.Adapter.InterfaceGuid), MAC $($cur.Adapter.MacAddress)), the switch id and instance $instance in $($EO.GuardState); the undo restores only from that record"
         'SSH from the host to 192.168.250.2:22 keeps working; nothing else on the host changes'
     )
+    # The host may have changed while the plan waited: the adapter and its NetBIOS value must be as shown.
+    $cur2 = Get-EoGuardCurrent
+    if (-not $cur2.Adapter -or "$($cur2.Adapter.InterfaceGuid)" -ne "$($cur.Adapter.InterfaceGuid)" -or "$($cur2.SwitchId)" -ne "$($cur.SwitchId)") { throw 'The switch or host adapter changed while the plan waited; stopping before any change.' }
+    if ("$($cur2.Adapter.Config.TcpipNetbiosOptions)" -ne "$raw") { throw "TcpipNetbiosOptions changed from $raw to $($cur2.Adapter.Config.TcpipNetbiosOptions) while the plan waited; stopping before any change." }
+    $cfg = $cur2.Adapter.Config
     $before = Save-EoSnapshot $stamp 'before'
     $state = [ordered]@{
         schema = $EoGuardSchema; instanceId = $instance; createdAt = (Get-Date).ToUniversalTime().ToString('o'); computer = $env:COMPUTERNAME

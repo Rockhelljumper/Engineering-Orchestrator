@@ -190,6 +190,7 @@ $badAcl = [ordered]@{
     'file grants a user'             = @($false, @{ Allow = @('S-1-5-18', $userSid) }, "grants access to $userSid")
     'a file where the folder should be' = @($true, @{ Container = $false; Protected = $true }, 'is a file, want a folder')
     'a folder where the file should be' = @($false, @{ Container = $true }, 'is a folder, want a file')
+    'folder with a null ACL'         = @($true, @{ Allow = @() }, 'has no access entries')
 }
 foreach ($k in $badAcl.Keys) {
     $c = $badAcl[$k][0]

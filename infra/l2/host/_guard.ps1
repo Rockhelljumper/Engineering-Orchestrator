@@ -197,6 +197,7 @@ function Test-EoAclFacts($Facts, [switch]$Container) {
     if ([bool]$Facts.Container -ne [bool]$Container) { $p.Add("$($Facts.Path) is $(if ($Facts.Container) { 'a folder' } else { 'a file' }), want $(if ($Container) { 'a folder' } else { 'a file' })") }
     if ("$($Facts.Owner)" -notin $EoAdminSids) { $p.Add("$($Facts.Path) is owned by $($Facts.Owner), want Administrators or SYSTEM") }
     if ($Container -and -not $Facts.Protected) { $p.Add("$($Facts.Path) inherits permissions from its parent") }
+    if (-not @(@($Facts.Allow) | Where-Object { "$_" }).Count) { $p.Add("$($Facts.Path) has no access entries (an empty or null ACL)") }
     $others = @(@($Facts.Allow) | Where-Object { "$_" -notin $EoAdminSids } | Sort-Object -Unique)
     if ($others.Count) { $p.Add("$($Facts.Path) grants access to $($others -join ', ')") }
     return $p

@@ -85,15 +85,21 @@ try {
     foreach ($k in $alter.Keys) {
         Make
         $base = $alter[$k][0]
+        # Wait until the recreated rule is in the active policy as specified, so a
+        # failure below comes from the alteration, not from the policy lagging.
+        $ready = @(Problems $base)
+        if ($ready.Count) { Expect "live: $k baseline in force before altering" $false ($ready -join '; '); continue }
         try { & $alter[$k][1] | Out-Null } catch { Expect "live: alteration '$k' could be applied" $false $_.Exception.Message; continue }
         $want = $alter[$k][2]
         $p = @(Test-EoRuleFacts "$prefix$base" (Get-EoRuleFacts "$prefix$base" 'PersistentStore') $all[$base])
         $hit = @($p | Where-Object { $_ -match "^$([regex]::Escape("$prefix$base")): $want\b" })
         Expect "live: $k fails verification for $want (persistent store)" ($hit.Count -gt 0) "reported: $($p -join '; ')"
-        # In the active policy a disabled or deleted rule may be absent; either way it must fail.
+        # In the active policy only a disabled or deleted rule may read as absent or not
+        # in force; every other alteration must show as the altered filter.
+        $apat = if ($want -in 'Enabled', 'missing') { "($want\b|missing|not in force)" } else { "$want\b" }
         for ($i = 0; $i -lt 20; $i++) {
             $a = @(Test-EoRuleFacts "$prefix$base" (Get-EoRuleFacts "$prefix$base" 'ActiveStore') $all[$base] -Active)
-            $ahit = @($a | Where-Object { $_ -match "^$([regex]::Escape("$prefix$base")): ($want\b|missing|not in force)" })
+            $ahit = @($a | Where-Object { $_ -match "^$([regex]::Escape("$prefix$base")): $apat" })
             if ($ahit.Count) { break }
             Start-Sleep -Milliseconds 500
         }
@@ -105,7 +111,7 @@ try {
     # as in force, so the profile check has to catch it.
     $before = @(Test-EoProfileFacts (Get-EoProfileFacts) $Alias | Where-Object { $_ -match 'DisabledInterfaceAliases' })
     Expect 'live: profile check reports no exemption before' ($before.Count -eq 0) ($before -join '; ')
-    $savedAliases = @((Get-NetFirewallProfile -Profile Public -PolicyStore PersistentStore).DisabledInterfaceAliases)
+    $savedAliases = @(@((Get-NetFirewallProfile -Profile Public -PolicyStore PersistentStore).DisabledInterfaceAliases) | Where-Object { "$_" })
     Write-Host "Public profile DisabledInterfaceAliases before: $($savedAliases -join '|')"
     $profChanged = $true
     Set-NetFirewallProfile -Profile Public -DisabledInterfaceAliases $Alias
@@ -116,6 +122,16 @@ try {
     }
     Expect 'live: adapter exempted from the Public profile fails the profile check' ($pp.Count -gt 0) 'no problem reported'
     if ($pp.Count) { Write-Host "     -> $($pp[0])" }
+
+    # An enabled rule that may override block rules (scoped to a documentation address).
+    New-NetFirewallRule -Name "${prefix}override" -DisplayName "${prefix}override" -Group $group -Direction Inbound -Action Allow -Enabled True `
+        -RemoteAddress '192.0.2.1' -Authentication Required -OverrideBlockRules $true -RemoteMachine 'D:(A;;CC;;;S-1-5-32-544)' | Out-Null
+    for ($i = 0; $i -lt 20; $i++) {
+        $ov = @(Get-EoOverrideRules | Where-Object Name -eq "${prefix}override")
+        if ($ov.Count) { break }
+        Start-Sleep -Milliseconds 500
+    }
+    Expect 'live: an enabled rule that may override block rules is found' ($ov.Count -gt 0) 'not found'
 } finally {
     Remove-CiRules
     Get-NetFirewallRule -Group "$group-other" -ErrorAction SilentlyContinue | Remove-NetFirewallRule
