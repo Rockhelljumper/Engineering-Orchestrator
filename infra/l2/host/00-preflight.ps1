@@ -41,6 +41,8 @@ try {
     Info 'C:\Hyper-V exists (02 creates it when absent)' { Test-Path 'C:\Hyper-V' }
     Check "No folder $($EO.Root)" { @{ ok = -not (Test-Path $EO.Root); detail = $(if (Test-Path $EO.Root) { 'exists' } else { 'absent' }) } }
     Check "No firewall rules in group $($EO.FwGroup)" { $x = @(Get-NetFirewallRule -Group $EO.FwGroup -ErrorAction SilentlyContinue); @{ ok = $x.Count -eq 0; detail = "$($x.Count) rules" } }
+    Check 'No rules with the host guard (01b) names, in any group' { $x = @($EO.GuardRules | ForEach-Object { Get-NetFirewallRule -Name $_ -ErrorAction SilentlyContinue }); @{ ok = $x.Count -eq 0; detail = (@($x | ForEach-Object { "$($_.Name) (group '$($_.Group)')" }) -join ', ') } }
+    Check "No folder $($EO.GuardDir) (01b creates it)" { @{ ok = -not (Test-Path -LiteralPath $EO.GuardDir); detail = $(if (Test-Path -LiteralPath $EO.GuardDir) { 'exists' } else { 'absent' }) } }
     Check "No host interface named $($EO.HostIf)" { $x = Get-NetAdapter -Name $EO.HostIf -ErrorAction SilentlyContinue; @{ ok = -not $x; detail = $(if ($x) { 'exists' } else { 'absent' }) } }
     Check 'Planned MAC addresses unused' {
         $used = @(Get-VMNetworkAdapter -All | Where-Object { $_.MacAddress -in @($EO.IntMac, $EO.SetupMac) })
@@ -77,11 +79,12 @@ try {
     }
 
     # The eo-l2 rules only matter if Windows Firewall is the firewall in force and applies local rules.
-    Check 'Windows Firewall on for every profile, inbound default Block, local rules applied (active policy)' {
-        $p = @(Get-NetFirewallProfile -PolicyStore ActiveStore)
-        $bad = @($p | Where-Object { "$($_.Enabled)" -ne 'True' -or "$($_.DefaultInboundAction)" -notin @('Block', 'NotConfigured') -or "$($_.AllowLocalFirewallRules)" -eq 'False' })
-        @{ ok = ($p.Count -eq 3 -and $bad.Count -eq 0); detail = ($p | ForEach-Object { "$($_.Name): enabled=$($_.Enabled) inbound=$($_.DefaultInboundAction) localRules=$($_.AllowLocalFirewallRules)" }) -join '; ' }
+    Check "Windows Firewall on for every profile, inbound default Block, local rules applied, '$($EO.HostIf)' not exempt (active policy)" {
+        $p = Get-EoProfileFacts
+        $bad = @(Test-EoProfileFacts $p)
+        @{ ok = ($bad.Count -eq 0); detail = $(if ($bad.Count) { $bad -join '; ' } else { ($p | ForEach-Object { "$($_.Name): enabled=$($_.Enabled) inbound=$($_.DefaultInboundAction) localRules=$($_.AllowLocalFirewallRules) disabledOn=$(@($_.DisabledInterfaceAliases) -join '|')" }) -join '; ' }) }
     }
+    Check 'No enabled rule may override block rules (active policy)' { $x = @(Get-EoOverrideRules); @{ ok = $x.Count -eq 0; detail = $(if ($x.Count) { ($x | ForEach-Object { "$($_.DisplayName) ($($_.Name))" }) -join ', ' } else { 'none' }) } }
     Check 'No third-party firewall registered with Windows Security' {
         $x = @(Get-CimInstance -Namespace root/SecurityCenter2 -ClassName FirewallProduct -ErrorAction SilentlyContinue)
         @{ ok = $x.Count -eq 0; detail = $(if ($x.Count) { ($x | ForEach-Object displayName) -join ', ' } else { 'none' }) }

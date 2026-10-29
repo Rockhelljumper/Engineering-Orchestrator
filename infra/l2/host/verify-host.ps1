@@ -5,7 +5,8 @@
 #   Plus: no checkpoints, checkpoints disabled, guest services/KVP/VSS off, no DVD,
 #   eo-l2-int has no NAT, no default route, forwarding off, and the eo-l2 rules are
 #   in the active policy with their address and interface filters, with Windows
-#   Firewall on and applying local rules. -SwitchOnly runs only the switch and host
+#   Firewall on, applying local rules, not exempting eo-l2-int, and no enabled rule
+#   that may override block rules. -SwitchOnly runs only the switch and host
 #   checks (used by 01 and 01b, before the VM exists). The host guard (01b) is
 #   required; only 01-switch.ps1, which runs before 01b, passes -BeforeGuard.
 param([switch]$NoLog, [switch]$SwitchOnly, [switch]$BeforeGuard)
@@ -43,8 +44,9 @@ try {
     $present = @($EO.GuardRules | Where-Object { Get-NetFirewallRule -PolicyStore PersistentStore -Name $_ -ErrorAction SilentlyContinue })
     $gstate = $null; $gerr = $null
     try { $gstate = Read-EoGuardState } catch { $gerr = $_.Exception.Message }
-    if ($BeforeGuard -and ($present.Count -or $gstate -or $gerr)) {
-        Row 'Host guard not present yet (-BeforeGuard)' $false ("present: $($present -join ', '); state record: $([bool]$gstate)")
+    $gfile = Test-Path -LiteralPath $EO.GuardState
+    if ($BeforeGuard -and ($present.Count -or $gfile)) {
+        Row 'Host guard not present yet (-BeforeGuard)' $false ("present: $($present -join ', '); state record: $gfile")
     } elseif (-not $BeforeGuard) {
         Row 'Host guard: all three rules present (none or all)' ($present.Count -eq $EO.GuardRules.Count) ("present: " + ($present -join ', '))
         foreach ($n in $specs.Guard.Keys) {
@@ -62,9 +64,11 @@ try {
     $known = @($specs.Inbound.Keys) + @($specs.Guard.Keys)
     $unexpected = @(Get-NetFirewallRule -PolicyStore ActiveStore -Group $EO.FwGroup -ErrorAction SilentlyContinue | Where-Object { $_.Name -notin $known })
     Row 'No other rules in group eo-l2' ($unexpected.Count -eq 0) (($unexpected | ForEach-Object Name) -join ', ')
-    $prof = @(Get-NetFirewallProfile -PolicyStore ActiveStore)
-    $badProf = @($prof | Where-Object { "$($_.Enabled)" -ne 'True' -or "$($_.DefaultInboundAction)" -notin @('Block', 'NotConfigured') -or "$($_.AllowLocalFirewallRules)" -eq 'False' })
-    Row 'Windows Firewall on for every profile, inbound default Block, local rules applied' ($prof.Count -eq 3 -and $badProf.Count -eq 0) (($prof | ForEach-Object { "$($_.Name)=$($_.Enabled)/$($_.DefaultInboundAction)/$($_.AllowLocalFirewallRules)" }) -join ' ')
+    $prof = Get-EoProfileFacts
+    $badProf = @(Test-EoProfileFacts $prof)
+    Row 'Windows Firewall on for every profile, inbound default Block, local rules applied, eo-l2-int not exempt' ($badProf.Count -eq 0) $(if ($badProf.Count) { $badProf -join '; ' } else { ($prof | ForEach-Object { "$($_.Name)=$($_.Enabled)/$($_.DefaultInboundAction)/$($_.AllowLocalFirewallRules)" }) -join ' ' })
+    $ovr = @(Get-EoOverrideRules)
+    Row 'No enabled rule may override block rules' ($ovr.Count -eq 0) (($ovr | ForEach-Object { "$($_.DisplayName) ($($_.Name))" }) -join ', ')
     $router = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters' -Name IPEnableRouter -ErrorAction SilentlyContinue).IPEnableRouter
     Row 'Host-wide IP routing off (IPEnableRouter)' (-not $router) "IPEnableRouter=$router"
     # Reads the .wslconfig of the user running this check; run it as the account that uses WSL.

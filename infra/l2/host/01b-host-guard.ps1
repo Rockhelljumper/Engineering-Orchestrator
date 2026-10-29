@@ -23,6 +23,11 @@ try {
     $existing = @($EO.GuardRules | ForEach-Object { Get-NetFirewallRule -Name $_ -ErrorAction SilentlyContinue })
     if ($existing.Count) { throw "Rules with the host guard names already exist: $(($existing | ForEach-Object { "$($_.Name) (group '$($_.Group)')" }) -join ', '); stopping before any change." }
     if (Test-Path -LiteralPath $EO.GuardState) { throw "$($EO.GuardState) exists: an earlier 01b was not undone. Run undo-01b-host-guard.ps1 first." }
+    # A folder already there must be protected and empty; checked again before writing.
+    if (Test-Path -LiteralPath $EO.GuardDir) {
+        $dp = @(Test-EoAclFacts (Get-EoAclFacts $EO.GuardDir) -Container) + @(@(Get-ChildItem -LiteralPath $EO.GuardDir -Force) | ForEach-Object { "contains $($_.Name)" })
+        if ($dp.Count) { throw "$($EO.GuardDir) exists and is not safe to use: $($dp -join '; '). Check who made it, remove it, and rerun; stopping before any change." }
+    }
     $cur = Get-EoGuardCurrent
     if (-not $cur.SwitchId -or -not $cur.Adapter) { throw "Switch $($EO.SwitchName) or its host adapter is missing; run 01-switch.ps1 first." }
     $cfg = $cur.Adapter.Config
@@ -36,7 +41,7 @@ try {
         "Firewall (group $($EO.FwGroup)): block outbound TCP to remote ports 1-21 and 23-65535 on '$($EO.HostIf)', all profiles"
         "Firewall (group $($EO.FwGroup)): block outbound UDP on '$($EO.HostIf)', all profiles"
         "Firewall (group $($EO.FwGroup)): block outbound ICMPv4 on '$($EO.HostIf)', all profiles"
-        "Create $($EO.GuardDir) (Administrators and SYSTEM only) if absent"
+        "Create $($EO.GuardDir) if absent, Administrators and SYSTEM only and owned by Administrators, and check it is empty and not a link"
         "First, record the NetBIOS value ($nbBefore), this adapter (GUID $($cur.Adapter.InterfaceGuid), MAC $($cur.Adapter.MacAddress)), the switch id and instance $instance in $($EO.GuardState); the undo restores only from that record"
         'SSH from the host to 192.168.250.2:22 keeps working; nothing else on the host changes'
     )
@@ -47,16 +52,14 @@ try {
         adapter = [ordered]@{ name = $EO.HostIf; interfaceGuid = $cur.Adapter.InterfaceGuid; macAddress = $cur.Adapter.MacAddress; settingId = $cur.Adapter.SettingId }
         netbiosBefore = $nbBefore; rules = $EO.GuardRules
     }
-    # Kept under %ProgramData% with an Administrators-and-SYSTEM-only ACL, so a
-    # standard-user process cannot edit the value the elevated undo will restore.
-    if (-not (Test-Path -LiteralPath $EO.GuardDir)) {
-        New-Item -ItemType Directory -Path $EO.GuardDir | Out-Null
-        Invoke-EoNative icacls.exe @($EO.GuardDir, '/inheritance:r', '/grant:r', '*S-1-5-32-544:(OI)(CI)F', '*S-1-5-18:(OI)(CI)F') | Write-Host
-    }
+    # Kept under %ProgramData% in a folder only Administrators and SYSTEM can write,
+    # so a standard-user process cannot edit the value the elevated undo will restore.
+    Initialize-EoGuardDir
     # Written whole to a temporary file, then moved into place, so a crash leaves no half record.
     $tmp = "$($EO.GuardState).tmp"
     $state | ConvertTo-Json -Depth 4 | Set-Content -Encoding UTF8 -LiteralPath $tmp
     Move-Item -LiteralPath $tmp -Destination $EO.GuardState
+    Invoke-EoNative icacls.exe @($EO.GuardState, '/setowner', '*S-1-5-32-544') | Write-Host
     Copy-Item -LiteralPath $EO.GuardState (Join-Path $EO.Evidence "$stamp-host-guard-state.json")
     $check = @(Test-EoGuardState (Read-EoGuardState) (Get-EoGuardCurrent))
     if ($check.Count) { throw "The state record does not read back cleanly: $($check -join '; ')" }

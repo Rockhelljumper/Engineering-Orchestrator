@@ -6,15 +6,18 @@
 # A value set in one canonical form: lower case, sorted, comma-joined.
 function ConvertTo-EoCanon($Values) { (@($Values) | ForEach-Object { "$_".Trim().ToLowerInvariant() } | Sort-Object) -join ',' }
 
-# The exact shape of each eo-l2 rule. Every filter Windows can use to narrow a
-# rule is listed, so a rule that has been limited to one program, package, user,
-# machine, port, address or interface fails. Each filter lists its accepted
-# canonical forms (Windows may write 192.168.250.0/29 as 192.168.250.0/255.255.255.248;
-# '' is an empty value). -HostIf lets the CI test check real rules on another adapter.
-function Get-EoRuleSpecs([string]$HostIf = $EO.HostIf) {
+# The exact shape of each eo-l2 rule. The filters the firewall cmdlets expose for
+# narrowing a rule are listed (program, package, service, user, machine, port,
+# address, dynamic keyword address, interface, interface type, platform, owner),
+# so a rule limited by any of them fails; so does one moved to another group. Each
+# filter lists its accepted canonical forms (Windows may write 192.168.250.0/29 as
+# 192.168.250.0/255.255.255.248; '' is an empty value). -HostIf and -Group let the
+# CI test check real rules on another adapter and in its own group.
+function Get-EoRuleSpecs([string]$HostIf = $EO.HostIf, [string]$Group = $EO.FwGroup) {
     $any = @('any')
     $common = @{
-        Enabled = @('true'); Action = @('block'); Profile = $any; Owner = @(''); Platform = @('')
+        Enabled = @('true'); Action = @('block'); Profile = $any; Owner = @(''); Platform = @(''); Group = @((ConvertTo-EoCanon $Group))
+        RemoteDynamicKeywordAddresses = @('')
         EdgeTraversalPolicy = @('block'); LooseSourceMapping = @('false'); LocalOnlyMapping = @('false')
         Program = $any; Package = @('', 'any'); Service = $any; InterfaceType = $any
         LocalAddress = $any; LocalPort = $any; DynamicTarget = $any
@@ -71,8 +74,8 @@ function Get-EoRuleFacts([string]$Name, [string]$Store) {
     $af = $r | Get-NetFirewallAddressFilter
     $ap = $r | Get-NetFirewallApplicationFilter
     $sf = $r | Get-NetFirewallSecurityFilter
-    return @{
-        Present = $true; Enabled = "$($r.Enabled)"; Action = "$($r.Action)"; Direction = "$($r.Direction)"; Profile = "$($r.Profile)"
+    $f = @{
+        Present = $true; Group = "$($r.Group)"; Enabled = "$($r.Enabled)"; Action = "$($r.Action)"; Direction = "$($r.Direction)"; Profile = "$($r.Profile)"
         PrimaryStatus = "$($r.PrimaryStatus)"; EnforcementStatus = "$($r.EnforcementStatus)"; Description = "$($r.Description)"
         Owner = "$($r.Owner)"; Platform = @($r.Platform); EdgeTraversalPolicy = "$($r.EdgeTraversalPolicy)"
         LooseSourceMapping = "$($r.LooseSourceMapping)"; LocalOnlyMapping = "$($r.LocalOnlyMapping)"
@@ -85,6 +88,48 @@ function Get-EoRuleFacts([string]$Name, [string]$Store) {
         Authentication = "$($sf.Authentication)"; Encryption = "$($sf.Encryption)"; OverrideBlockRules = "$($sf.OverrideBlockRules)"
         LocalUser = "$($sf.LocalUser)"; RemoteUser = "$($sf.RemoteUser)"; RemoteMachine = "$($sf.RemoteMachine)"
     }
+    # Dynamic keyword addresses (Windows 10 21H2 and later) narrow a rule without
+    # showing in RemoteAddress. Where Windows has them but the property is not found,
+    # the key stays out and the check reports it as not read.
+    $kw = @($af, $r) | Where-Object { $_ -and 'RemoteDynamicKeywordAddresses' -in @($_.PSObject.Properties.Name) } | Select-Object -First 1
+    if ($kw) { $f.RemoteDynamicKeywordAddresses = @($kw.RemoteDynamicKeywordAddresses) }
+    elseif (-not (Get-Command New-NetFirewallRule).Parameters.ContainsKey('RemoteDynamicKeywordAddresses')) { $f.RemoteDynamicKeywordAddresses = @() }
+    return $f
+}
+
+# Problems with the firewall profiles (active policy) for rules on $HostIf: each of
+# the three must be on, block inbound by default, apply local rules, and not exempt
+# the host vNIC (DisabledInterfaceAliases switches the firewall off on an interface,
+# and every eo-l2 rule on it with it, while the rules still read as in force).
+# $Profiles: @{ Name; Enabled; DefaultInboundAction; AllowLocalFirewallRules; DisabledInterfaceAliases }
+function Test-EoProfileFacts($Profiles, [string]$HostIf = $EO.HostIf) {
+    $p = New-Object System.Collections.Generic.List[string]
+    $all = @($Profiles)
+    if ($all.Count -ne 3) { $p.Add("$($all.Count) firewall profiles read, want 3") }
+    foreach ($f in $all) {
+        if ("$($f.Enabled)" -ne 'True') { $p.Add("profile $($f.Name): Enabled is '$($f.Enabled)'") }
+        if ("$($f.DefaultInboundAction)" -notin @('Block', 'NotConfigured')) { $p.Add("profile $($f.Name): DefaultInboundAction is '$($f.DefaultInboundAction)'") }
+        if ("$($f.AllowLocalFirewallRules)" -eq 'False') { $p.Add("profile $($f.Name): AllowLocalFirewallRules is False") }
+        if (-not $f.ContainsKey('DisabledInterfaceAliases')) { $p.Add("profile $($f.Name): DisabledInterfaceAliases was not read"); continue }
+        $off = @(@($f.DisabledInterfaceAliases) | Where-Object { "$_".Trim() -ieq $HostIf -or "$_".Trim() -ieq 'Any' })
+        if ($off.Count) { $p.Add("profile $($f.Name): DisabledInterfaceAliases exempts '$($off -join "', '")' from the firewall") }
+    }
+    return $p
+}
+
+function Get-EoProfileFacts {
+    @(Get-NetFirewallProfile -PolicyStore ActiveStore | ForEach-Object {
+            @{ Name = "$($_.Name)"; Enabled = "$($_.Enabled)"; DefaultInboundAction = "$($_.DefaultInboundAction)"
+                AllowLocalFirewallRules = "$($_.AllowLocalFirewallRules)"; DisabledInterfaceAliases = @($_.DisabledInterfaceAliases) }
+        })
+}
+
+# Enabled rules in the active policy that may override block rules (an IPsec
+# authenticated bypass would let traffic past the eo-l2 blocks).
+function Get-EoOverrideRules {
+    $ids = @(Get-NetFirewallSecurityFilter -PolicyStore ActiveStore -All | Where-Object { "$($_.OverrideBlockRules)" -eq 'True' } | ForEach-Object InstanceID)
+    if (-not $ids.Count) { return @() }
+    return @(Get-NetFirewallRule -PolicyStore ActiveStore -Enabled True | Where-Object { $_.InstanceID -in $ids })
 }
 
 # --- host guard state --------------------------------------------------------
@@ -138,8 +183,55 @@ function Test-EoGuardState($State, $Current) {
     return $p
 }
 
+# The record's folder and file must be writable by Administrators and SYSTEM only,
+# owned by one of them, and not a link, or a standard-user process could rewrite
+# the value the elevated undo restores.
+$EoAdminSids = @('S-1-5-32-544', 'S-1-5-18')
+
+# Problems with plain ACL facts. $Facts: @{ Path; Reparse; Container; Owner (SID);
+# Protected (inheritance off); Allow = @(SIDs of Allow entries) }. The folder must
+# have inheritance off; the file inherits from it.
+function Test-EoAclFacts($Facts, [switch]$Container) {
+    $p = New-Object System.Collections.Generic.List[string]
+    if ($Facts.Reparse) { $p.Add("$($Facts.Path) is a link (reparse point)") }
+    if ([bool]$Facts.Container -ne [bool]$Container) { $p.Add("$($Facts.Path) is $(if ($Facts.Container) { 'a folder' } else { 'a file' }), want $(if ($Container) { 'a folder' } else { 'a file' })") }
+    if ("$($Facts.Owner)" -notin $EoAdminSids) { $p.Add("$($Facts.Path) is owned by $($Facts.Owner), want Administrators or SYSTEM") }
+    if ($Container -and -not $Facts.Protected) { $p.Add("$($Facts.Path) inherits permissions from its parent") }
+    $others = @(@($Facts.Allow) | Where-Object { "$_" -notin $EoAdminSids } | Sort-Object -Unique)
+    if ($others.Count) { $p.Add("$($Facts.Path) grants access to $($others -join ', ')") }
+    return $p
+}
+
+function Get-EoAclFacts([string]$Path) {
+    $i = Get-Item -LiteralPath $Path -Force
+    $acl = Get-Acl -LiteralPath $Path
+    $sid = [System.Security.Principal.SecurityIdentifier]
+    return @{ Path = $Path; Reparse = [bool]($i.Attributes -band [IO.FileAttributes]::ReparsePoint); Container = [bool]$i.PSIsContainer
+        Owner = "$($acl.GetOwner($sid).Value)"; Protected = [bool]$acl.AreAccessRulesProtected
+        Allow = @($acl.GetAccessRules($true, $true, $sid) | Where-Object { "$($_.AccessControlType)" -eq 'Allow' } | ForEach-Object { "$($_.IdentityReference.Value)" }) }
+}
+
+# Makes the record folder (Administrators and SYSTEM only, owned by Administrators)
+# and checks it, or checks the one already there. It must be empty: anything in it
+# that this step did not write is not trusted.
+function Initialize-EoGuardDir([string]$Path = $EO.GuardDir) {
+    if (-not (Test-Path -LiteralPath $Path)) {
+        New-Item -ItemType Directory -Path $Path | Out-Null
+        Invoke-EoNative icacls.exe @($Path, '/inheritance:r', '/grant:r', '*S-1-5-32-544:(OI)(CI)F', '*S-1-5-18:(OI)(CI)F') | Write-Host
+        Invoke-EoNative icacls.exe @($Path, '/setowner', '*S-1-5-32-544') | Write-Host
+    }
+    $p = @(Test-EoAclFacts (Get-EoAclFacts $Path) -Container)
+    $items = @(Get-ChildItem -LiteralPath $Path -Force)
+    if ($items.Count) { $p += "$Path is not empty: $(($items | ForEach-Object Name) -join ', ')" }
+    if ($p.Count) { throw "Refusing to use $Path for the host guard record: $($p -join '; '). Check who made it, remove it, and rerun." }
+}
+
+# The record, or $null when there is none. Throws when the folder or file is not
+# protected as above, so a record anyone else could have written is never used.
 function Read-EoGuardState {
     if (-not (Test-Path -LiteralPath $EO.GuardState)) { return $null }
+    $p = @(Test-EoAclFacts (Get-EoAclFacts $EO.GuardDir) -Container) + @(Test-EoAclFacts (Get-EoAclFacts $EO.GuardState))
+    if ($p.Count) { throw "the host guard record is not protected: $($p -join '; ')" }
     return (Get-Content -LiteralPath $EO.GuardState -Raw | ConvertFrom-Json)
 }
 

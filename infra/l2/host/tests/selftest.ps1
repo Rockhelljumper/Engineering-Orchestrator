@@ -75,7 +75,7 @@ foreach ($n in $allSpecs.Keys) {
     Expect "rules: $n not in force fails (active)" (@(Test-EoRuleFacts $n $f $spec -Active).Count -gt 0) $true
     foreach ($k in $spec.Keys) {
         $f = GoodFacts $spec; $f[$k] = @('eo-mutated')
-        Expect "rules: $n altered $k fails" (@(Test-EoRuleFacts $n $f $spec).Count -gt 0) $true
+        Expect "rules: $n altered $k fails for $k" (@(Test-EoRuleFacts $n $f $spec | Where-Object { $_.StartsWith("${n}: $k ") }).Count -gt 0) $true
     }
 }
 # The same rules as the firewall cmdlets report them.
@@ -84,7 +84,8 @@ $realTcp = @{ Present = $true; PrimaryStatus = 'OK'; Enabled = 'True'; Action = 
     LocalPort = @('Any'); RemotePort = @('23-65535', '1-21'); IcmpType = @('Any'); RemoteAddress = @('Any'); LocalAddress = @('Any')
     InterfaceAlias = @($hostIf); InterfaceType = 'Any'; Program = 'Any'; Service = 'Any'
     Owner = ''; Platform = @(); EdgeTraversalPolicy = 'Block'; LooseSourceMapping = 'False'; LocalOnlyMapping = 'False'; DynamicTarget = 'Any'; Package = ''
-    Authentication = 'NotRequired'; Encryption = 'NotRequired'; OverrideBlockRules = 'False'; LocalUser = 'Any'; RemoteUser = 'Any'; RemoteMachine = 'Any' }
+    Authentication = 'NotRequired'; Encryption = 'NotRequired'; OverrideBlockRules = 'False'; LocalUser = 'Any'; RemoteUser = 'Any'; RemoteMachine = 'Any'
+    Group = 'eo-l2'; RemoteDynamicKeywordAddresses = @() }
 $tcpSpec = $specs.Guard['eo-l2-out-block-tcp']
 Expect 'rules: TCP guard as reported passes (port order ignored)' (@(Test-EoRuleFacts 'tcp' $realTcp $tcpSpec -Active).Count) 0
 $variants = [ordered]@{
@@ -115,10 +116,16 @@ $variants = [ordered]@{
     'only for encrypted traffic'     = @{ Encryption = 'Required' }
     'overridable by IPsec'           = @{ OverrideBlockRules = 'True' }
     'a filter that was not read'     = @{ Package = $null }
+    'keyword address not read'       = @{ RemoteDynamicKeywordAddresses = $null }
+    'limited to a keyword address'   = @{ RemoteDynamicKeywordAddresses = @('{8b9c1f4e-0000-4000-8000-000000000001}') }
+    'moved to another group'         = @{ Group = 'other' }
 }
 foreach ($v in $variants.Keys) {
     $f = $realTcp.Clone(); foreach ($k in $variants[$v].Keys) { if ($null -eq $variants[$v][$k]) { $f.Remove($k) } else { $f[$k] = $variants[$v][$k] } }
-    Expect "rules: TCP guard $v fails" (@(Test-EoRuleFacts 'tcp' $f $tcpSpec).Count -gt 0) $true
+    $msgs = @(Test-EoRuleFacts 'tcp' $f $tcpSpec)
+    foreach ($k in $variants[$v].Keys) {
+        Expect "rules: TCP guard $v fails for $k" (@($msgs | Where-Object { $_.StartsWith("tcp: $k ") }).Count -gt 0) $true
+    }
 }
 $icmpSpec = $specs.Guard['eo-l2-out-block-icmp']
 $realIcmp = $realTcp.Clone(); $realIcmp.Protocol = 'ICMPv4'; $realIcmp.RemotePort = @('Any')
@@ -137,6 +144,58 @@ $realSub = $realTcp.Clone(); $realSub.Direction = 'Inbound'; $realSub.Protocol =
 Expect 'rules: guest-subnet rule in mask form passes' (@(Test-EoRuleFacts 'sub' $realSub $subSpec -Active).Count) 0
 $f = $realSub.Clone(); $f.RemoteAddress = @('192.168.250.0/255.255.255.0')
 Expect 'rules: guest-subnet rule widened to /24 fails' (@(Test-EoRuleFacts 'sub' $f $subSpec).Count -gt 0) $true
+
+# --- firewall profiles: on, blocking inbound, applying local rules, not exempting eo-l2-int ---
+function Prof([string]$Name, [hashtable]$Over) {
+    $f = @{ Name = $Name; Enabled = 'True'; DefaultInboundAction = 'NotConfigured'; AllowLocalFirewallRules = 'NotConfigured'; DisabledInterfaceAliases = @('NotConfigured') }
+    foreach ($k in $Over.Keys) { if ($null -eq $Over[$k]) { $f.Remove($k) } else { $f[$k] = $Over[$k] } }
+    return $f
+}
+function Profs([hashtable]$PublicOver) { @((Prof 'Domain' @{}), (Prof 'Private' @{}), (Prof 'Public' $PublicOver)) }
+Expect 'profiles: defaults pass' (@(Test-EoProfileFacts (Profs @{})).Count) 0
+Expect 'profiles: another interface exempt passes' (@(Test-EoProfileFacts (Profs @{ DisabledInterfaceAliases = @('Ethernet 2') })).Count) 0
+$badProf = [ordered]@{
+    'eo-l2-int exempt'               = @(@{ DisabledInterfaceAliases = @($EO.HostIf) }, 'DisabledInterfaceAliases exempts')
+    'eo-l2-int exempt (other case)'  = @(@{ DisabledInterfaceAliases = @('Ethernet', $EO.HostIf.ToUpperInvariant()) }, 'DisabledInterfaceAliases exempts')
+    'every interface exempt'         = @(@{ DisabledInterfaceAliases = @('Any') }, 'DisabledInterfaceAliases exempts')
+    'exemptions not read'            = @(@{ DisabledInterfaceAliases = $null }, 'DisabledInterfaceAliases was not read')
+    'profile off'                    = @(@{ Enabled = 'False' }, 'Enabled is')
+    'inbound allowed by default'     = @(@{ DefaultInboundAction = 'Allow' }, 'DefaultInboundAction is')
+    'local rules ignored'            = @(@{ AllowLocalFirewallRules = 'False' }, 'AllowLocalFirewallRules is False')
+}
+foreach ($k in $badProf.Keys) {
+    $msgs = @(Test-EoProfileFacts (Profs $badProf[$k][0]))
+    Expect "profiles: $k fails for its own reason" (@($msgs | Where-Object { $_.StartsWith('profile Public: ') -and $_.Contains($badProf[$k][1]) }).Count -gt 0) $true
+}
+Expect 'profiles: only two profiles read fails' (@(Test-EoProfileFacts @((Prof 'Domain' @{}), (Prof 'Private' @{})) | Where-Object { $_.Contains('want 3') }).Count -gt 0) $true
+
+# --- host guard record folder and file: Administrators and SYSTEM only, no link ---
+$userSid = 'S-1-5-21-1-2-3-1001'
+function Acl([bool]$Container, [hashtable]$Over) {
+    $f = @{ Path = 'X'; Reparse = $false; Container = $Container; Owner = 'S-1-5-32-544'; Protected = $Container; Allow = @('S-1-5-32-544', 'S-1-5-18') }
+    foreach ($k in $Over.Keys) { $f[$k] = $Over[$k] }
+    return $f
+}
+Expect 'acl: protected folder passes' (@(Test-EoAclFacts (Acl $true @{}) -Container).Count) 0
+Expect 'acl: folder owned by SYSTEM passes' (@(Test-EoAclFacts (Acl $true @{ Owner = 'S-1-5-18' }) -Container).Count) 0
+Expect 'acl: file inheriting from it passes' (@(Test-EoAclFacts (Acl $false @{})).Count) 0
+$badAcl = [ordered]@{
+    'folder is a junction'           = @($true, @{ Reparse = $true }, 'is a link')
+    'file is a symbolic link'        = @($false, @{ Reparse = $true }, 'is a link')
+    'folder owned by a user'         = @($true, @{ Owner = $userSid }, 'is owned by')
+    'file owned by a user'           = @($false, @{ Owner = $userSid }, 'is owned by')
+    'folder inherits from ProgramData' = @($true, @{ Protected = $false }, 'inherits permissions')
+    'folder grants Users'            = @($true, @{ Allow = @('S-1-5-32-544', 'S-1-5-18', 'S-1-5-32-545') }, 'grants access to S-1-5-32-545')
+    'folder grants CREATOR OWNER'    = @($true, @{ Allow = @('S-1-5-32-544', 'S-1-3-0') }, 'grants access to S-1-3-0')
+    'file grants a user'             = @($false, @{ Allow = @('S-1-5-18', $userSid) }, "grants access to $userSid")
+    'a file where the folder should be' = @($true, @{ Container = $false; Protected = $true }, 'is a file, want a folder')
+    'a folder where the file should be' = @($false, @{ Container = $true }, 'is a folder, want a file')
+}
+foreach ($k in $badAcl.Keys) {
+    $c = $badAcl[$k][0]
+    $msgs = @(Test-EoAclFacts (Acl $c $badAcl[$k][1]) -Container:$c)
+    Expect "acl: $k fails for its own reason" (@($msgs | Where-Object { $_.Contains($badAcl[$k][2]) }).Count -gt 0) $true
+}
 
 # --- host guard state: the undo restores only from a matching record -------------
 $guid = '{6c1d5d6a-0000-4000-8000-00000000abcd}'
