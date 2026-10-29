@@ -22,7 +22,7 @@ try {
 
     $sw = Get-VMSwitch -Name $EO.SwitchName
     Row 'eo-l2-int is an Internal switch' ("$($sw.SwitchType)" -eq 'Internal') "$($sw.SwitchType)"
-    $others = @(Get-VMNetworkAdapter -All | Where-Object { $_.SwitchName -eq $EO.SwitchName -and -not $_.IsManagementOs -and $_.VMName -ne $EO.VmName })
+    $others = @(Get-VMNetworkAdapter -All | Where-Object { -not $_.IsManagementOs -and $_.SwitchName -eq $EO.SwitchName -and $_.VMName -ne $EO.VmName })
     Row 'No other VM on eo-l2-int' ($others.Count -eq 0) (($others | ForEach-Object VMName) -join ', ')
     $ifc = Get-NetIPInterface -InterfaceAlias $EO.HostIf -AddressFamily IPv4
     Row 'Host vNIC forwarding off' ("$($ifc.Forwarding)" -eq 'Disabled') "$($ifc.Forwarding)"

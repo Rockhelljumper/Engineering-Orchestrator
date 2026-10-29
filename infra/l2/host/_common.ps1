@@ -165,7 +165,8 @@ function Get-EoSnapshot {
     $s = [ordered]@{}
     $s.vmSwitches   = @(Get-VMSwitch | Sort-Object Name | ForEach-Object { [ordered]@{ name = $_.Name; type = "$($_.SwitchType)"; adapter = $_.NetAdapterInterfaceDescription } })
     $s.vms          = @(Get-VM | Sort-Object Name | ForEach-Object { [ordered]@{ name = $_.Name; generation = $_.Generation; cpus = $_.ProcessorCount; memoryStartup = $_.MemoryStartup; checkpointType = "$($_.CheckpointType)"; path = $_.Path } })
-    $s.vmAdapters   = @(Get-VMNetworkAdapter -All | Sort-Object VMName, Name | ForEach-Object { [ordered]@{ vm = $_.VMName; name = $_.Name; switch = $_.SwitchName; mac = $_.MacAddress; managementOs = $_.IsManagementOs } })
+    # A host (management OS) adapter throws on VMName, so it is read only for VM adapters.
+    $s.vmAdapters   = @(Get-VMNetworkAdapter -All | ForEach-Object { [ordered]@{ vm = $(if ($_.IsManagementOs) { '(host)' } else { "$($_.VMName)" }); name = $_.Name; switch = $_.SwitchName; mac = $_.MacAddress; managementOs = $_.IsManagementOs } } | Sort-Object { $_.vm }, { $_.name }, { $_.mac })
     $s.netAdapters  = @(Get-NetAdapter -IncludeHidden | Sort-Object Name | ForEach-Object { [ordered]@{ name = $_.Name; description = $_.InterfaceDescription; mac = $_.MacAddress } })
     $s.ipAddresses  = @(Get-NetIPAddress | Sort-Object InterfaceAlias, IPAddress | ForEach-Object { [ordered]@{ if = $_.InterfaceAlias; ip = $_.IPAddress; prefix = $_.PrefixLength } })
     $s.routes       = @(Get-NetRoute -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.DestinationPrefix -notlike '224.*' -and $_.DestinationPrefix -ne '255.255.255.255/32' } | Sort-Object DestinationPrefix, InterfaceAlias | ForEach-Object { "$($_.DestinationPrefix) via $($_.NextHop) on $($_.InterfaceAlias)" })
