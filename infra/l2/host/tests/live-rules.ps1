@@ -47,7 +47,7 @@ try {
     foreach ($b in $all.Keys) {
         $facts = Get-EoRuleFacts "$prefix$b" 'ActiveStore'
         Write-Host "facts $b (active): $(($facts.GetEnumerator() | Sort-Object Key | ForEach-Object { "$($_.Key)=$(@($_.Value) -join '|')" }) -join '; ')"
-        $p = Problems $b
+        $p = @(Problems $b)
         Expect "live: $b as created by the step matches its spec in both stores" ($p.Count -eq 0) ($p -join '; ')
     }
     $alter = [ordered]@{
