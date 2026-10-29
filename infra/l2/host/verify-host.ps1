@@ -32,26 +32,32 @@ try {
     Row 'No NAT covers 192.168.250.0/29' ($nat.Count -eq 0) ''
     $dr = @(Get-NetRoute -InterfaceAlias $EO.HostIf -ErrorAction SilentlyContinue | Where-Object DestinationPrefix -in '0.0.0.0/0', '::/0')
     Row 'No default route on eo-l2-int' ($dr.Count -eq 0) ''
-    # Read from the active policy, so a rule that exists but is not in force fails.
-    $active = @(Get-NetFirewallRule -PolicyStore ActiveStore -Group $EO.FwGroup -ErrorAction SilentlyContinue)
-    $byName = @{}; foreach ($r in $active) { $byName[$r.Name] = $r }
-    function RuleOk($Name, $Direction) { $r = $byName[$Name]; return [bool]($r -and "$($r.Enabled)" -eq 'True' -and "$($r.Action)" -eq 'Block' -and "$($r.Direction)" -eq $Direction -and "$($r.Profile)" -eq 'Any') }
-    $sub = $byName['eo-l2-block-guest-subnet']
-    $subAddr = if ($sub) { @(($sub | Get-NetFirewallAddressFilter).RemoteAddress) } else { @() }
-    Row 'Rule eo-l2-block-guest-subnet in force: inbound block from 192.168.250.0/29, all profiles' ((RuleOk 'eo-l2-block-guest-subnet' 'Inbound') -and $subAddr.Count -eq 1 -and $subAddr[0] -in @('192.168.250.0/29', '192.168.250.0/255.255.255.248')) ($subAddr -join ', ')
-    $ifr = $byName['eo-l2-block-interface']
-    $ifAlias = if ($ifr) { @(($ifr | Get-NetFirewallInterfaceFilter).InterfaceAlias) } else { @() }
-    Row "Rule eo-l2-block-interface in force: inbound block on '$($EO.HostIf)', all profiles" ((RuleOk 'eo-l2-block-interface' 'Inbound') -and $ifAlias.Count -eq 1 -and $ifAlias[0] -eq $EO.HostIf) ($ifAlias -join ', ')
-    $guard = @($EO.GuardRules | Where-Object { $byName.ContainsKey($_) })
-    if ($guard.Count) {
-        $nb = (Get-CimInstance Win32_NetworkAdapterConfiguration -Filter "InterfaceIndex = $((Get-NetAdapter -Name $EO.HostIf).ifIndex)").TcpipNetbiosOptions
-        $guardOk = $guard.Count -eq $EO.GuardRules.Count -and -not ($EO.GuardRules | Where-Object { -not (RuleOk $_ 'Outbound') -or @(($byName[$_] | Get-NetFirewallInterfaceFilter).InterfaceAlias) -join ',' -ne $EO.HostIf })
-        $tcpPorts = if ($byName['eo-l2-out-block-tcp']) { @(($byName['eo-l2-out-block-tcp'] | Get-NetFirewallPortFilter).RemotePort) -join ',' } else { '' }
-        Row 'Host guard: all three outbound block rules in force on eo-l2-int; TCP leaves only port 22; NetBIOS off' ($guardOk -and $tcpPorts -eq '1-21,23-65535' -and $nb -eq 2) "rules=$($guard -join ',') tcp=$tcpPorts netbios=$nb"
+    # Every eo-l2 rule, checked filter by filter against its spec in the persistent
+    # store (what survives a reboot) and in the active policy (what is in force).
+    $specs = Get-EoRuleSpecs
+    foreach ($n in $specs.Inbound.Keys) {
+        $bad = @(Test-EoRuleFacts $n (Get-EoRuleFacts $n 'PersistentStore') $specs.Inbound[$n]) + @(Test-EoRuleFacts $n (Get-EoRuleFacts $n 'ActiveStore') $specs.Inbound[$n] -Active)
+        Row "Rule $n exact and in force" ($bad.Count -eq 0) ($bad -join '; ')
+    }
+    $present = @($EO.GuardRules | Where-Object { Get-NetFirewallRule -PolicyStore PersistentStore -Name $_ -ErrorAction SilentlyContinue })
+    $gstate = $null; $gerr = $null
+    try { $gstate = Read-EoGuardState } catch { $gerr = $_.Exception.Message }
+    if ($present.Count -or $gstate -or $gerr) {
+        Row 'Host guard: all three rules present (none or all)' ($present.Count -eq $EO.GuardRules.Count) ("present: " + ($present -join ', '))
+        foreach ($n in $specs.Guard.Keys) {
+            $bad = @(Test-EoRuleFacts $n (Get-EoRuleFacts $n 'PersistentStore') $specs.Guard[$n]) + @(Test-EoRuleFacts $n (Get-EoRuleFacts $n 'ActiveStore') $specs.Guard[$n] -Active)
+            Row "Host guard rule $n exact and in force" ($bad.Count -eq 0) ($bad -join '; ')
+        }
+        $gcur = Get-EoGuardCurrent
+        $sp = if ($gerr) { @("state record unreadable: $gerr") } else { @(Test-EoGuardState $gstate $gcur) }
+        Row 'Host guard: state record valid, for this computer, switch, adapter and these rules' ($sp.Count -eq 0) ($sp -join '; ')
+        $nb = if ($gcur.Adapter) { $gcur.Adapter.Netbios } else { $null }
+        Row 'Host guard: NetBIOS over TCP/IP off on eo-l2-int' ("$nb" -eq '2') "TcpipNetbiosOptions=$nb"
     } else {
         Write-Host 'Host guard (01b) not present.'
     }
-    $unexpected = @($active | Where-Object { $_.Name -notin @('eo-l2-block-guest-subnet', 'eo-l2-block-interface') + $EO.GuardRules })
+    $known = @($specs.Inbound.Keys) + @($specs.Guard.Keys)
+    $unexpected = @(Get-NetFirewallRule -PolicyStore ActiveStore -Group $EO.FwGroup -ErrorAction SilentlyContinue | Where-Object { $_.Name -notin $known })
     Row 'No other rules in group eo-l2' ($unexpected.Count -eq 0) (($unexpected | ForEach-Object Name) -join ', ')
     $prof = @(Get-NetFirewallProfile -PolicyStore ActiveStore)
     $badProf = @($prof | Where-Object { "$($_.Enabled)" -ne 'True' -or "$($_.DefaultInboundAction)" -notin @('Block', 'NotConfigured') -or "$($_.AllowLocalFirewallRules)" -eq 'False' })

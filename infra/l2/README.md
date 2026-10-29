@@ -11,7 +11,7 @@ The five approved host changes, and the script for each:
 | 3. Debian 13 ISO, signature and checksum verified | `host/03-fetch-iso.ps1` (download), `host/02-vm.ps1` (placement) | Standard user, then elevated | delete `%USERPROFILE%\Downloads\eo-l2-iso`; the ISO in the VM folder goes with undo 02 |
 | 4. Temporary setup NIC on the Default Switch | `host/04a-add-setup-nic.ps1`, removed by `host/04b-remove-setup-nic.ps1` | Elevated | 04b is the undo, and it is mandatory |
 | 5. Passphrase-protected key and `Host eo-l2` entry | `host/05-ssh.ps1` | Standard user | `host/undo-05-ssh.ps1` |
-| Optional, **not approved yet**: host guard on `eo-l2-int` (NetBIOS off; the host sends the guest only SSH) | `host/01b-host-guard.ps1` | Elevated | `host/undo-01b-host-guard.ps1` |
+| 6. Host guard on `eo-l2-int` (NetBIOS off; outbound UDP, ICMPv4 and TCP other than port 22 blocked), approved 2026-10-29 | `host/01b-host-guard.ps1` | Elevated | `host/undo-01b-host-guard.ps1` (restores NetBIOS only from the value 01b recorded; refuses otherwise) |
 
 Read-only helpers: `host/00-preflight.ps1`, `host/verify-host.ps1`, `host/b9-targets.ps1`.
 
@@ -25,7 +25,7 @@ Every line marked **(you)** is typed by the operator in an attended session. "El
 
 1. **Preflight** (elevated, read-only): `powershell -ExecutionPolicy Bypass -File .\00-preflight.ps1`. Stop if it prints `PREFLIGHT FAILED`.
 2. **ISO** (normal PowerShell): `.\03-fetch-iso.ps1`. It stops unless `SHA256SUMS` is signed by the Debian CD key `DF9B 9C49 EAA9 2984 3258 9D76 DA87 E80D 6294 BE9B` and the ISO matches.
-3. **Switch** (elevated): `.\01-switch.ps1`. Only if the host guard has been approved: `.\01b-host-guard.ps1`.
+3. **Switch** (elevated): `.\01-switch.ps1`, then the host guard: `.\01b-host-guard.ps1`.
 4. **VM** (elevated): `.\02-vm.ps1`. It checks the ISO's signature again and shows its hash; compare it with the published `SHA256SUMS` before typing `vm`. The VM is created switched off.
 5. **SSH key** (normal PowerShell): `.\05-ssh.ps1`. Choose the passphrase when asked. It stops if `ssh -G eo-l2` shows anything but the planned settings.
 6. **Setup NIC** (elevated): `.\04a-add-setup-nic.ps1`.

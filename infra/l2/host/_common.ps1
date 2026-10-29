@@ -47,7 +47,11 @@ $EO = [ordered]@{
     # Optional host guard (only with the owner's approval; see README): NetBIOS off on
     # the host vNIC, and the host may send the guest nothing but SSH.
     GuardRules   = @('eo-l2-out-block-tcp', 'eo-l2-out-block-udp', 'eo-l2-out-block-icmp')
+    # What 01b changed, written before it changes anything; the undo needs it.
+    GuardState   = Join-Path $env:USERPROFILE 'eo-l2-evidence\host-guard-state.json'
 }
+
+. (Join-Path $PSScriptRoot '_guard.ps1')
 
 # The VM's integration service with this GUID, matched on the Id's GUID part and
 # falling back to the English name. Throws when neither matches.
