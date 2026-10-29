@@ -1,0 +1,17 @@
+2026-10-23T14:32:55Z commit 3c99dbf4d0bccc9b7947f4572df5a761643241c5 group beads
+2026-10-23T14:32:55Z start beads-crash-sample-journal: --suite crash-sample --param phase=journal
+2026-10-23T14:39:51Z parallel continuation, commit 3c99dbf4d0bccc9b7947f4572df5a761643241c5; beads-crash-sample-journal still running as pid 8361
+2026-10-23T14:39:51Z start beads-crash-sample-anchor: --suite crash-sample --param phase=anchor
+2026-10-23T14:39:51Z start beads-crash-escalation-journal: --suite crash-escalation --param phase=journal
+2026-10-23T15:28:12Z beads-crash-escalation-journal exit 0 status PASSED 37 / 37
+2026-10-23T16:54:30Z beads-crash-sample-anchor exit 0 status PASSED 70 / 70
+2026-10-23T16:54:30Z start beads-crash-escalation-anchor: --suite crash-escalation --param phase=anchor
+2026-10-23T16:54:30Z start beads-random-kills: --suite random-kills --param seeds=8
+2026-10-23T17:12:28Z beads-random-kills exit 0 status PASSED 8 / 8
+2026-10-23T17:27:34Z beads-crash-escalation-anchor exit 0 status PASSED 37 / 37
+2026-10-23T17:27:35Z beads-crash-sample-journal status exit 0 status PASSED 70 / 70
+2026-10-23T17:27:35Z start beads-claim-race: --suite claim-race --param store=beads --param rounds=20 --param workers=10
+2026-10-23T17:31:59Z beads-claim-race exit 0 status PASSED 20 / 20
+2026-10-23T17:31:59Z beads unit+integration
+2026-10-23T18:40:35Z beads unit+integration exit 0
+2026-10-23T18:40:35Z group beads done

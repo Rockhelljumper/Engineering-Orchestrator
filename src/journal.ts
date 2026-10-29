@@ -81,6 +81,10 @@ export class Journal {
   private lastMac = GENESIS;
   private recordsCache: JournalRecord[] = [];
   private appendsThisProcess = 0;
+  /** Called after each record is durable (the rollback anchor, M2-0b). An append is complete only when it returns. */
+  private onAppend: ((rec: JournalRecord) => void) | undefined;
+  /** Set when onAppend failed: the journal is then ahead of its anchor, and one more append would put it two ahead. */
+  private failed: Error | undefined;
 
   private constructor(file: string, key: Buffer) {
     this.file = file;
@@ -91,7 +95,7 @@ export class Journal {
    * Open for appending. Refuses a tampered journal. A torn final line (crash during write)
    * is removed only when `repairTornTail` is set; the controller sets it on open and reports it in the resume record.
    */
-  static open(file: string, key: Buffer, opts: { repairTornTail?: boolean } = {}): Journal {
+  static open(file: string, key: Buffer, opts: { repairTornTail?: boolean; onAppend?: (rec: JournalRecord) => void } = {}): Journal {
     const v = verifyJournalFile(file, key);
     if (!v.ok) throw new JournalTamperError(`journal failed verification: ${v.errors.join('; ')}`);
     if (v.tornTail) {
@@ -104,6 +108,7 @@ export class Journal {
       appendLineDurable(file, '');
     }
     const j = new Journal(file, key);
+    j.onAppend = opts.onAppend;
     j.recordsCache = v.records;
     const last = v.records[v.records.length - 1];
     if (last) {
@@ -114,6 +119,7 @@ export class Journal {
   }
 
   append<T>(type: string, data: T): JournalRecord<T> {
+    if (this.failed) throw new JournalTamperError(`no further appends: recording an earlier one failed (${this.failed.message})`);
     const base = { seq: this.lastSeq + 1, ts: new Date().toISOString(), type, data, prev: this.lastMac };
     const rec: JournalRecord<T> = { ...base, mac: macOf(this.key, base) };
     appendLineDurable(this.file, JSON.stringify(rec));
@@ -121,7 +127,14 @@ export class Journal {
     this.lastMac = rec.mac;
     this.recordsCache.push(rec);
     this.appendsThisProcess++;
-    crashHook(this.appendsThisProcess);
+    if (process.env['EO_CRASH_PHASE'] !== 'anchor') crashHook(this.appendsThisProcess, 'journal append');
+    try {
+      this.onAppend?.(rec);
+    } catch (err) {
+      this.failed = err as Error;
+      throw err;
+    }
+    if (process.env['EO_CRASH_PHASE'] === 'anchor') crashHook(this.appendsThisProcess, 'anchor update for journal append');
     return rec;
   }
 
@@ -136,13 +149,14 @@ export class Journal {
 
 /**
  * Test-only crash injection: with EO_CRASH_AT=N the process exits abruptly right after its
- * Nth durable journal append, simulating a kill at that step boundary. Production runs never
- * set it; `eo doctor` reports when it is set.
+ * Nth durable journal append, before the rollback anchor records it, simulating a kill at
+ * that step boundary. With EO_CRASH_PHASE=anchor it exits right after the anchor update
+ * instead. Production runs never set either; `eo doctor` reports when they are set.
  */
-function crashHook(count: number): void {
+function crashHook(count: number, what: string): void {
   const at = process.env['EO_CRASH_AT'];
   if (at !== undefined && Number(at) === count) {
-    process.stderr.write(`eo: injected crash after journal append #${count}\n`);
+    process.stderr.write(`eo: injected crash after ${what} #${count}\n`);
     process.exit(137);
   }
 }

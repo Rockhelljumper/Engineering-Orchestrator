@@ -1,0 +1,7 @@
+== wt-final 3c99dbf4d0bccc9b7947f4572df5a761643241c5
+start exit 1
+resume exit 4
+durable: run 71165171-66bf-4696-8e35-4f140a20fa7d is NOT_VERIFIED: records 1, 2, 3, 4, 5, ... were written for a different manifest (manifest.json changed); this run cannot be verified or resumed, start a new one
+status exit 1
+final status NOT_VERIFIED
+verdict DEFENDED

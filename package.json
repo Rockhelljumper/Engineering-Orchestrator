@@ -17,7 +17,8 @@
     "test:integration": "node --test --test-concurrency=1 \"tests/integration/**/*.test.ts\"",
     "test:behavioral": "node --test --test-concurrency=1 \"tests/behavioral/**/*.test.ts\"",
     "test:all": "node --test --test-concurrency=1 \"tests/**/*.test.ts\"",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "durable": "node tests/support/durable/cli.ts"
   },
   "dependencies": {},
   "devDependencies": {}

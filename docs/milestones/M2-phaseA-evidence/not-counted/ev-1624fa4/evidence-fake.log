@@ -1,0 +1,14 @@
+2026-10-23T14:16:57Z commit 1624fa4da916bd1d26267b127c3026471022ab79 group fake
+2026-10-23T14:16:57Z start crash-sample-journal: --suite crash-sample --param phase=journal
+2026-10-23T14:16:57Z start crash-sample-anchor: --suite crash-sample --param phase=anchor
+2026-10-23T14:19:03Z crash-sample-journal exit 0 status PASSED 70 / 70
+2026-10-23T14:19:04Z crash-sample-anchor exit 0 status PASSED 70 / 70
+2026-10-23T14:19:04Z start crash-escalation-journal: --suite crash-escalation --param phase=journal
+2026-10-23T14:19:04Z start crash-escalation-anchor: --suite crash-escalation --param phase=anchor
+2026-10-23T14:20:03Z crash-escalation-anchor exit 0 status PASSED 37 / 37
+2026-10-23T14:20:04Z crash-escalation-journal exit 0 status PASSED 37 / 37
+2026-10-23T14:20:04Z start random-kills: --suite random-kills --param seeds=8
+2026-10-23T14:20:35Z random-kills exit 1 status FAILED 7 / 8
+2026-10-23T14:20:35Z start claim-race-fake: --suite claim-race --param store=fake --param rounds=100 --param workers=20
+2026-10-23T14:23:17Z claim-race-fake exit 0 status PASSED 100 / 100
+2026-10-23T14:23:17Z group fake done

@@ -37,6 +37,13 @@ export class FileLock {
         const info: LockInfo = { pid: process.pid, owner: this.owner, acquiredAt: new Date().toISOString(), nonce: this.nonce };
         fs.writeSync(fd, JSON.stringify(info));
         fs.closeSync(fd);
+        // A holder paused between the create and the write (longer than an empty lock stays
+        // fresh) can have its file removed as stale and replaced by a contender's; it must not
+        // then believe it holds the lock.
+        if (!this.stillOurs()) {
+          this.nonce = '';
+          return false;
+        }
         this.held = true;
         heldHere.add(this.file);
         return true;
@@ -61,6 +68,14 @@ export class FileLock {
     }
   }
 
+  private stillOurs(): boolean {
+    try {
+      return (JSON.parse(fs.readFileSync(this.file, 'utf8')) as LockInfo).nonce === this.nonce;
+    } catch {
+      return false;
+    }
+  }
+
   release(): void {
     if (!this.held) return;
     this.held = false;
@@ -80,7 +95,7 @@ export class FileLock {
    * So removal happens only while holding a short-lived breaker lock, after re-checking.
    * Returns true if the caller should retry acquiring.
    */
-  private removeIfStale(): boolean {
+  private removeIfStale(retried = false): boolean {
     if (!fs.existsSync(this.file)) return true; // released between our create and this check
     if (!isStale(this.file)) return false;
     const breaker = `${this.file}.break`;
@@ -91,13 +106,18 @@ export class FileLock {
       const code = (err as NodeJS.ErrnoException).code;
       if (process.platform === 'win32' && (code === 'EPERM' || code === 'EACCES')) return false; // delete pending
       if (code !== 'EEXIST') throw err;
-      // A breaker left by a process killed in this tiny window is cleared after 10s.
+      // A breaker left by a process killed in this tiny window is cleared after 10s, and the
+      // takeover goes ahead at once (it used to need a second attempt).
+      let expired = false;
       try {
-        if (Date.now() - fs.statSync(breaker).mtimeMs > 10_000) fs.unlinkSync(breaker);
+        if (Date.now() - fs.statSync(breaker).mtimeMs > 10_000) {
+          fs.unlinkSync(breaker);
+          expired = true;
+        }
       } catch {
         // gone already
       }
-      return false;
+      return expired && !retried ? this.removeIfStale(true) : false;
     }
     fs.closeSync(fd);
     try {
@@ -124,9 +144,12 @@ function isStale(file: string): boolean {
     info = JSON.parse(fs.readFileSync(file, 'utf8')) as LockInfo;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false;
-    // Holder may be mid-write. Unreadable content older than 30s is stale.
+    // Holder may be mid-write. Unreadable content older than 30s is stale. An empty file is
+    // written by the same call that created it, microseconds later; one that is still empty
+    // after 2 s was left by a holder killed between the two (found by the M2-0 kill runs).
     try {
-      return Date.now() - fs.statSync(file).mtimeMs > 30_000;
+      const st = fs.statSync(file);
+      return Date.now() - st.mtimeMs > (st.size === 0 ? 2_000 : 30_000);
     } catch {
       return false;
     }
@@ -135,6 +158,33 @@ function isStale(file: string): boolean {
   // whose pid was reused.
   if (info.pid === process.pid) return !heldHere.has(file);
   return !isProcessAlive(info.pid);
+}
+
+/**
+ * Who holds a lock, for an error message: the holder and whether it is alive, or why nobody
+ * may take it yet (an empty lock still being written, or a takeover's breaker left by a kill).
+ */
+export function describeLock(file: string): string {
+  let body: string;
+  try {
+    body = fs.readFileSync(file, 'utf8');
+  } catch {
+    return 'the lock is gone';
+  }
+  const parts: string[] = [];
+  try {
+    const info = JSON.parse(body) as LockInfo;
+    parts.push(`held by ${info.owner} (pid ${info.pid}, ${isProcessAlive(info.pid) ? 'running' : 'not running'})`);
+  } catch {
+    parts.push('the lock file is empty or partial (its holder may have been killed while writing it; it is taken over after 2 s)');
+  }
+  try {
+    const age = Date.now() - fs.statSync(`${file}.break`).mtimeMs;
+    parts.push(`a takeover is in progress or was cut short by a kill (${file}.break, ${Math.round(age / 1000)} s old; cleared after 10 s)`);
+  } catch {
+    // no breaker
+  }
+  return parts.join('; ');
 }
 
 function describe(file: string): string {

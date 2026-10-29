@@ -1,0 +1,443 @@
+{
+  "version": 1,
+  "runId": "92c9d6ba-ef31-40b7-b69d-1b8addadc510",
+  "suite": "claim-race",
+  "params": {
+    "store": "fake",
+    "rounds": 100,
+    "workers": 20
+  },
+  "derived": {},
+  "scenarios": [
+    {
+      "id": "round-1",
+      "seed": 1
+    },
+    {
+      "id": "round-2",
+      "seed": 2
+    },
+    {
+      "id": "round-3",
+      "seed": 3
+    },
+    {
+      "id": "round-4",
+      "seed": 4
+    },
+    {
+      "id": "round-5",
+      "seed": 5
+    },
+    {
+      "id": "round-6",
+      "seed": 6
+    },
+    {
+      "id": "round-7",
+      "seed": 7
+    },
+    {
+      "id": "round-8",
+      "seed": 8
+    },
+    {
+      "id": "round-9",
+      "seed": 9
+    },
+    {
+      "id": "round-10",
+      "seed": 10
+    },
+    {
+      "id": "round-11",
+      "seed": 11
+    },
+    {
+      "id": "round-12",
+      "seed": 12
+    },
+    {
+      "id": "round-13",
+      "seed": 13
+    },
+    {
+      "id": "round-14",
+      "seed": 14
+    },
+    {
+      "id": "round-15",
+      "seed": 15
+    },
+    {
+      "id": "round-16",
+      "seed": 16
+    },
+    {
+      "id": "round-17",
+      "seed": 17
+    },
+    {
+      "id": "round-18",
+      "seed": 18
+    },
+    {
+      "id": "round-19",
+      "seed": 19
+    },
+    {
+      "id": "round-20",
+      "seed": 20
+    },
+    {
+      "id": "round-21",
+      "seed": 21
+    },
+    {
+      "id": "round-22",
+      "seed": 22
+    },
+    {
+      "id": "round-23",
+      "seed": 23
+    },
+    {
+      "id": "round-24",
+      "seed": 24
+    },
+    {
+      "id": "round-25",
+      "seed": 25
+    },
+    {
+      "id": "round-26",
+      "seed": 26
+    },
+    {
+      "id": "round-27",
+      "seed": 27
+    },
+    {
+      "id": "round-28",
+      "seed": 28
+    },
+    {
+      "id": "round-29",
+      "seed": 29
+    },
+    {
+      "id": "round-30",
+      "seed": 30
+    },
+    {
+      "id": "round-31",
+      "seed": 31
+    },
+    {
+      "id": "round-32",
+      "seed": 32
+    },
+    {
+      "id": "round-33",
+      "seed": 33
+    },
+    {
+      "id": "round-34",
+      "seed": 34
+    },
+    {
+      "id": "round-35",
+      "seed": 35
+    },
+    {
+      "id": "round-36",
+      "seed": 36
+    },
+    {
+      "id": "round-37",
+      "seed": 37
+    },
+    {
+      "id": "round-38",
+      "seed": 38
+    },
+    {
+      "id": "round-39",
+      "seed": 39
+    },
+    {
+      "id": "round-40",
+      "seed": 40
+    },
+    {
+      "id": "round-41",
+      "seed": 41
+    },
+    {
+      "id": "round-42",
+      "seed": 42
+    },
+    {
+      "id": "round-43",
+      "seed": 43
+    },
+    {
+      "id": "round-44",
+      "seed": 44
+    },
+    {
+      "id": "round-45",
+      "seed": 45
+    },
+    {
+      "id": "round-46",
+      "seed": 46
+    },
+    {
+      "id": "round-47",
+      "seed": 47
+    },
+    {
+      "id": "round-48",
+      "seed": 48
+    },
+    {
+      "id": "round-49",
+      "seed": 49
+    },
+    {
+      "id": "round-50",
+      "seed": 50
+    },
+    {
+      "id": "round-51",
+      "seed": 51
+    },
+    {
+      "id": "round-52",
+      "seed": 52
+    },
+    {
+      "id": "round-53",
+      "seed": 53
+    },
+    {
+      "id": "round-54",
+      "seed": 54
+    },
+    {
+      "id": "round-55",
+      "seed": 55
+    },
+    {
+      "id": "round-56",
+      "seed": 56
+    },
+    {
+      "id": "round-57",
+      "seed": 57
+    },
+    {
+      "id": "round-58",
+      "seed": 58
+    },
+    {
+      "id": "round-59",
+      "seed": 59
+    },
+    {
+      "id": "round-60",
+      "seed": 60
+    },
+    {
+      "id": "round-61",
+      "seed": 61
+    },
+    {
+      "id": "round-62",
+      "seed": 62
+    },
+    {
+      "id": "round-63",
+      "seed": 63
+    },
+    {
+      "id": "round-64",
+      "seed": 64
+    },
+    {
+      "id": "round-65",
+      "seed": 65
+    },
+    {
+      "id": "round-66",
+      "seed": 66
+    },
+    {
+      "id": "round-67",
+      "seed": 67
+    },
+    {
+      "id": "round-68",
+      "seed": 68
+    },
+    {
+      "id": "round-69",
+      "seed": 69
+    },
+    {
+      "id": "round-70",
+      "seed": 70
+    },
+    {
+      "id": "round-71",
+      "seed": 71
+    },
+    {
+      "id": "round-72",
+      "seed": 72
+    },
+    {
+      "id": "round-73",
+      "seed": 73
+    },
+    {
+      "id": "round-74",
+      "seed": 74
+    },
+    {
+      "id": "round-75",
+      "seed": 75
+    },
+    {
+      "id": "round-76",
+      "seed": 76
+    },
+    {
+      "id": "round-77",
+      "seed": 77
+    },
+    {
+      "id": "round-78",
+      "seed": 78
+    },
+    {
+      "id": "round-79",
+      "seed": 79
+    },
+    {
+      "id": "round-80",
+      "seed": 80
+    },
+    {
+      "id": "round-81",
+      "seed": 81
+    },
+    {
+      "id": "round-82",
+      "seed": 82
+    },
+    {
+      "id": "round-83",
+      "seed": 83
+    },
+    {
+      "id": "round-84",
+      "seed": 84
+    },
+    {
+      "id": "round-85",
+      "seed": 85
+    },
+    {
+      "id": "round-86",
+      "seed": 86
+    },
+    {
+      "id": "round-87",
+      "seed": 87
+    },
+    {
+      "id": "round-88",
+      "seed": 88
+    },
+    {
+      "id": "round-89",
+      "seed": 89
+    },
+    {
+      "id": "round-90",
+      "seed": 90
+    },
+    {
+      "id": "round-91",
+      "seed": 91
+    },
+    {
+      "id": "round-92",
+      "seed": 92
+    },
+    {
+      "id": "round-93",
+      "seed": 93
+    },
+    {
+      "id": "round-94",
+      "seed": 94
+    },
+    {
+      "id": "round-95",
+      "seed": 95
+    },
+    {
+      "id": "round-96",
+      "seed": 96
+    },
+    {
+      "id": "round-97",
+      "seed": 97
+    },
+    {
+      "id": "round-98",
+      "seed": 98
+    },
+    {
+      "id": "round-99",
+      "seed": 99
+    },
+    {
+      "id": "round-100",
+      "seed": 100
+    }
+  ],
+  "identity": {
+    "commit": "3c99dbf4d0bccc9b7947f4572df5a761643241c5",
+    "dirty": false,
+    "testSourceSha256": "4346e5b510630ebc5c74fe02110002ecff5305ca06ff0ba574e62fd5890f7bfd",
+    "binaries": {
+      "node": "1f3d442a8d6faa2a9e11fd39f7c1344a590f61d2394dec1f4034a7930592f933"
+    },
+    "config": {
+      "suite": "claim-race",
+      "params": {
+        "store": "fake",
+        "rounds": 100,
+        "workers": 20
+      },
+      "env": {
+        "EO_TEST_STORE": null,
+        "EO_BD_BIN": null,
+        "EO_REQUIRE_BD": null,
+        "EO_REQUIRE_TRACE": null
+      }
+    },
+    "configSha256": "5f29e4b0d203c8bac7922ad29b4d1736eee16912cb894acf4dc89438e57b2bfd",
+    "platform": {
+      "os": "linux",
+      "arch": "x64",
+      "node": "v22.22.0"
+    }
+  },
+  "createdAt": "2026-10-23T14:30:57.743Z",
+  "stallWindowS": 120
+}
