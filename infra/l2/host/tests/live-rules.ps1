@@ -14,8 +14,6 @@ $prefix = 'eo-l2-ci-'; $group = 'eo-l2-ci'
 $failures = New-Object System.Collections.Generic.List[string]
 function Expect([string]$Name, [bool]$Ok, [string]$Detail = '') { if ($Ok) { Write-Host "ok   $Name" } else { Write-Host "FAIL $Name $Detail"; $failures.Add($Name) } }
 function Remove-CiRules { Get-NetFirewallRule -Group $group -ErrorAction SilentlyContinue | Remove-NetFirewallRule }
-$specs = Get-EoRuleSpecs -HostIf $Alias
-$all = [ordered]@{}; foreach ($k in $specs.Inbound.Keys) { $all[$k] = $specs.Inbound[$k] }; foreach ($k in $specs.Guard.Keys) { $all[$k] = $specs.Guard[$k] }
 function Make { Remove-CiRules; New-EoInboundRules -HostIf $Alias -Prefix $prefix -Group $group | Out-Null; New-EoGuardRules -Tag 'ci' -HostIf $Alias -Prefix $prefix -Group $group | Out-Null }
 # The active policy can lag the persistent store by a moment.
 function Problems([string]$Base) {
@@ -42,6 +40,9 @@ if (-not $Alias) {
     if (-not $Alias) { throw 'No interface the firewall accepts as an InterfaceAlias.' }
 }
 Write-Host "PowerShell $($PSVersionTable.PSVersion); adapter '$Alias'"
+# The spec is built for the adapter chosen above.
+$specs = Get-EoRuleSpecs -HostIf $Alias
+$all = [ordered]@{}; foreach ($k in $specs.Inbound.Keys) { $all[$k] = $specs.Inbound[$k] }; foreach ($k in $specs.Guard.Keys) { $all[$k] = $specs.Guard[$k] }
 try {
     Make
     foreach ($b in $all.Keys) {
