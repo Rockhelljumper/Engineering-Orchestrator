@@ -21,7 +21,7 @@ Nothing here installs software on Windows or changes WSL, Docker Desktop, Virtua
 
 ## Order
 
-Every line marked **(you)** is typed by the operator in an attended session. "Elevated" means a PowerShell started with *Run as administrator*. Run the host scripts from this repository checkout, for example `cd <checkout>\infra\l2\host`. The checkout must have LF endings in `infra\l2\guest` (the repository's `.gitattributes` makes sure of it); step 10 checks again.
+Every line marked **(you)** is typed by the operator in an attended session. "Elevated" means a PowerShell started with *Run as administrator*. Run the host scripts from this repository checkout, for example `cd <checkout>\infra\l2\host`. The checkout must have LF endings in `infra\l2\guest` (the repository's `.gitattributes` makes sure of it); step 9 checks again.
 
 1. **Preflight** (elevated, read-only): `powershell -ExecutionPolicy Bypass -File .\00-preflight.ps1`. Stop if it prints `PREFLIGHT FAILED`.
 2. **ISO** (normal PowerShell): `.\03-fetch-iso.ps1`. It stops unless `SHA256SUMS` is signed by the Debian CD key `DF9B 9C49 EAA9 2984 3258 9D76 DA87 E80D 6294 BE9B` and the ISO matches.

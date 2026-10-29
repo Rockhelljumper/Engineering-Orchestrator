@@ -9,8 +9,8 @@ eo_log_start seal
 
 [[ -z $(find /srv/eo -mindepth 1 -maxdepth 1 ! -name lost+found 2>/dev/null) ]] || eo_die "/srv/eo is not empty: eo code or data arrived before sealing"
 # The positive control cannot run after sealing, so it must have passed first.
-python3 -I -c 'import json,sys; sys.exit(0 if json.load(open("/var/log/eo-l2/b9-setup.json")).get("passed") is True else 1)' \
-    || eo_die "B9 positive control has not passed (/var/log/eo-l2/b9-setup.json); run b9-probe.py setup first"
+python3 -I -c 'import json,os,sys,time; p="/var/log/eo-l2/b9-setup.json"; sys.exit(0 if json.load(open(p)).get("passed") is True and time.time() - os.path.getmtime(p) < 6 * 3600 else 1)' \
+    || eo_die "B9 positive control has not passed in the last 6 hours (/var/log/eo-l2/b9-setup.json); run b9-probe.py setup first"
 [[ ! -e /opt/eo ]] || eo_die "/opt/eo exists before sealing"
 mountpoint -q /srv/eo-anchor || eo_die "run 11-storage.sh first"
 

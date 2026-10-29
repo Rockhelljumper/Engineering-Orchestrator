@@ -2,7 +2,8 @@
 # the host guard on eo-l2-int. Turns NetBIOS over TCP/IP off on the host vNIC and
 # adds outbound block rules on it for all UDP, all ICMPv4, and TCP to every port
 # but 22. The host then sends the guest no name queries (LLMNR, mDNS, NetBIOS),
-# no broadcasts and no connections other than SSH, so guest root cannot answer a
+# no UDP broadcasts and no TCP connection but SSH (IGMP and other rare IP
+# protocols are not covered), so guest root cannot answer a
 # host lookup and draw a host client (and its credentials) to the guest.
 # Needs an elevated PowerShell, after step 01. Undo: undo-01b-host-guard.ps1.
 

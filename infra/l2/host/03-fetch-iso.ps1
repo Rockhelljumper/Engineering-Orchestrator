@@ -69,6 +69,10 @@ try {
     Copy-Item $sign (Join-Path $EO.Evidence "$stamp-SHA256SUMS.sign")
     Copy-Item $keyFile (Join-Path $EO.Evidence "$stamp-debian-cd-key.asc")
     Write-Host 'STEP 03 DONE: ISO downloaded and verified.'
+} catch {
+    Write-Host "STEP 03 STOPPED: $($_.Exception.Message)"
+    Write-Host "Only files in $($EO.Download) may have changed; delete that folder and rerun."
+    throw
 } finally {
     Stop-EoLog
 }

@@ -153,8 +153,6 @@ find /usr/lib/modules /lib/modules -path '*/kernel/net/vmw_vsock/*' -name '*.ko*
 for k in /usr/lib/modules/*; do depmod -a "$(basename "$k")"; done
 cat >/etc/sysctl.d/90-eo-l2.conf <<'EOF'
 net.ipv4.ip_forward = 0
-# sshd binds 192.168.250.2 even if eoint comes up after it.
-net.ipv4.ip_nonlocal_bind = 1
 net.ipv4.conf.all.accept_redirects = 0
 net.ipv4.conf.all.send_redirects = 0
 net.ipv4.conf.all.accept_source_route = 0

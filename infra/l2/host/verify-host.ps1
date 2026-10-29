@@ -58,6 +58,10 @@ try {
     Row 'Windows Firewall on for every profile, inbound default Block, local rules applied' ($prof.Count -eq 3 -and $badProf.Count -eq 0) (($prof | ForEach-Object { "$($_.Name)=$($_.Enabled)/$($_.DefaultInboundAction)/$($_.AllowLocalFirewallRules)" }) -join ' ')
     $router = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters' -Name IPEnableRouter -ErrorAction SilentlyContinue).IPEnableRouter
     Row 'Host-wide IP routing off (IPEnableRouter)' (-not $router) "IPEnableRouter=$router"
+    # Reads the .wslconfig of the user running this check; run it as the account that uses WSL.
+    $wslcfg = Join-Path $env:USERPROFILE '.wslconfig'
+    $wslMode = if (Test-Path $wslcfg) { (Select-String -Path $wslcfg -Pattern '^\s*networkingMode\s*=\s*(\S+)' | Select-Object -First 1 | ForEach-Object { $_.Matches[0].Groups[1].Value }) } else { $null }
+    Row "WSL not in mirrored networking mode ($wslcfg)" ("$wslMode" -ne 'mirrored') "networkingMode=$wslMode"
     if (-not $SwitchOnly) {
         $vm = Get-VM -Name $EO.VmName
         $nics = @(Get-VMNetworkAdapter -VMName $EO.VmName)

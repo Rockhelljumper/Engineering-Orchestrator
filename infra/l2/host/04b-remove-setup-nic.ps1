@@ -38,6 +38,10 @@ try {
     & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog
     if ($LASTEXITCODE -ne 0) { throw 'Host-side adapter verification failed.' }
     Write-Host 'STEP 04b DONE: setup NIC removed and verified.'
+} catch {
+    Write-Host "STEP 04b STOPPED: $($_.Exception.Message)"
+    Write-Host 'Do not start the guest. Check Get-VMNetworkAdapter -VMName eo-l2 and rerun this step (it is safe to repeat) until VERIFY-HOST PASSED.'
+    throw
 } finally {
     Stop-EoLog
 }

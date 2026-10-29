@@ -196,6 +196,29 @@ class UdpTests(unittest.TestCase):
         self.assertTrue(ok)
 
 
+class RouteTests(unittest.TestCase):
+    CONNECTED = {"dst": "192.168.250.0/29", "dev": "eoint", "protocol": "kernel", "scope": "link", "prefsrc": "192.168.250.2", "flags": []}
+    LOCAL = {"type": "local", "dst": "192.168.250.2", "dev": "eoint", "table": "local", "protocol": "kernel", "scope": "host", "prefsrc": "192.168.250.2"}
+
+    def test_only_the_connected_route_passes(self):
+        self.assertTrue(b9.routes_ok([self.CONNECTED, self.LOCAL]))
+        self.assertTrue(b9.routes_ok([dict(self.CONNECTED, flags=["linkdown"])]))
+
+    def test_any_other_route_fails(self):
+        default = {"dst": "default", "gateway": "192.168.250.1", "dev": "eoint", "flags": []}
+        self.assertFalse(b9.routes_ok([self.CONNECTED, default]))
+        self.assertFalse(b9.routes_ok([self.CONNECTED, dict(self.CONNECTED, table="100")]))
+        self.assertFalse(b9.routes_ok([dict(self.CONNECTED, table="100")]))
+        self.assertFalse(b9.routes_ok([]))
+
+    def test_ssh_frames_are_recognised(self):
+        ssh = eth(HOST_MAC, 0x0800, ipv4(6, "192.168.250.1", "192.168.250.2", struct.pack(">HH", 50000, 22) + bytes(16)))
+        smb = eth(HOST_MAC, 0x0800, ipv4(6, "192.168.250.1", "192.168.250.2", struct.pack(">HH", 445, 50000) + bytes(16)))
+        self.assertTrue(b9.is_ssh(ssh))
+        self.assertFalse(b9.is_ssh(smb))
+        self.assertFalse(b9.is_ssh(eth(HOST_MAC, 0x0806, bytes(28))))
+
+
 if __name__ == "__main__":
     r = unittest.main(exit=False, verbosity=2).result
     sys.exit(0 if r.wasSuccessful() else 1)

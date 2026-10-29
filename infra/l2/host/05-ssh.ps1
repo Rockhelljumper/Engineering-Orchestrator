@@ -29,6 +29,11 @@ $block = @(
     '    ForwardX11 no'
     '    PermitLocalCommand no'
     '    ExitOnForwardFailure yes'
+    '    GlobalKnownHostsFile none'
+    '    KnownHostsCommand none'
+    '    ProxyCommand none'
+    '    ProxyJump none'
+    '    AddKeysToAgent no'
     '# The lines after this one applied to every host before eo-l2 was added, and still do.'
     'Host *'
     $end
@@ -74,17 +79,23 @@ try {
     $want = [ordered]@{ hostname = $EO.GuestIp; user = 'eo-admin'; identitiesonly = 'yes'; forwardagent = 'no'; forwardx11 = 'no'; stricthostkeychecking = 'ask'; permitlocalcommand = 'no' }
     $problems = @()
     foreach ($k in $want.Keys) { $v = @(Opt $k); if ($v.Count -ne 1 -or $v[0] -ne $want[$k]) { $problems += "$k=$($v -join '|') (want $($want[$k]))" } }
+    $agent = @(Opt 'addkeystoagent')
+    if ($agent.Count -gt 1 -or ($agent.Count -eq 1 -and $agent[0] -notin @('no', 'false'))) { $problems += "addkeystoagent=$($agent -join '|') (want no)" }
     $ids = @(Opt 'identityfile')
     if ($ids.Count -ne 1 -or $ids[0] -notmatch 'eo-l2_ed25519$') { $problems += "identityfile=$($ids -join '|') (want only eo-l2_ed25519)" }
     $known = @(Opt 'userknownhostsfile')
     if ($known.Count -ne 1 -or $known[0] -notmatch 'known_hosts_eo-l2$') { $problems += "userknownhostsfile=$($known -join '|') (want only known_hosts_eo-l2)" }
-    foreach ($k in 'proxyjump', 'proxycommand', 'localforward', 'remoteforward', 'dynamicforward', 'localcommand', 'remotecommand') {
+    foreach ($k in 'proxyjump', 'proxycommand', 'localforward', 'remoteforward', 'dynamicforward', 'localcommand', 'remotecommand', 'knownhostscommand', 'hostkeyalias', 'pkcs11provider', 'securitykeyprovider', 'setenv') {
         $v = @(Opt $k | Where-Object { $_ -ne 'none' })
         if ($v.Count) { $problems += "$k=$($v -join '|') (want none)" }
     }
     $g | Where-Object { $_ -match '^(hostname|user|identityfile|identitiesonly|userknownhostsfile|stricthostkeychecking|forwardagent|forwardx11|proxyjump|proxycommand|localforward|remoteforward|dynamicforward) ' } | Write-Host
     if ($problems.Count) { throw "ssh -G eo-l2 does not give the planned settings: $($problems -join '; '). Run undo-05-ssh.ps1, fix the conflicting entry in ~/.ssh/config, and rerun." }
     Write-Host 'STEP 05 DONE: key created with a passphrase; Host eo-l2 added.'
+} catch {
+    Write-Host "STEP 05 STOPPED: $($_.Exception.Message)"
+    Write-Host 'Run undo-05-ssh.ps1 to remove the key and the eo-l2 block (it keeps a backup of ~/.ssh/config), then rerun.'
+    throw
 } finally {
     Stop-EoLog
 }

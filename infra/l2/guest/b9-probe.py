@@ -14,9 +14,15 @@ Run with python3 -I. Phases:
             route    a default route via 192.168.250.1, from 192.168.250.2;
             spoofed  from /32 addresses of every host-side subnet and from
                      198.51.100.2, through 192.168.250.1, so the host's
-                     interface rule is tested without its guest-subnet rule;
+                     interface rule is tested without its guest-subnet rule.
+                     Windows would route replies to these sources out of its
+                     other interfaces, so this pass can only catch a reply that
+                     comes back on eo-l2-int; one-way paths are covered by the
+                     TTL probes below and by host/verify-host.ps1;
             on-link  addresses with the subnet's own prefix on eoint, so a
                      bridge from eo-l2-int to another network would answer.
+          The route pass also sends TTL 1 and 2 datagrams: a forwarding host
+          answers with ICMP Time Exceeded, which the capture catches.
           It also tries IPv6 and the Hyper-V socket transport (hv_sock) to the
           host's registered services. Everything must fail. The guest's
           addresses, routes and firewall are restored and checked afterwards,
@@ -269,6 +275,13 @@ def classify(frame, host_mac):
 
 
 class Capture(threading.Thread):
+    """Counts every frame the host (or anyone else) sends the guest on eoint. Pass or
+    fail is decided on the counts, never on the stored samples, so host chatter
+    cannot crowd out a real finding. It must also prove it was watching: the
+    operator's own SSH session from the host has to show up in it."""
+
+    SAMPLES = 50
+
     def __init__(self, host_mac):
         super().__init__(daemon=True)
         self.host_mac = host_mac.lower()
@@ -278,33 +291,61 @@ class Capture(threading.Thread):
         self.stop = threading.Event()
         self.frames = 0
         self.arp_from_host = 0
-        self.findings = []
+        self.ssh_from_host = 0
+        self.counts = {"hostTraffic": 0, "foreign": 0, "hostQuery": 0}
+        self.samples = {k: [] for k in self.counts}
+        self.error = None
 
     def run(self):
-        while not self.stop.is_set():
-            try:
-                frame, addr = self.sock.recvfrom(65535)
-            except socket.timeout:
-                continue
-            except OSError:
-                break
-            if addr[2] == PACKET_OUTGOING:
-                continue
-            self.frames += 1
-            if mac_str(frame[6:12]) == self.host_mac and frame[12:14] == b"\x08\x06":
-                self.arp_from_host += 1
-            c = classify(frame, self.host_mac)
-            if c and len(self.findings) < 500:
-                self.findings.append(c)
+        try:
+            while not self.stop.is_set():
+                try:
+                    frame, addr = self.sock.recvfrom(65535)
+                except socket.timeout:
+                    continue
+                if addr[2] == PACKET_OUTGOING:
+                    continue
+                self.frames += 1
+                from_host = mac_str(frame[6:12]) == self.host_mac
+                if from_host and frame[12:14] == b"\x08\x06":
+                    self.arp_from_host += 1
+                c = classify(frame, self.host_mac)
+                if c is None:
+                    if from_host and is_ssh(frame):
+                        self.ssh_from_host += 1
+                    continue
+                self.counts[c["kind"]] += 1
+                if len(self.samples[c["kind"]]) < self.SAMPLES:
+                    self.samples[c["kind"]].append(c)
+        except Exception as e:  # noqa: BLE001 - any capture failure fails B9
+            self.error = f"{type(e).__name__}: {e}"
 
     def finish(self):
+        alive = self.is_alive()
         self.stop.set()
         self.join(timeout=2)
         self.sock.close()
-        return {"frames": self.frames, "arpFromHost": self.arp_from_host,
-                "hostTraffic": [f for f in self.findings if f["kind"] == "hostTraffic"],
-                "foreign": [f for f in self.findings if f["kind"] == "foreign"],
-                "hostQueries": [f for f in self.findings if f["kind"] == "hostQuery"]}
+        return {"frames": self.frames, "arpFromHost": self.arp_from_host, "sshFromHost": self.ssh_from_host,
+                "watching": alive and self.error is None and self.ssh_from_host > 0, "error": self.error,
+                "counts": dict(self.counts), "samples": self.samples}
+
+
+def is_ssh(frame):
+    off = 18 if frame[12:14] == b"\x81\x00" else 14
+    if len(frame) < off + 24 or frame[off - 2:off] != b"\x08\x00" or frame[off + 9] != 6:
+        return False
+    ihl = (frame[off] & 0x0F) * 4
+    sport, dport = struct.unpack(">HH", frame[off + ihl:off + ihl + 4])
+    return sport == 22 or dport == 22
+
+
+def routes_ok(routes):
+    """routes: parsed 'ip -j -4 route show table all'. True when, apart from the
+    kernel's local and broadcast entries, the only route is the connected /29."""
+    rest = [r for r in routes if r.get("type", "unicast") not in ("local", "broadcast")]
+    return len(rest) == 1 and rest[0].get("dst") == "192.168.250.0/29" and rest[0].get("dev") == INT_IF \
+        and rest[0].get("protocol") == "kernel" and rest[0].get("scope") == "link" \
+        and rest[0].get("prefsrc") == GUEST_IP and rest[0].get("table", "main") == "main" and "gateway" not in rest[0]
 
 
 # --- inventory --------------------------------------------------------------
@@ -328,9 +369,9 @@ def inventory(spec):
     macs = {n: open(f"/sys/class/net/{n}/address").read().strip() for n in ifs}
     row("exactly one interface besides lo", len(ifs) == 1, ", ".join(f"{n}={m}" for n, m in macs.items()))
     row("that interface is eoint with the expected MAC", ifs == [INT_IF] and macs.get(INT_IF) == INT_MAC)
-    routes = [r for r in sh("ip", "-4", "route", "show", "table", "all", check=False).stdout.splitlines()
-              if not r.startswith(("local ", "broadcast "))]
-    row("routing: only 192.168.250.0/29 on eoint, in any table", routes == ["192.168.250.0/29 dev eoint proto kernel scope link src 192.168.250.2"], " | ".join(routes))
+    routes = json.loads(sh("ip", "-j", "-4", "route", "show", "table", "all", check=False).stdout or "[]")
+    row("routing: only 192.168.250.0/29 on eoint, in any table", routes_ok(routes),
+        " | ".join(f"{r.get('type', '')} {r.get('dst')} dev {r.get('dev')} table {r.get('table', 'main')}".strip() for r in routes if r.get("type", "unicast") not in ("local", "broadcast")))
     rules = [r.split(":", 1)[1].strip() for r in sh("ip", "-4", "rule", "show", check=False).stdout.splitlines()]
     row("policy routing: only the three default rules", rules == ["from all lookup local", "from all lookup main", "from all lookup default"], " | ".join(rules))
     row("IPv6 disabled in the kernel", not os.path.exists("/proc/sys/net/ipv6"), "ipv6.disable=1" if not os.path.exists("/proc/sys/net/ipv6") else "IPv6 present")
@@ -421,6 +462,23 @@ def vsock_attack(ports):
     return results, notes
 
 
+def ttl_probe(ips):
+    sent = 0
+    for ip in ips:
+        for ttl in (1, 2):
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                s.setsockopt(socket.IPPROTO_IP, socket.IP_TTL, ttl)
+                s.sendto(b"eo-l2 b9 ttl probe", (ip, 33434))
+                sent += 1
+            except OSError:
+                pass
+            finally:
+                s.close()
+    time.sleep(2)
+    return f"ttl probes: {sent} datagrams with TTL 1 and 2 through 192.168.250.1; any ICMP back shows in the capture"
+
+
 def attack(spec):
     """Guest root tries to build a path out. Returns (results, notes, restore)."""
     notes, results = [], []
@@ -429,7 +487,7 @@ def attack(spec):
     host_targets = [t for t in spec["negative"] if t["name"].startswith("host ")]
     avoid = {t["ip"] for t in targets} | {GUEST_IP, HOST_IP}
     added = []
-    old = {s: signal.signal(s, _raise) for s in (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)}
+    old = {}
 
     def add(cidr, why):
         r = sh("ip", "addr", "add", cidr, "dev", INT_IF, check=False)
@@ -441,6 +499,8 @@ def attack(spec):
         return False
 
     try:
+        for sig in (signal.SIGHUP, signal.SIGTERM, signal.SIGINT):
+            old[sig] = signal.signal(sig, _raise)
         sh("nft", "flush", "ruleset")
         notes.append("guest nftables flushed; only host-side controls remain")
         r = sh("sysctl", "-w", "net.ipv6.conf.all.disable_ipv6=0", check=False)
@@ -451,6 +511,9 @@ def attack(spec):
         notes.append("default route via 192.168.250.1 " + ("added" if r.returncode == 0 else f"failed: {r.stderr.strip()}"))
         print("Pass 1, route: default route via the host, from 192.168.250.2")
         results += [dict(x, mode="route") for x in probe_all(targets, label="route: ")]
+        # A host that forwards would send ICMP Time Exceeded back for TTL 1 (and a
+        # router behind it for TTL 2); the capture counts any such frame as host traffic.
+        notes.append(ttl_probe(sorted({t["ip"] for t in targets if not t["ip"].startswith("192.168.250.")})))
 
         print("Pass 2, spoofed: /32 sources outside the guest subnet, through the host")
         sources = [(SPOOF_TESTNET, "TEST-NET-2, matches no host subnet")]
@@ -489,8 +552,8 @@ def attack(spec):
         notes.append(f"interrupted by {e}; restoring")
         raise
     finally:
-        for s in old:
-            signal.signal(s, signal.SIG_IGN)
+        for sig in old:
+            signal.signal(sig, signal.SIG_IGN)
         sh("ip", "route", "del", "default", "via", HOST_IP, "dev", INT_IF, check=False)
         for cidr in added:
             sh("ip", "addr", "del", cidr, "dev", INT_IF, check=False)
@@ -501,8 +564,8 @@ def attack(spec):
         diff = [k for k in saved if saved[k] != now[k]]
         print("  attack: guest addresses, routes and firewall " + ("restored and checked" if not diff else f"NOT restored ({', '.join(diff)}); reboot the guest"))
         attack.restore = {"ok": not diff, "differs": diff}
-        for s, h in old.items():
-            signal.signal(s, h)
+        for sig, h in old.items():
+            signal.signal(sig, h)
 
 
 # --- main -------------------------------------------------------------------
@@ -538,6 +601,7 @@ def main():
         report["inventory"] = inv
         cap = Capture(spec["hostMac"])
         cap.start()
+        res = []
         try:
             if a.phase == "sealed":
                 print("Targets (all must be unreachable):")
@@ -547,27 +611,36 @@ def main():
                 attack.restore = {"ok": False, "differs": ["not run"]}
                 try:
                     res, notes, _ = attack(spec)
+                    report["attackNotes"] = notes
                 finally:
                     report["restore"] = attack.restore
-                report["attackNotes"] = notes
                 print("Inventory after restore:")
                 report["inventoryAfter"] = inventory(spec)
+        except Interrupted as e:
+            report["interrupted"] = str(e)
+            print(f"INTERRUPTED ({e}); the report is partial and B9 is not passed")
         finally:
             time.sleep(1)
             report["capture"] = cap.finish()
         c = report["capture"]
-        print(f"Capture on eoint: {c['frames']} frames in; {len(c['hostTraffic'])} non-SSH frames from the host; {len(c['foreign'])} from other MACs; {len(c['hostQueries'])} host multicast/broadcast frames (information)")
-        for f in c["hostTraffic"][:20] + c["foreign"][:20]:
+        n = c["counts"]
+        print(f"Capture on eoint: {c['frames']} frames in, {c['sshFromHost']} of the host's SSH session (proves the capture watched: {c['watching']}); "
+              f"{n['hostTraffic']} other frames from the host; {n['foreign']} from other MACs; {n['hostQuery']} host multicast/broadcast frames (information)")
+        if c["error"]:
+            print(f"  capture error: {c['error']}")
+        for f in c["samples"]["hostTraffic"][:20] + c["samples"]["foreign"][:20]:
             print(f"  FRAME {f}")
         report["probes"] = res
         leaks = [r for r in res if r["reachable"]]
         report["leaks"] = leaks
         controls = [r for r in res if r["control"]]
         report["controlChecks"] = len(controls)
-        print(f"Checks on ports another host rule allows (unreachable only because of the eo-l2 rules): {len(controls)}")
-        ok = (all(r["ok"] for r in inv) and not leaks and not c["hostTraffic"] and not c["foreign"]
+        print(f"Checks on ports another host rule allows (unreachable only because of the eo-l2 rules): {len(controls)}"
+              + ("" if controls else " -- none on this host, so B9 cannot tell the eo-l2 rules from Windows' default inbound block"))
+        ok = ("interrupted" not in report and all(r["ok"] for r in inv) and not leaks and c["watching"]
+              and n["hostTraffic"] == 0 and n["foreign"] == 0
               and (a.phase == "sealed" or (report["restore"]["ok"] and all(r["ok"] for r in report["inventoryAfter"]))))
-        print(("B9 " + a.phase.upper() + " PASSED") if ok else f"B9 {a.phase.upper()} FAILED: {len(leaks)} reachable, inventory ok={all(r['ok'] for r in inv)}, host frames={len(c['hostTraffic'])}, foreign frames={len(c['foreign'])}")
+        print(("B9 " + a.phase.upper() + " PASSED") if ok else f"B9 {a.phase.upper()} FAILED: {len(leaks)} reachable, inventory ok={all(r['ok'] for r in inv)}, capture watching={c['watching']}, host frames={n['hostTraffic']}, foreign frames={n['foreign']}")
 
     report["passed"] = ok
     with open(a.out, "w") as f:
