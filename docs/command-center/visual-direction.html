@@ -1,0 +1,634 @@
+<title>Mission Control Visual Direction</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #EEF1F4;
+  --surface: #FFFFFF;
+  --surface-2: #F5F7F9;
+  --grid: #DCE2E8;
+  --border: #CDD4DC;
+  --border-strong: #7A8696;
+  --text: #111820;
+  --text-2: #3F4B59;
+  --text-3: #5A6675;
+  --accent: #1C5BD0;
+  --accent-ink: #FFFFFF;
+  --accent-bg: #E3ECFB;
+  --s-verified: #0B7543;
+  --s-verified-bg: #E2F3E9;
+  --s-recorded: #0A6A87;
+  --s-recorded-bg: #E0F1F6;
+  --s-unverified: #8A4F00;
+  --s-unverified-bg: #FBEFDA;
+  --s-nodata: #5A6675;
+  --s-nodata-bg: #EEF1F4;
+  --s-blocked: #B0241C;
+  --s-blocked-bg: #FBE6E4;
+  --s-integrity: #981B83;
+  --s-integrity-bg: #F7E4F3;
+  --font-ui: "Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --m-fast: 120ms; --m-state: 200ms; --m-arrive: 240ms;
+  --ease-std: cubic-bezier(.2,0,0,1); --ease-out: cubic-bezier(0,0,0,1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0B0F14;
+    --surface: #121821;
+    --surface-2: #19212C;
+    --grid: #1C2530;
+    --border: #2A3442;
+    --border-strong: #64717F;
+    --text: #E6EBF0;
+    --text-2: #AEB9C5;
+    --text-3: #8D99A6;
+    --accent: #74A7FF;
+    --accent-ink: #08101C;
+    --accent-bg: #14233D;
+    --s-verified: #55D492;
+    --s-verified-bg: #0F2A1D;
+    --s-recorded: #56C6E2;
+    --s-recorded-bg: #0D2631;
+    --s-unverified: #F2B550;
+    --s-unverified-bg: #2B2111;
+    --s-nodata: #8D99A6;
+    --s-nodata-bg: #19212C;
+    --s-blocked: #FF7D70;
+    --s-blocked-bg: #2F1614;
+    --s-integrity: #F283E2;
+    --s-integrity-bg: #2D1229;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0B0F14;
+  --surface: #121821;
+  --surface-2: #19212C;
+  --grid: #1C2530;
+  --border: #2A3442;
+  --border-strong: #64717F;
+  --text: #E6EBF0;
+  --text-2: #AEB9C5;
+  --text-3: #8D99A6;
+  --accent: #74A7FF;
+  --accent-ink: #08101C;
+  --accent-bg: #14233D;
+  --s-verified: #55D492;
+  --s-verified-bg: #0F2A1D;
+  --s-recorded: #56C6E2;
+  --s-recorded-bg: #0D2631;
+  --s-unverified: #F2B550;
+  --s-unverified-bg: #2B2111;
+  --s-nodata: #8D99A6;
+  --s-nodata-bg: #19212C;
+  --s-blocked: #FF7D70;
+  --s-blocked-bg: #2F1614;
+  --s-integrity: #F283E2;
+  --s-integrity-bg: #2D1229;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--text);
+  font: 400 15px/22px var(--font-ui);
+  font-variation-settings: "wdth" 100;
+  overflow-wrap: anywhere;
+}
+.wrap {
+  max-width: 1280px; margin: 0 auto;
+  padding: 32px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px));
+}
+h1, h2, h3, h4 { margin: 0; font-weight: 700; }
+h1 { font-size: 28px; line-height: 34px; font-variation-settings: "wdth" 88; letter-spacing: -.01em; }
+h2 { font-size: 22px; line-height: 28px; font-variation-settings: "wdth" 88; }
+h3 { font-size: 18px; line-height: 24px; }
+p { margin: 0 0 12px; max-width: 72ch; }
+code, .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; }
+code { font-size: 13px; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.label {
+  font: 600 12px/16px var(--font-ui); font-variation-settings: "wdth" 75;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--text-2);
+}
+.muted { color: var(--text-3); }
+.sec { margin-top: 48px; }
+.sec > header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--border-strong); padding-bottom: 8px; margin-bottom: 16px; }
+.sec > header .num { font-family: var(--font-mono); color: var(--text-3); font-size: 13px; }
+
+/* Masthead */
+.mast { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .mast { grid-template-columns: 1fr auto; align-items: end; } }
+.mast .kicker { color: var(--accent); }
+.theme-switch { display: inline-flex; border: 1px solid var(--border-strong); background: var(--surface); }
+.theme-switch button {
+  font: 600 12px/16px var(--font-ui); font-variation-settings: "wdth" 75; text-transform: uppercase; letter-spacing: .06em;
+  min-height: 32px; min-width: 64px; padding: 6px 12px; border: 0; background: transparent; color: var(--text-2); cursor: pointer;
+}
+.theme-switch button + button { border-left: 1px solid var(--border); }
+.theme-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.sample-note {
+  display: flex; gap: 8px; align-items: flex-start; margin-top: 16px; padding: 8px 12px;
+  border: 1px dashed var(--s-unverified); background: var(--surface); color: var(--text-2); font-size: 14px;
+}
+
+/* Panel with drawing title strip */
+.panel { background: var(--surface); border: 1px solid var(--border); min-width: 0; }
+.strip {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  padding: 6px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+.strip .id { font-family: var(--font-mono); font-size: 12px; color: var(--text-3); }
+.panel .body { padding: 12px; }
+
+/* Swatches */
+.swatches { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.sw { background: var(--surface); border: 1px solid var(--border); }
+.sw .chip-c { height: 56px; border-bottom: 1px solid var(--border); }
+.sw .meta { padding: 8px 10px; font-size: 13px; line-height: 18px; }
+.sw .meta b { display: block; font-family: var(--font-mono); font-weight: 500; font-size: 12px; }
+.states { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); margin-top: 16px; }
+.state-card { background: var(--surface); border: 1px solid var(--border); padding: 12px; display: grid; gap: 8px; }
+.state-card .hex { font-family: var(--font-mono); font-size: 12px; color: var(--text-3); }
+
+/* Lamps (state pills) */
+.lamp {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 2px 8px;
+  border: 1px solid currentColor; border-radius: 3px;
+  font: 600 12px/16px var(--font-ui); font-variation-settings: "wdth" 75; text-transform: uppercase; letter-spacing: .06em;
+  white-space: nowrap; transition: background-color var(--m-state) var(--ease-std), color var(--m-state) var(--ease-std);
+}
+.lamp .g { font-family: var(--font-mono); font-size: 12px; line-height: 1; }
+.lamp.verified { color: var(--s-verified); background: var(--s-verified-bg); }
+.lamp.recorded { color: var(--s-recorded); background: var(--surface); }
+.lamp.unverified { color: var(--s-unverified); border-style: dashed;
+  background: repeating-linear-gradient(45deg, var(--s-unverified-bg) 0 4px, var(--surface) 4px 8px); }
+.lamp.nodata { color: var(--s-nodata); border-style: dotted; background: var(--surface); }
+.lamp.blocked { color: var(--s-blocked); background: var(--s-blocked-bg); }
+.lamp.integrity { color: var(--s-integrity); background: var(--s-integrity-bg); }
+
+/* Provenance chip */
+.pv {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 20px; padding: 0 6px;
+  font: 500 11px/18px var(--font-mono); color: var(--text-2);
+  border: 1px solid var(--border-strong); border-radius: 2px; background: var(--surface-2); white-space: nowrap; text-decoration: none;
+}
+.pv::before { content: ""; width: 6px; height: 6px; background: var(--s-verified); }
+.pv.rec::before { background: transparent; border: 1px solid var(--s-recorded); border-radius: 50%; }
+.pv.unv { border-style: dashed; } .pv.unv::before { background: var(--s-unverified); border-radius: 50%; }
+.pv.none { border-style: dotted; } .pv.none::before { background: transparent; border: 1px dotted var(--s-nodata); }
+.pv.sample { color: var(--s-unverified); border-color: var(--s-unverified); }
+.pv.sample::before { display: none; }
+
+/* Type specimens */
+.type-grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .type-grid { grid-template-columns: 1fr 1fr; } }
+.spec-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.spec-row:last-child { border-bottom: 0; }
+@media (max-width: 479px) { .spec-row { grid-template-columns: 1fr; gap: 2px; } }
+.big-num { font: 500 36px/40px var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; }
+
+/* Component gallery */
+.gallery { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.stack { display: grid; gap: 8px; }
+
+/* Stream status */
+.stream { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); min-height: 28px; padding: 2px 10px; border: 1px solid var(--border); background: var(--surface); }
+.stream .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--s-verified); }
+.stream.reconn .dot { background: var(--s-unverified); animation: reconn 1.6s ease-in-out infinite; }
+.stream.stale { color: var(--text-3); } .stream.stale .dot { background: transparent; border: 1px dotted var(--s-nodata); }
+@keyframes reconn { 50% { opacity: .25; } }
+
+/* Integrity banner */
+.integrity-banner {
+  display: grid; grid-template-columns: 10px 1fr; background: var(--s-integrity-bg); border: 1px solid var(--s-integrity); color: var(--text);
+}
+.integrity-banner .hz { background: repeating-linear-gradient(-45deg, var(--s-integrity) 0 6px, var(--s-integrity-bg) 6px 12px); }
+.integrity-banner .c { padding: 10px 12px; display: grid; gap: 6px; }
+.integrity-banner .c strong { color: var(--s-integrity); }
+
+/* Task node */
+.node { background: var(--surface); border: 1px solid var(--border-strong); min-width: 0; }
+.node .nh { display: flex; justify-content: space-between; gap: 8px; padding: 4px 8px; background: var(--surface-2); border-bottom: 1px solid var(--border); font: 500 12px/18px var(--font-mono); color: var(--text-2); }
+.node .nb { padding: 8px; display: grid; gap: 6px; }
+.node .t { font-weight: 600; font-size: 14px; line-height: 20px; }
+.node.sel { outline: 2px solid var(--accent); outline-offset: 2px; }
+.node.blk { border-color: var(--s-blocked); }
+
+/* Metric tile */
+.metric { background: var(--surface); border: 1px solid var(--border); padding: 12px; display: grid; gap: 6px; min-width: 0; align-content: start; }
+.metric .v { font: 500 28px/34px var(--font-mono); font-variant-numeric: tabular-nums slashed-zero; }
+.metric .v small { font-size: 14px; color: var(--text-2); margin-left: 4px; }
+.metric .cav { font-size: 12px; line-height: 16px; color: var(--text-3); }
+.metric.nd .v { font: 600 15px/22px var(--font-ui); color: var(--s-nodata); }
+.spark { width: 100%; height: 32px; display: block; color: var(--text-2); }
+
+/* Budget bar */
+.budget { display: grid; gap: 4px; }
+.budget .track { position: relative; height: 12px; background: var(--surface-2); border: 1px solid var(--border-strong); }
+.budget .spent { position: absolute; inset: 0 auto 0 0; background: var(--text-2); }
+.budget .resv { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, var(--text-3) 0 2px, transparent 2px 5px); }
+.budget .cap { position: absolute; top: -4px; bottom: -4px; right: 0; width: 2px; background: var(--text); }
+.budget .lg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--text-2); align-items: center; }
+
+/* Approval and intent cards */
+.card { background: var(--surface); border: 1px solid var(--border-strong); display: grid; }
+.card .ch { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.card .cb { padding: 12px; display: grid; gap: 8px; }
+.card .ca { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 12px 12px; }
+.btn {
+  font: 600 13px/18px var(--font-ui); min-height: 32px; padding: 6px 14px; cursor: pointer;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  transition: background-color var(--m-fast) var(--ease-std);
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:hover { background: var(--accent-bg); } .btn.primary:hover { background: var(--accent); filter: brightness(1.08); }
+.btn[disabled] { color: var(--text-3); cursor: not-allowed; background: var(--surface-2); }
+.card.intent { border-style: dashed; }
+
+/* Event row */
+.feed { display: grid; }
+.ev { display: grid; grid-template-columns: 72px auto 1fr; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 14px; line-height: 20px; }
+.ev:last-child { border-bottom: 0; }
+.ev .tm { font: 400 12px/16px var(--font-mono); color: var(--text-3); }
+.ev .tx { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-width: 0; }
+.ev.new { animation: arrive var(--m-arrive) var(--ease-out) both, tint 1.44s linear both; }
+@keyframes arrive { from { transform: translateY(-8px); opacity: 0; } }
+@keyframes tint { 0%, 83% { background: var(--accent-bg); } 100% { background: transparent; } }
+@media (max-width: 479px) { .ev { grid-template-columns: 1fr; } .ev .lamp { justify-self: start; } }
+
+/* App frame (hi-fi screens) */
+.app { border: 1px solid var(--border-strong); background: var(--bg); display: grid; grid-template-columns: 1fr; min-width: 0; }
+@media (min-width: 768px) { .app { grid-template-columns: 64px 1fr; } }
+.rail { display: none; background: var(--surface); border-right: 1px solid var(--border); padding: 8px 0; }
+@media (min-width: 768px) { .rail { display: grid; align-content: start; gap: 4px; } }
+.rail a, .bbar a {
+  display: grid; place-items: center; gap: 2px; min-height: 52px; color: var(--text-2); text-decoration: none;
+  font: 600 9px/12px var(--font-ui); font-variation-settings: "wdth" 62; text-transform: uppercase; letter-spacing: .02em;
+  white-space: nowrap;
+}
+.rail a svg, .bbar a svg { width: 20px; height: 20px; }
+.rail a[aria-current="page"], .bbar a[aria-current="page"] { color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.bbar a[aria-current="page"] { box-shadow: inset 0 3px 0 var(--accent); }
+.rail .badge, .bbar .badge { font-family: var(--font-mono); font-size: 10px; padding: 0 4px; background: var(--accent); color: var(--accent-ink); }
+.bbar { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--surface); border-top: 1px solid var(--border); }
+@media (min-width: 768px) { .bbar { display: none; } }
+.main { min-width: 0; display: grid; gap: 16px; padding: 16px; align-content: start; }
+.topbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.crumbs { font-size: 13px; color: var(--text-2); }
+.grid-3 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+.grid-4 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+.proj .body { display: grid; gap: 10px; }
+.kv { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: 14px; }
+.kv .n { font: 500 15px/22px var(--font-mono); font-variant-numeric: tabular-nums; }
+.dash { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 1024px) { .dash { grid-template-columns: 2fr 1fr; } }
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.dag svg { display: block; }
+.dag text { font-family: var(--font-mono); font-size: 12px; }
+.dag .edge { stroke: var(--border-strong); stroke-width: 1.5; fill: none; }
+.dag .nbox { fill: var(--surface); stroke: var(--border-strong); }
+.dag .nstrip { fill: var(--surface-2); }
+.dag .tid { fill: var(--text-2); } .dag .ttl { fill: var(--text); font-family: var(--font-ui); font-size: 13px; font-weight: 600; }
+.dag .st-verified { fill: var(--s-verified); } .dag .st-blocked { fill: var(--s-blocked); } .dag .st-unverified { fill: var(--s-unverified); }
+.dag .st-recorded { fill: var(--s-recorded); } .dag .st-nodata { fill: var(--s-nodata); }
+.dag .lampbox-verified { fill: var(--s-verified-bg); stroke: var(--s-verified); }
+.dag .lampbox-blocked { fill: var(--s-blocked-bg); stroke: var(--s-blocked); }
+.dag .lampbox-unverified { fill: var(--s-unverified-bg); stroke: var(--s-unverified); stroke-dasharray: 3 2; }
+.dag .lampbox-nodata { fill: var(--surface); stroke: var(--s-nodata); stroke-dasharray: 1 2; }
+.dag .lampbox-recorded { fill: var(--surface); stroke: var(--s-recorded); }
+.dag .sel { stroke: var(--accent); stroke-width: 2; fill: none; }
+.board { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); }
+.col { background: var(--surface-2); border: 1px solid var(--border); padding: 8px; display: grid; gap: 6px; align-content: start; }
+.col .ct { display: flex; justify-content: space-between; gap: 4px; flex-wrap: wrap; }
+.lane { display: grid; grid-template-columns: 96px 1fr; gap: 8px; align-items: center; font-size: 13px; }
+.lane .bars { position: relative; height: 20px; background: var(--surface-2); border: 1px solid var(--border); }
+.lane .bar { position: absolute; top: 2px; bottom: 2px; background: var(--s-verified-bg); border: 1px solid var(--s-verified); }
+.lane .bar.run { background: repeating-linear-gradient(45deg, var(--s-unverified-bg) 0 4px, var(--surface) 4px 8px); border: 1px dashed var(--s-unverified); }
+.lane .bar.blk { background: var(--s-blocked-bg); border-color: var(--s-blocked); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; }
+.tok-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tok-table th, .tok-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.tok-table th { font-weight: 600; color: var(--text-2); }
+.footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--border-strong); font-size: 13px; color: var(--text-3); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-port" viewBox="0 0 20 20"><rect x="2.5" y="2.5" width="6" height="6" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="11.5" y="2.5" width="6" height="6" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="11.5" width="6" height="6" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="11.5" y="11.5" width="6" height="6" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-appr" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-proj" viewBox="0 0 20 20"><circle cx="4.5" cy="10" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="15.5" cy="5" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="15.5" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 9.2l7-3.4M6.5 10.8l7 3.4" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 20 20"><path d="M3 4h14v9H8l-4 3v-3H3z" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-fleet" viewBox="0 0 20 20"><rect x="3" y="3" width="14" height="4" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="9" width="14" height="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 16h14" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-lib" viewBox="0 0 20 20"><path d="M4 3v14M8 3v14M12 4l4 12" stroke="currentColor" stroke-width="1.5" fill="none"/></symbol>
+    <symbol id="i-ana" viewBox="0 0 20 20"><path d="M3 17V3M3 17h14M6 13l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.5" fill="none"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<header class="mast">
+  <div>
+    <div class="label kicker">Engineering Orchestrator · Command Center · CC0 revision R5</div>
+    <h1>Mission Control visual direction: “Telemetry Console”</h1>
+    <p style="margin-top:8px">A flight-control console crossed with an engineering drawing: graphite or drafting-white panels on a faint blueprint grid, drawing-style title strips, annunciator lamps for state and monospaced tabular numerals. The six signal colours are the only saturated colours on screen, so colour always means a state, and the trust level (verified, recorded, unverified) changes the <em>shape</em> of the mark as well as its colour.</p>
+    <p class="muted" style="font-size:13px">Normative spec: <code>proposal.md</code> §4.2. Fonts: Archivo and IBM Plex Mono (Google Fonts here; bundled in production).</p>
+  </div>
+  <div class="stack" style="justify-items:start">
+    <span class="label" id="theme-l">Theme</span>
+    <div class="theme-switch" role="group" aria-labelledby="theme-l">
+      <button type="button" data-set-theme="auto" aria-pressed="true">System</button>
+      <button type="button" data-set-theme="light" aria-pressed="false">Light</button>
+      <button type="button" data-set-theme="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+</header>
+<div class="sample-note" role="note"><span class="pv sample">SAMPLE</span><span>Every project, task, number and record on this page is <strong>sample data</strong> for illustration. Each number carries a provenance chip in the format the product will use (<code>J#</code> journal seq, <code>E:</code> evidence manifest, <code>W:</code> workspace store, <code>unverified</code> runner stream, <code>no source</code>).</span></div>
+
+<!-- 1. Colour tokens -->
+<section class="sec" aria-labelledby="s1">
+  <header><span class="num">01</span><h2 id="s1">Colour tokens</h2><span class="muted">current theme shown; values for both themes listed</span></header>
+  <div class="swatches">
+    <div class="sw"><div class="chip-c" style="background:var(--bg)"></div><div class="meta">Canvas <b>--bg</b><span class="muted">#EEF1F4 / #0B0F14</span></div></div>
+    <div class="sw"><div class="chip-c" style="background:var(--surface)"></div><div class="meta">Panel <b>--surface</b><span class="muted">#FFFFFF / #121821</span></div></div>
+    <div class="sw"><div class="chip-c" style="background:var(--surface-2)"></div><div class="meta">Inset, strip <b>--surface-2</b><span class="muted">#F5F7F9 / #19212C</span></div></div>
+    <div class="sw"><div class="chip-c" style="background:var(--border-strong)"></div><div class="meta">Boundary ≥ 3:1 <b>--border-strong</b><span class="muted">#7A8696 / #64717F</span></div></div>
+    <div class="sw"><div class="chip-c" style="background:var(--text)"></div><div class="meta">Text <b>--text</b><span class="muted">#111820 / #E6EBF0</span></div></div>
+    <div class="sw"><div class="chip-c" style="background:var(--text-2)"></div><div class="meta">Secondary <b>--text-2</b><span class="muted">#3F4B59 / #AEB9C5</span></div></div>
+    <div class="sw"><div class="chip-c" style="background:var(--text-3)"></div><div class="meta">Muted ≥ 4.5:1 <b>--text-3</b><span class="muted">#5A6675 / #8D99A6</span></div></div>
+    <div class="sw"><div class="chip-c" style="background:var(--accent)"></div><div class="meta">Interactive, focus <b>--accent</b><span class="muted">#1C5BD0 / #74A7FF</span></div></div>
+  </div>
+
+  <h3 style="margin-top:24px">Semantic state colours</h3>
+  <p class="muted" style="font-size:14px">Each state = glyph + label + colour + border pattern. All foregrounds are ≥ 4.5:1 on their tint and on the panel in both themes (validated).</p>
+  <div class="states">
+    <div class="state-card"><span class="lamp verified"><span class="g" aria-hidden="true">✓</span>Verified</span><span style="font-size:14px">Controller-verified: journal record or evidence manifest. Solid.</span><span class="hex">--s-verified #0B7543 / #55D492 · tint #E2F3E9 / #0F2A1D</span></div>
+    <div class="state-card"><span class="lamp recorded"><span class="g" aria-hidden="true">●</span>Recorded</span><span style="font-size:14px">Workspace store (T1): conversations, registry, memory. Outlined.</span><span class="hex">--s-recorded #0A6A87 / #56C6E2 · tint #E0F1F6 / #0D2631</span></div>
+    <div class="state-card"><span class="lamp unverified"><span class="g" aria-hidden="true">◌</span>Unverified</span><span style="font-size:14px">Runner stream or agent claim. Dashed and hatched.</span><span class="hex">--s-unverified #8A4F00 / #F2B550 · tint #FBEFDA / #2B2111</span></div>
+    <div class="state-card"><span class="lamp nodata"><span class="g" aria-hidden="true">∅</span>No data</span><span style="font-size:14px">No source yet, or below minSample. Dotted, empty.</span><span class="hex">--s-nodata #5A6675 / #8D99A6 · tint #EEF1F4 / #19212C</span></div>
+    <div class="state-card"><span class="lamp blocked"><span class="g" aria-hidden="true">■</span>Blocked</span><span style="font-size:14px">Blocked task, escalation, rejected intent.</span><span class="hex">--s-blocked #B0241C / #FF7D70 · tint #FBE6E4 / #2F1614</span></div>
+    <div class="state-card"><span class="lamp integrity"><span class="g" aria-hidden="true">◆</span>Integrity</span><span style="font-size:14px">Anchor or recovery refusal, gateway-auth alarm. Hazard stripes.</span><span class="hex">--s-integrity #981B83 / #F283E2 · tint #F7E4F3 / #2D1229</span></div>
+  </div>
+</section>
+
+<!-- 2. Typography -->
+<section class="sec" aria-labelledby="s2">
+  <header><span class="num">02</span><h2 id="s2">Typography</h2></header>
+  <div class="type-grid">
+    <div class="panel">
+      <div class="strip"><span class="label">Archivo · UI, headings, labels</span><span class="id">wdth 62–125 · wght 100–900</span></div>
+      <div class="body">
+        <div class="spec-row"><span class="label">h1 28/34</span><span style="font-size:28px;line-height:34px;font-weight:700;font-variation-settings:'wdth' 88">Portfolio overview</span></div>
+        <div class="spec-row"><span class="label">h2 22/28</span><span style="font-size:22px;line-height:28px;font-weight:700;font-variation-settings:'wdth' 88">Approvals waiting on you</span></div>
+        <div class="spec-row"><span class="label">h3 18/24</span><span style="font-size:18px;line-height:24px;font-weight:700">Execution inspector</span></div>
+        <div class="spec-row"><span class="label">body 15/22</span><span>The controller decides; agents and interfaces only propose.</span></div>
+        <div class="spec-row"><span class="label">dense 14/20</span><span style="font-size:14px;line-height:20px">Console density: rows of 32 px, targets still ≥ 24 px.</span></div>
+        <div class="spec-row"><span class="label">label 12/16</span><span class="label">Controller decision pending</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="strip"><span class="label">IBM Plex Mono · numbers, ids, cursors</span><span class="id">tabular-nums slashed-zero</span></div>
+      <div class="body">
+        <div class="spec-row"><span class="label">metric 36/40</span><span class="big-num">$4.82</span></div>
+        <div class="spec-row"><span class="label">caption 12/16</span><span class="mono" style="font-size:12px">eo:ws_01JD…/prj_01JE…/task/T3/attempt/2</span></div>
+        <div class="spec-row"><span class="label">ids</span><span class="mono" style="font-size:13px">J#20431 · E:T3/2 · apr_01JF8Q · 9f3c2a1e</span></div>
+        <div class="spec-row"><span class="label">alignment</span><span class="mono" style="font-size:14px;white-space:pre">  0.48
+ 10.00
+110.25</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Components -->
+<section class="sec" aria-labelledby="s3">
+  <header><span class="num">03</span><h2 id="s3">Components</h2></header>
+  <div class="gallery">
+
+    <div class="panel"><div class="strip"><span class="label">Provenance chip</span><span class="id">required on every number</span></div>
+      <div class="body row">
+        <a class="pv" href="#s3">J#20431</a><a class="pv" href="#s3">E:T3/2</a><a class="pv rec" href="#s3">W:row 88c1</a><a class="pv unv" href="#s3">unverified</a><span class="pv none">no source</span><span class="pv sample">SAMPLE</span>
+      </div></div>
+
+    <div class="panel"><div class="strip"><span class="label">Stream status</span><span class="id">always in header</span></div>
+      <div class="body stack">
+        <span class="stream" role="status"><span class="dot" aria-hidden="true"></span>Live · <span class="mono">J#20431</span></span>
+        <span class="stream reconn"><span class="dot" aria-hidden="true"></span>Reconnecting… last <span class="mono">J#20431</span></span>
+        <span class="stream stale"><span class="dot" aria-hidden="true"></span>Stale · as of <span class="mono">J#20398</span>, <span class="mono">42 s</span> ago <span class="pv">J#20398</span></span>
+      </div></div>
+
+    <div class="panel"><div class="strip"><span class="label">Task node</span><span class="id">DAG and board</span></div>
+      <div class="body grid-3" style="grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr))">
+        <div class="node sel" tabindex="0" aria-label="T3, verifying, attempt 2, depends on T1 and T2"><div class="nh"><span>T3 · implementer</span><span>a2</span></div><div class="nb"><span class="t">Add rate limiter</span><span class="lamp unverified"><span class="g" aria-hidden="true">◌</span>Verifying</span><a class="pv" href="#s3">J#20417</a></div></div>
+        <div class="node blk" tabindex="0" aria-label="T4, blocked, attempt 3"><div class="nh"><span>T4 · implementer</span><span>a3</span></div><div class="nb"><span class="t">Migrate config</span><span class="lamp blocked"><span class="g" aria-hidden="true">■</span>Blocked</span><a class="pv" href="#s3">J#20388</a></div></div>
+      </div></div>
+
+    <div class="panel"><div class="strip"><span class="label">Metric tile</span><span class="id">MetricValue only</span></div>
+      <div class="body grid-3" style="grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr))">
+        <div class="metric"><span class="label">Spend today (estimate)</span><span class="v">$4.82</span><div class="row"><a class="pv" href="#s3">budget.settle ×14</a></div><span class="cav">Client-reported estimate, not billing. n=14</span></div>
+        <div class="metric nd"><span class="label">First-attempt pass rate</span><span class="v">Not enough data</span><div class="row"><span class="pv none">no source</span></div><span class="cav">Needs M3 verification. n=0 of 10</span></div>
+      </div></div>
+
+    <div class="panel"><div class="strip"><span class="label">Budget bar</span><span class="id">spent · reserved · cap</span></div>
+      <div class="body budget">
+        <div class="track" role="img" aria-label="Spent 3.10 dollars, reserved 1.50, cap 10 dollars"><span class="spent" style="width:31%"></span><span class="resv" style="left:31%;width:15%"></span><span class="cap"></span></div>
+        <div class="lg"><span>spent <span class="mono">$3.10</span></span><a class="pv" href="#s3">J#20402</a><span>reserved <span class="mono">$1.50</span></span><a class="pv" href="#s3">J#20419</a><span>cap <span class="mono">$10.00</span></span><a class="pv" href="#s3">policy J#88</a></div>
+      </div></div>
+
+    <div class="integrity-banner" role="alert"><span class="hz" aria-hidden="true"></span><div class="c"><strong>◆ Integrity: anchor refused the state root of data-pipeline</strong><span style="font-size:14px">Journal is behind the anchored head. Intents for this project are disabled until resolved at the console.</span><div class="row"><a class="pv" href="#s3">J#5120</a><code>eo doctor data-pipeline</code></div></div></div>
+
+    <div class="card"><div class="ch"><span class="label">Approval · plan</span><span class="lamp recorded"><span class="g" aria-hidden="true">●</span>Pending</span></div>
+      <div class="cb"><strong>Approve plan for sample-api</strong><div class="kv"><span>subject hash</span><code>9f3c2a1e</code><span>tasks</span><span class="n">12</span><a class="pv" href="#s3">J#20390</a></div><div class="kv muted"><span>expires in</span><span class="n">47 min</span><a class="pv" href="#s3">J#20390</a></div></div>
+      <div class="ca"><button class="btn primary" type="button">Review and approve…</button><button class="btn" type="button">Reject…</button></div></div>
+
+    <div class="card intent"><div class="ch"><span class="label">Intent card · from manager “Atlas”</span><span class="lamp unverified"><span class="g" aria-hidden="true">◌</span>Proposed</span></div>
+      <div class="cb"><code>run.start · prj sample-api · plan 9f3c2a1e</code><span class="label" style="color:var(--text-2)">Controller decision pending · needs your passkey</span></div>
+      <div class="ca"><button class="btn primary" type="button">Confirm with passkey</button><button class="btn" type="button">Discard</button></div></div>
+
+    <div class="panel"><div class="strip"><span class="label">Event row</span><span class="id">arrival highlight 240 ms</span></div>
+      <div class="feed">
+        <div class="ev new"><span class="tm">14:02:11</span><span class="lamp verified"><span class="g" aria-hidden="true">✓</span>Ready</span><span class="tx">T5 unblocked by owner <a class="pv" href="#s3">J#20431</a></span></div>
+        <div class="ev"><span class="tm">14:01:56</span><span class="lamp unverified"><span class="g" aria-hidden="true">◌</span>Claim</span><span class="tx">Worker says tests pass <span class="pv unv">unverified</span></span></div>
+      </div></div>
+  </div>
+</section>
+
+<!-- 4. Portfolio overview -->
+<section class="sec" aria-labelledby="s4">
+  <header><span class="num">04</span><h2 id="s4">Hi-fi: Portfolio overview</h2><span class="pv sample">SAMPLE DATA</span></header>
+  <div class="app" role="region" aria-label="Portfolio overview sample">
+    <nav class="rail" aria-label="Primary">
+      <a href="#s4" aria-current="page"><svg aria-hidden="true"><use href="#i-port"/></svg>Portfolio</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-appr"/></svg>Approvals <span class="badge">2</span></a>
+      <a href="#s5"><svg aria-hidden="true"><use href="#i-proj"/></svg>Projects</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-chat"/></svg>Managers</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-fleet"/></svg>Fleet</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-lib"/></svg>Library</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-ana"/></svg>Analytics</a>
+    </nav>
+    <div class="main">
+      <div class="topbar">
+        <div><div class="crumbs">Workspace <code>ws_owner</code></div><h2>Portfolio</h2></div>
+        <div class="row"><span class="stream" role="status"><span class="dot" aria-hidden="true"></span>Live · <span class="mono">J#20431</span></span><span class="pv sample">SAMPLE</span></div>
+      </div>
+
+      <div class="integrity-banner" role="alert"><span class="hz" aria-hidden="true"></span><div class="c"><strong>◆ data-pipeline: anchor refused the state root</strong><span style="font-size:14px">Intents disabled for this project. Action required at console.</span><div class="row"><a class="pv" href="#s4">J#5120</a><code>eo doctor data-pipeline</code></div></div></div>
+
+      <div class="panel"><div class="strip"><span class="label">Waiting on you</span><span class="row"><span class="n mono">2</span><a class="pv" href="#s4">approval.requested ×2</a></span></div>
+        <div class="body grid-3">
+          <div class="card"><div class="ch"><span class="label">Plan · sample-api</span><span class="row"><span class="mono" style="font-size:12px">47 min</span><a class="pv" href="#s4">J#20390</a></span></div><div class="cb"><span>Approve plan <code>9f3c2a1e</code>, <span class="mono">12</span> tasks <a class="pv" href="#s4">J#20390</a></span></div><div class="ca"><button class="btn primary" type="button">Review…</button></div></div>
+          <div class="card"><div class="ch"><span class="label">Unblock · docs-site T4</span><span class="row"><span class="mono" style="font-size:12px">3 h</span><a class="pv" href="#s4">J#7781</a></span></div><div class="cb"><span>Attempt <span class="mono">3</span> failed <code>npm test</code> <a class="pv" href="#s4">E:T4/3</a></span></div><div class="ca"><button class="btn primary" type="button">Review…</button></div></div>
+        </div></div>
+
+      <div class="grid-4">
+        <div class="metric"><span class="label">Spend today (estimate)</span><span class="v">$4.82</span>
+          <svg class="spark" viewBox="0 0 120 32" preserveAspectRatio="none" role="img" aria-label="Spend per hour, last 10 hours, ending at 0.61 dollars"><polyline fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" points="0,26 13,24 26,25 40,18 53,20 66,14 80,16 93,10 106,12 118,6"/><circle cx="118" cy="6" r="2.5" fill="var(--accent)"/></svg>
+          <div class="row"><a class="pv" href="#s4">budget.settle ×14</a></div><span class="cav">Client-reported estimate. n=14 · last hour $0.61</span></div>
+        <div class="metric"><span class="label">Active runs</span><span class="v">2<small>of 3 projects</small></span><div class="row"><a class="pv" href="#s4">run.start J#20376</a></div><span class="cav">From controller run records</span></div>
+        <div class="metric"><span class="label">Blocked time p50</span><span class="v">18<small>min</small></span><div class="row"><a class="pv" href="#s4">task.transition ×9</a></div><span class="cav">n=9 blocked intervals, last 7 days</span></div>
+        <div class="metric nd"><span class="label">First-attempt pass rate</span><span class="v">Not enough data</span><div class="row"><span class="pv none">no source</span></div><span class="cav">Needs M3 verification. n=0 of 10</span></div>
+      </div>
+
+      <div class="grid-3">
+        <article class="panel proj"><div class="strip"><strong>sample-api</strong><span class="lamp verified"><span class="g" aria-hidden="true">✓</span>Healthy</span></div>
+          <div class="body">
+            <div class="kv"><span>done</span><span class="n">7</span><span class="muted">/</span><span class="n">12</span><span class="muted">planned</span><a class="pv" href="#s4">J#20431</a></div>
+            <div class="kv"><span class="lamp unverified"><span class="g" aria-hidden="true">◌</span>Verifying</span><span class="n">1</span><span class="lamp verified"><span class="g" aria-hidden="true">✓</span>Ready</span><span class="n">2</span><a class="pv" href="#s4">J#20431</a></div>
+            <div class="budget"><div class="track" role="img" aria-label="Spent 3.10 of 10 dollars, 1.50 reserved"><span class="spent" style="width:31%"></span><span class="resv" style="left:31%;width:15%"></span><span class="cap"></span></div>
+              <div class="lg"><span class="mono">$3.10</span><span>+ <span class="mono">$1.50</span> reserved of <span class="mono">$10.00</span></span><a class="pv" href="#s4">J#20419</a></div></div>
+            <div class="kv muted"><span>last event</span><span class="n">12 s</span><span>ago</span><a class="pv" href="#s4">J#20431</a></div>
+          </div></article>
+        <article class="panel proj"><div class="strip"><strong>docs-site</strong><span class="lamp blocked"><span class="g" aria-hidden="true">■</span>1 blocked</span></div>
+          <div class="body">
+            <div class="kv"><span>done</span><span class="n">4</span><span class="muted">/</span><span class="n">6</span><span class="muted">planned</span><a class="pv" href="#s4">J#7790</a></div>
+            <div class="kv"><span class="lamp blocked"><span class="g" aria-hidden="true">■</span>Blocked</span><span>T4 after <span class="n">3</span> attempts</span><a class="pv" href="#s4">J#7781</a></div>
+            <div class="budget"><div class="track" role="img" aria-label="Spent 4.40 of 5 dollars"><span class="spent" style="width:88%"></span><span class="cap"></span></div>
+              <div class="lg"><span class="mono">$4.40</span><span>of <span class="mono">$5.00</span></span><a class="pv" href="#s4">J#7779</a></div></div>
+            <div class="kv muted"><span>last event</span><span class="n">3 h</span><span>ago</span><a class="pv" href="#s4">J#7790</a></div>
+          </div></article>
+        <article class="panel proj"><div class="strip"><strong>data-pipeline</strong><span class="lamp integrity"><span class="g" aria-hidden="true">◆</span>Integrity</span></div>
+          <div class="body">
+            <div class="kv"><span>done</span><span class="n">2</span><span class="muted">/</span><span class="n">9</span><span class="muted">planned</span><span class="pv">as of J#5119</span></div>
+            <div class="kv"><span class="lamp nodata"><span class="g" aria-hidden="true">∅</span>Frozen</span><span class="muted">no new state accepted</span><a class="pv" href="#s4">J#5120</a></div>
+            <div class="budget"><div class="track" role="img" aria-label="Spent 0.90 of 8 dollars"><span class="spent" style="width:11%"></span><span class="cap"></span></div>
+              <div class="lg"><span class="mono">$0.90</span><span>of <span class="mono">$8.00</span></span><a class="pv" href="#s4">J#5101</a></div></div>
+            <div class="row"><button class="btn" type="button" disabled>Start run (disabled)</button></div>
+          </div></article>
+      </div>
+    </div>
+    <nav class="bbar" aria-label="Primary (compact)">
+      <a href="#s4" aria-current="page"><svg aria-hidden="true"><use href="#i-port"/></svg>Portfolio</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-appr"/></svg>Approvals</a>
+      <a href="#s5"><svg aria-hidden="true"><use href="#i-proj"/></svg>Projects</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-chat"/></svg>Managers</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-fleet"/></svg>Fleet</a>
+    </nav>
+  </div>
+</section>
+
+<!-- 5. Project dashboard -->
+<section class="sec" aria-labelledby="s5">
+  <header><span class="num">05</span><h2 id="s5">Hi-fi: Project dashboard</h2><span class="pv sample">SAMPLE DATA</span></header>
+  <div class="app" role="region" aria-label="Project dashboard sample">
+    <nav class="rail" aria-label="Primary">
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-port"/></svg>Portfolio</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-appr"/></svg>Approvals</a>
+      <a href="#s5" aria-current="page"><svg aria-hidden="true"><use href="#i-proj"/></svg>Projects</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-chat"/></svg>Managers</a>
+      <a href="#s4"><svg aria-hidden="true"><use href="#i-fleet"/></svg>Fleet</a>
+    </nav>
+    <div class="main">
+      <div class="topbar">
+        <div><div class="crumbs">Portfolio / <code>prj_sample-api</code> · plan <code>9f3c2a1e</code></div><h2>sample-api</h2></div>
+        <div class="row"><span class="stream" role="status"><span class="dot" aria-hidden="true"></span>Live · <span class="mono">J#20431</span></span><button class="btn" type="button">Stop run</button></div>
+      </div>
+      <div class="dash">
+        <div class="panel dag"><div class="strip"><span class="label">Task graph</span><span class="row"><span class="id">layout cached per plan hash</span><a class="btn" style="min-height:24px;padding:2px 8px;text-decoration:none" href="#s5">List view</a></span></div>
+          <div class="scroll-x" tabindex="0" role="region" aria-label="Task graph, scroll horizontally">
+            <svg width="820" height="250" viewBox="0 0 820 250" role="img" aria-label="Task graph: T1 and T2 done, T3 verifying depends on T1 and T2, T4 blocked depends on T2, T5 ready depends on T3, T6 pending depends on T4 and T5">
+              <path class="edge" d="M170 57 C 215 57, 215 97, 260 97"/>
+              <path class="edge" d="M170 173 C 215 173, 215 105, 260 105"/>
+              <path class="edge" d="M170 181 C 215 181, 215 199, 260 199"/>
+              <path class="edge" d="M430 101 C 475 101, 475 71, 520 71"/>
+              <path class="edge" d="M430 199 C 535 199, 535 181, 640 181"/>
+              <path class="edge" d="M660 108 C 660 124, 700 124, 700 140"/>
+              <!-- nodes: x, y, w=170, h=70 -->
+              <g><rect class="nbox" x="0" y="20" width="170" height="74"/><rect class="nstrip" x="0.5" y="20.5" width="169" height="20"/><text class="tid" x="8" y="35">T1 · a1</text><text class="ttl" x="8" y="60">Schema types</text><rect class="lampbox-verified" x="8" y="68" width="62" height="18" rx="3"/><text class="st-verified" x="15" y="81">✓ DONE</text><text class="tid" x="100" y="81">J#20011</text></g>
+              <g><rect class="nbox" x="0" y="140" width="170" height="74"/><rect class="nstrip" x="0.5" y="140.5" width="169" height="20"/><text class="tid" x="8" y="155">T2 · a1</text><text class="ttl" x="8" y="180">Config loader</text><rect class="lampbox-verified" x="8" y="188" width="62" height="18" rx="3"/><text class="st-verified" x="15" y="201">✓ DONE</text><text class="tid" x="100" y="201">J#20108</text></g>
+              <g><rect class="nbox" x="260" y="64" width="170" height="74"/><rect class="sel" x="256" y="60" width="178" height="82"/><rect class="nstrip" x="260.5" y="64.5" width="169" height="20"/><text class="tid" x="268" y="79">T3 · a2</text><text class="ttl" x="268" y="104">Add rate limiter</text><rect class="lampbox-unverified" x="268" y="112" width="92" height="18" rx="3"/><text class="st-unverified" x="275" y="125">◌ VERIFYING</text><text class="tid" x="365" y="125">J#20417</text></g>
+              <g><rect class="nbox" x="260" y="162" width="170" height="74" style="stroke:var(--s-blocked)"/><rect class="nstrip" x="260.5" y="162.5" width="169" height="20"/><text class="tid" x="268" y="177">T4 · a3</text><text class="ttl" x="268" y="202">Migrate config</text><rect class="lampbox-blocked" x="268" y="210" width="80" height="18" rx="3"/><text class="st-blocked" x="275" y="223">■ BLOCKED</text><text class="tid" x="360" y="223">J#20388</text></g>
+              <g><rect class="nbox" x="520" y="34" width="170" height="74"/><rect class="nstrip" x="520.5" y="34.5" width="169" height="20"/><text class="tid" x="528" y="49">T5 · —</text><text class="ttl" x="528" y="74">Rate-limit docs</text><rect class="lampbox-recorded" x="528" y="82" width="66" height="18" rx="3"/><text class="st-recorded" x="535" y="95">● READY</text><text class="tid" x="610" y="95">J#20431</text></g>
+              <g><rect class="nbox" x="640" y="140" width="170" height="74"/><rect class="nstrip" x="640.5" y="140.5" width="169" height="20"/><text class="tid" x="648" y="155">T6 · —</text><text class="ttl" x="648" y="180">Release notes</text><rect class="lampbox-nodata" x="648" y="188" width="78" height="18" rx="3"/><text class="st-nodata" x="655" y="201">∅ PENDING</text><text class="tid" x="735" y="201">J#20390</text></g>
+            </svg>
+          </div></div>
+        <div class="panel"><div class="strip"><span class="label">Activity</span><span class="id">journal + runner stream</span></div>
+          <div class="feed">
+            <div class="ev new"><span class="tm">14:02:11</span><span class="lamp verified"><span class="g" aria-hidden="true">✓</span>Ready</span><span class="tx">T5 dependencies met <a class="pv" href="#s5">J#20431</a></span></div>
+            <div class="ev"><span class="tm">14:01:56</span><span class="lamp unverified"><span class="g" aria-hidden="true">◌</span>Claim</span><span class="tx">T3 worker: “all tests pass” <span class="pv unv">unverified</span></span></div>
+            <div class="ev"><span class="tm">14:01:40</span><span class="lamp verified"><span class="g" aria-hidden="true">✓</span>Reserved</span><span class="tx">Budget <span class="mono">$1.50</span> for T3/a2 <a class="pv" href="#s5">J#20419</a></span></div>
+            <div class="ev"><span class="tm">13:58:02</span><span class="lamp blocked"><span class="g" aria-hidden="true">■</span>Blocked</span><span class="tx">T4 escalated after attempt <span class="mono">3</span> <a class="pv" href="#s5">J#20388</a></span></div>
+          </div></div>
+      </div>
+      <div class="panel"><div class="strip"><span class="label">Board</span><span class="id">counts from projection at J#20431</span></div>
+        <div class="body board">
+          <div class="col"><div class="ct"><span class="label">Pending</span><span class="row"><span class="mono">1</span><a class="pv" href="#s5">J#20431</a></span></div><span class="lamp nodata"><span class="g" aria-hidden="true">∅</span>T6</span></div>
+          <div class="col"><div class="ct"><span class="label">Ready</span><span class="row"><span class="mono">1</span><a class="pv" href="#s5">J#20431</a></span></div><span class="lamp recorded"><span class="g" aria-hidden="true">●</span>T5</span></div>
+          <div class="col"><div class="ct"><span class="label">Verifying</span><span class="row"><span class="mono">1</span><a class="pv" href="#s5">J#20431</a></span></div><span class="lamp unverified"><span class="g" aria-hidden="true">◌</span>T3</span></div>
+          <div class="col"><div class="ct"><span class="label">Blocked</span><span class="row"><span class="mono">1</span><a class="pv" href="#s5">J#20431</a></span></div><span class="lamp blocked"><span class="g" aria-hidden="true">■</span>T4</span></div>
+          <div class="col"><div class="ct"><span class="label">Done</span><span class="row"><span class="mono">2</span><a class="pv" href="#s5">J#20431</a></span></div><span class="lamp verified"><span class="g" aria-hidden="true">✓</span>T1</span><span class="lamp verified"><span class="g" aria-hidden="true">✓</span>T2</span></div>
+        </div></div>
+      <div class="panel"><div class="strip"><span class="label">Lanes</span><span class="id">attempt bars from attempt.* events · tier L2</span></div>
+        <div class="body stack">
+          <div class="lane"><span class="mono">slot 1</span><div class="bars" role="img" aria-label="Slot 1: T1 done, T3 attempt 2 running"><span class="bar" style="left:2%;width:30%"></span><span class="bar run" style="left:36%;width:40%"></span></div></div>
+          <div class="lane"><span class="mono">slot 2</span><div class="bars" role="img" aria-label="Slot 2: T2 done, T4 blocked"><span class="bar" style="left:4%;width:26%"></span><span class="bar blk" style="left:34%;width:22%"></span></div></div>
+          <div class="legend"><span class="lamp verified"><span class="g" aria-hidden="true">✓</span>Ended (journal)</span><span class="lamp unverified"><span class="g" aria-hidden="true">◌</span>Running (runner stream)</span><span class="lamp blocked"><span class="g" aria-hidden="true">■</span>Blocked</span><a class="pv" href="#s5">attempt.end J#20402</a></div>
+        </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Motion -->
+<section class="sec" aria-labelledby="s6">
+  <header><span class="num">06</span><h2 id="s6">Motion and sound</h2></header>
+  <div class="panel"><div class="body scroll-x">
+    <table class="tok-table">
+      <thead><tr><th>Token</th><th>Duration · easing</th><th>Only for</th></tr></thead>
+      <tbody>
+        <tr><td><code>--m-fast</code></td><td><code>120ms · cubic-bezier(.2,0,0,1)</code></td><td>Hover, focus, press</td></tr>
+        <tr><td><code>--m-state</code></td><td><code>200ms · cubic-bezier(.2,0,0,1)</code></td><td>A verified state change (lamp crossfade, node moves column)</td></tr>
+        <tr><td><code>--m-arrive</code></td><td><code>240ms · cubic-bezier(0,0,0,1)</code>, tint held 1.2 s</td><td>Event arrival in a feed (see the first activity row)</td></tr>
+        <tr><td><code>--m-reconnect</code></td><td><code>1.6s cycle</code></td><td>Stream dot while reconnecting, nothing else</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:12px;font-size:14px" class="muted">Never: progress or skeleton shimmer, ambient loops, count-up numbers, parallax. With reduced motion every change is instant. Sound is off.</p>
+  </div></div>
+</section>
+
+<footer class="footer">Telemetry Console · visual direction for CC0 revision R5 · all data sample · spec in <code>proposal.md</code> §4.2</footer>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement, btns = document.querySelectorAll('[data-set-theme]');
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var v = b.getAttribute('data-set-theme');
+      if (v === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', v);
+      btns.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    });
+  });
+})();
+</script>

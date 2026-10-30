@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Command Center Wireframes</title>
+<meta name="description" content="Low/mid-fidelity wireframes for the Engineering Orchestrator Command Center: portfolio, project dashboard, AI manager chat, agent fleet, execution inspector and approval center, with the data source of every panel annotated.">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #eef0f4;
+  --surface-3: #e2e6ec;
+  --ink: #16191f;
+  --ink-2: #4a5160;
+  --ink-3: #6b7282;
+  --line: #cfd5de;
+  --line-strong: #9aa3b2;
+  --accent: #2f5bd3;
+  --accent-soft: #e3eafc;
+  --ok: #1d7a46;
+  --ok-soft: #e1f3e8;
+  --warn: #9a5b00;
+  --warn-soft: #fbefd9;
+  --bad: #b42318;
+  --bad-soft: #fbe4e1;
+  --unv: #6b4fbb;
+  --unv-soft: #eee8fb;
+  --pin-bg: #16191f;
+  --pin-ink: #ffffff;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115;
+    --surface: #171a21;
+    --surface-2: #1e222b;
+    --surface-3: #272c37;
+    --ink: #e8ebf1;
+    --ink-2: #b3bac7;
+    --ink-3: #8b93a3;
+    --line: #2f3542;
+    --line-strong: #4a5263;
+    --accent: #7ea2ff;
+    --accent-soft: #1f2b4a;
+    --ok: #5fd08f;
+    --ok-soft: #17321f;
+    --warn: #f0b24f;
+    --warn-soft: #3a2b12;
+    --bad: #ff8a7a;
+    --bad-soft: #3d1c18;
+    --unv: #b9a3ff;
+    --unv-soft: #2a2245;
+    --pin-bg: #e8ebf1;
+    --pin-ink: #0f1115;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1115; --surface: #171a21; --surface-2: #1e222b; --surface-3: #272c37;
+  --ink: #e8ebf1; --ink-2: #b3bac7; --ink-3: #8b93a3; --line: #2f3542; --line-strong: #4a5263;
+  --accent: #7ea2ff; --accent-soft: #1f2b4a; --ok: #5fd08f; --ok-soft: #17321f;
+  --warn: #f0b24f; --warn-soft: #3a2b12; --bad: #ff8a7a; --bad-soft: #3d1c18;
+  --unv: #b9a3ff; --unv-soft: #2a2245; --pin-bg: #e8ebf1; --pin-ink: #0f1115;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 var(--font);
+  overflow-wrap: anywhere;
+}
+a { color: var(--accent); }
+.page { max-width: 1240px; margin: 0 auto; padding: 32px 16px 64px; }
+header.intro h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
+header.intro p { margin: 0 0 12px; color: var(--ink-2); max-width: 75ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 16px 0 8px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.legend > span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
+nav.toc { margin: 8px 0 24px; display: flex; flex-wrap: wrap; gap: 8px; }
+nav.toc a { font-size: 13px; text-decoration: none; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); }
+nav.toc a:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+section.wf { margin: 40px 0 0; }
+section.wf > h2 { font-size: 20px; margin: 0 0 4px; }
+section.wf > p.sub { margin: 0 0 14px; color: var(--ink-2); font-size: 14px; max-width: 80ch; }
+.wf-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+@media (max-width: 1000px) { .wf-layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Frame = a browser window */
+.frame { background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; min-width: 0; }
+.chrome { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line); font: 12px/1.4 var(--mono); color: var(--ink-3); }
+.dots { display: inline-flex; gap: 5px; flex: none; }
+.dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); display: block; }
+.url { flex: 1; min-width: 0; padding: 3px 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.frame-label { position: relative; }
+.app { display: grid; grid-template-columns: 64px minmax(0, 1fr); min-height: 420px; }
+.rail { background: var(--surface-2); border-right: 1px solid var(--line); padding: 10px 6px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.rail b { display: block; min-width: 40px; padding: 0 3px; height: 32px; border-radius: 8px; background: var(--surface-3); font: 600 10px/32px var(--font); text-align: center; color: var(--ink-2); }
+.rail b.on { background: var(--accent-soft); color: var(--accent); outline: 1px solid var(--accent); }
+.rail b .n { display: inline-block; margin-left: 2px; padding: 0 4px; border-radius: 6px; background: var(--bad); color: #fff; font-size: 9px; line-height: 14px; vertical-align: 1px; }
+@media (max-width: 640px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .rail { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px; border-right: 0; border-top: 1px solid var(--line); order: 2; }
+  .rail b { width: auto; min-width: 0; padding: 0 6px; height: 28px; line-height: 28px; }
+}
+.main { padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.topbar h3 { margin: 0; font-size: 16px; }
+.grow { flex: 1; }
+.live { font-size: 12px; display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); }
+.live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.btn { display: inline-block; font-size: 12px; padding: 5px 10px; border-radius: var(--radius-sm); border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); min-height: 28px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn.danger { border-color: var(--bad); color: var(--bad); }
+.btn[aria-disabled="true"] { opacity: .5; }
+
+.grid { display: grid; gap: 12px; min-width: 0; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.g-side { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+@media (max-width: 820px) { .g3, .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .g-side { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 520px) { .g2, .g3, .g4 { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { position: relative; background: var(--surface); border: 1px dashed var(--line-strong); border-radius: var(--radius-sm); padding: 10px 10px 10px; min-width: 0; }
+.panel > h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); padding-right: 26px; }
+.pin { position: absolute; top: -9px; right: -9px; width: 22px; height: 22px; border-radius: 50%; background: var(--pin-bg); color: var(--pin-ink); font: 700 12px/22px var(--font); text-align: center; box-shadow: 0 0 0 2px var(--surface); }
+.pin.inline { position: static; display: inline-block; flex: none; box-shadow: none; }
+.bar { height: 8px; border-radius: 4px; background: var(--surface-3); position: relative; overflow: hidden; }
+.bar > i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 4px; }
+.bar > i.res { background: repeating-linear-gradient(45deg, var(--accent-soft), var(--accent-soft) 4px, var(--surface-3) 4px, var(--surface-3) 8px); }
+.kv { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--ink-2); }
+.big { font-size: 20px; font-weight: 650; color: var(--ink); }
+.muted { color: var(--ink-3); font-size: 12px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font: 11px/1.3 var(--mono); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
+.chip.v { border-color: var(--ok); color: var(--ok); background: var(--ok-soft); }
+.chip.r { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.chip.u { border-color: var(--unv); color: var(--unv); background: var(--unv-soft); border-style: dashed; }
+.chip.nd { border-style: dotted; color: var(--ink-3); }
+.st { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-3); color: var(--ink-2); white-space: nowrap; }
+.st.ok { background: var(--ok-soft); color: var(--ok); }
+.st.warn { background: var(--warn-soft); color: var(--warn); }
+.st.bad { background: var(--bad-soft); color: var(--bad); }
+.st.acc { background: var(--accent-soft); color: var(--accent); }
+.rows { display: flex; flex-direction: column; gap: 6px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); font-size: 13px; }
+.row .t { font-weight: 600; }
+.ln { height: 8px; border-radius: 4px; background: var(--surface-3); }
+.ln.w60 { width: 60%; } .ln.w80 { width: 80%; } .ln.w40 { width: 40%; }
+.banner { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--bad-soft); color: var(--bad); font-size: 13px; border: 1px solid var(--bad); }
+.claim { border: 1px dashed var(--unv); background: var(--unv-soft); border-radius: var(--radius-sm); padding: 8px; font-size: 12px; color: var(--ink-2); }
+.mono { font-family: var(--mono); font-size: 12px; }
+.log { font: 11.5px/1.55 var(--mono); background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px; color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.scroll-x { overflow-x: auto; max-width: 100%; }
+.scroll-x:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+svg { display: block; width: 100%; height: auto; max-width: 100%; }
+svg text { font-family: var(--font); fill: var(--ink-2); font-size: 11px; }
+svg .node { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; }
+svg .n-done { fill: var(--ok-soft); stroke: var(--ok); }
+svg .n-run { fill: var(--accent-soft); stroke: var(--accent); }
+svg .n-blk { fill: var(--bad-soft); stroke: var(--bad); }
+svg .n-rdy { fill: var(--surface-2); stroke: var(--line-strong); stroke-dasharray: 3 2; }
+svg .edge { fill: none; stroke: var(--line-strong); stroke-width: 1.2; }
+svg .axis { stroke: var(--line); stroke-width: 1; }
+svg .series { fill: none; stroke: var(--accent); stroke-width: 2; }
+svg .cap { stroke: var(--bad); stroke-dasharray: 4 3; stroke-width: 1.2; }
+svg .bar-s { fill: var(--accent); }
+svg .bar-r { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+
+/* Chat */
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 88%; padding: 8px 10px; border-radius: 10px; font-size: 13px; }
+.msg.me { align-self: flex-end; background: var(--accent-soft); color: var(--ink); }
+.msg.ai { align-self: flex-start; background: var(--surface-2); color: var(--ink); }
+.intent { margin-top: 8px; border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 8px; background: var(--surface); display: flex; flex-direction: column; gap: 6px; }
+.composer { display: flex; gap: 8px; align-items: center; padding: 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); }
+.composer .ln { flex: 1; }
+
+/* Timeline */
+.tl { position: relative; padding-left: 16px; display: flex; flex-direction: column; gap: 8px; }
+.tl::before { content: ""; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 2px; background: var(--line); }
+.tl > div { position: relative; font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.tl > div::before { content: ""; position: absolute; left: -15px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--line-strong); }
+.tl > div.v::before { border-color: var(--ok); }
+.tl > div.b::before { border-color: var(--bad); }
+.tl > div.u::before { border-color: var(--unv); border-style: dashed; }
+
+/* Annotations */
+.notes { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; min-width: 0; }
+.notes h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin: 0 0 8px; }
+.notes ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.notes li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; font-size: 13px; color: var(--ink-2); }
+.notes li b { color: var(--ink); }
+.notes code, .src { font: 12px/1.4 var(--mono); background: var(--surface-2); padding: 0 4px; border-radius: 3px; color: var(--ink); }
+footer { margin-top: 48px; color: var(--ink-3); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; }
+@media (prefers-reduced-motion: no-preference) {
+  .live::before { animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="intro">
+  <h1>Command Center Wireframes</h1>
+  <p>Low/mid-fidelity wireframes for deliverable 4 of the Engineering Orchestrator Command Center proposal (<span class="src">proposal.md</span>, same folder). They show layout and data provenance, not visual design. <b>All numbers, names and ids in the frames are placeholders.</b> Each numbered pin is explained beside its frame, naming the record the panel is drawn from. Where no verified source exists, the panel shows "no data", never an estimate.</p>
+  <div class="legend" aria-label="Provenance legend">
+    <span><span class="chip v">J#412</span> controller-verified (journal seq / evidence manifest)</span>
+    <span><span class="chip r">rec</span> recorded (workspace store, hash-chained)</span>
+    <span><span class="chip u">unverified</span> runner stream or agent claim</span>
+    <span><span class="chip nd">no data</span> source not yet available (names the milestone)</span>
+  </div>
+  <nav class="toc" aria-label="Wireframes">
+    <a href="#wf1">1 Portfolio overview</a>
+    <a href="#wf2">2 Project dashboard</a>
+    <a href="#wf3">3 AI Manager chat</a>
+    <a href="#wf4">4 Agent fleet</a>
+    <a href="#wf5">5 Execution inspector</a>
+    <a href="#wf6">6 Approval center</a>
+  </nav>
+</header>
+
+<!-- 1 PORTFOLIO -->
+<section class="wf" id="wf1" aria-labelledby="wf1-h">
+  <h2 id="wf1-h">1. Portfolio overview</h2>
+  <p class="sub">Every project in the workspace on one screen. Attention items (approvals, blockers, integrity) come first; activity second.</p>
+  <div class="wf-layout">
+    <figure class="frame" style="margin:0" aria-label="Wireframe: portfolio overview">
+      <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url">localhost:8443/w/ws_home</span></div>
+      <div class="app">
+        <div class="rail" aria-hidden="true"><b class="on">Port</b><b>Appr<span class="n">3</span></b><b>Proj</b><b>Chat</b><b>Fleet</b><b>Lib</b><b>Stats</b></div>
+        <div class="main">
+          <div class="topbar"><h3>Workspace: Home</h3><span class="grow"></span><span class="live">Live · cursor 9f3a…</span><span class="btn">⌘K Search</span></div>
+
+          <div class="panel"><span class="pin">1</span><h4>Needs you</h4>
+            <div class="rows">
+              <div class="row"><span class="st warn">Approval</span><span class="t">Plan v2 · tinyledger</span><span class="chip v">J#388</span><span class="grow"></span><span class="btn primary">Review</span></div>
+              <div class="row"><span class="st bad">Blocked</span><span class="t">T4 attempts exhausted · tinyledger</span><span class="chip v">J#405</span><span class="grow"></span><span class="btn">Open</span></div>
+              <div class="row"><span class="st bad">Integrity</span><span class="t">Anchor refused · docs-site</span><span class="chip v">doctor</span><span class="grow"></span><span class="btn">Details</span></div>
+            </div>
+          </div>
+
+          <div class="grid g3">
+            <div class="panel"><span class="pin">2</span><h4>tinyledger</h4>
+              <div class="kv"><span>Tasks done / planned</span><span class="big">5 / 9</span></div>
+              <div class="bar" role="img" aria-label="5 of 9 tasks done"><i style="width:55%"></i></div>
+              <div class="kv" style="margin-top:6px"><span><span class="st acc">running</span> 2 · <span class="st bad">blocked</span> 1</span><span class="chip v">J#412</span></div>
+            </div>
+            <div class="panel"><h4>api-gateway</h4>
+              <div class="kv"><span>Tasks done / planned</span><span class="big">0 / 4</span></div>
+              <div class="bar"><i style="width:0%"></i></div>
+              <div class="kv" style="margin-top:6px"><span><span class="st">plan pending</span></span><span class="chip v">J#37</span></div>
+            </div>
+            <div class="panel"><h4>docs-site</h4>
+              <div class="banner" style="padding:6px 8px">Intents disabled: recovery refused</div>
+              <div class="kv" style="margin-top:6px"><span>Last verified state</span><span class="chip v">J#120</span></div>
+            </div>
+          </div>
+
+          <div class="grid g-side">
+            <div class="panel"><span class="pin">3</span><h4>Spend vs. cap (estimate)</h4>
+              <svg viewBox="0 0 360 120" role="img" aria-label="Bar chart: spent and reserved against cap per project">
+                <line class="axis" x1="90" y1="10" x2="90" y2="104"/>
+                <text x="0" y="30">tinyledger</text><rect class="bar-s" x="90" y="20" width="120" height="14" rx="2"/><rect class="bar-r" x="210" y="20" width="40" height="14" rx="2"/><line class="cap" x1="300" y1="14" x2="300" y2="40"/>
+                <text x="0" y="62">api-gateway</text><rect class="bar-s" x="90" y="52" width="10" height="14" rx="2"/><line class="cap" x1="260" y1="46" x2="260" y2="72"/>
+                <text x="0" y="94">docs-site</text><rect class="bar-s" x="90" y="84" width="60" height="14" rx="2"/><line class="cap" x1="200" y1="78" x2="200" y2="104"/>
+                <text x="90" y="116">solid spent · hatched reserved · dashed cap</text>
+              </svg>
+              <div class="muted">Client-reported estimate, not billing. <span class="chip v">budget.settle</span></div>
+            </div>
+            <div class="panel"><span class="pin">4</span><h4>Recent activity</h4>
+              <div class="tl">
+                <div class="v"><span>T3 verifying → reviewing</span><span class="chip v">J#412</span></div>
+                <div class="v"><span>evidence sealed T3/a2</span><span class="chip v">J#411</span></div>
+                <div class="u"><span>implementer: "edited ledger.ts"</span><span class="chip u">unverified</span></div>
+                <div class="b"><span>T4 → blocked (attempts)</span><span class="chip v">J#405</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel"><span class="pin">5</span><h4>Throughput (done tasks / day)</h4>
+            <div class="muted"><span class="chip nd">no data</span> Shown once ≥ 10 done tasks exist (metric <span class="src">throughput.done_per_day</span>, minSample 10).</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <aside class="notes" aria-label="Annotations for portfolio overview">
+      <h3>Data sources</h3>
+      <ol>
+        <li><span class="pin inline">1</span><span><b>Needs you</b>: pending <code>approval.requested</code>, open <code>escalation.raised</code> and <code>integrity.alert</code> events across projects, ordered by age. Each row links to the journal record.</span></li>
+        <li><span class="pin inline">2</span><span><b>Project cards</b>: counts of task states from the controller projection at the shown cursor. The "done / planned" bar is exactly that ratio, not an estimate of effort.</span></li>
+        <li><span class="pin inline">3</span><span><b>Spend vs. cap</b>: <code>budget.settle</code> (spent), open <code>budget.reserve</code> (reserved), caps from the project policy. Labelled as a client-side estimate (docs/07 §5).</span></li>
+        <li><span class="pin inline">4</span><span><b>Activity</b>: the workspace event stream. Controller events carry a journal chip; runner chatter is dashed and marked <i>unverified</i>.</span></li>
+        <li><span class="pin inline">5</span><span><b>Metrics</b> render only through the metric registry; below <code>minSample</code> the panel says so instead of drawing a line.</span></li>
+        <li><span class="pin inline">·</span><span><b>Stream status</b> (top right): live, reconnecting, or "resynced at cursor". Never hidden.</span></li>
+      </ol>
+    </aside>
+  </div>
+</section>
+
+<!-- 2 PROJECT DASHBOARD -->
+<section class="wf" id="wf2" aria-labelledby="wf2-h">
+  <h2 id="wf2-h">2. Project dashboard</h2>
+  <p class="sub">One project: task DAG, board by lifecycle state, budget, blockers and the controller's health.</p>
+  <div class="wf-layout">
+    <figure class="frame" style="margin:0" aria-label="Wireframe: project dashboard">
+      <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url">localhost:8443/w/ws_home/p/prj_tinyledger</span></div>
+      <div class="app">
+        <div class="rail" aria-hidden="true"><b>Port</b><b>Appr<span class="n">3</span></b><b class="on">Proj</b><b>Chat</b><b>Fleet</b><b>Lib</b><b>Stats</b></div>
+        <div class="main">
+          <div class="topbar"><h3>tinyledger · epic E1</h3><span class="st ok">doctor OK</span><span class="chip v">plan 7c2e…</span><span class="grow"></span><span class="btn">Graph</span><span class="btn">Board</span><span class="btn">List</span><span class="btn primary">Run ▸</span></div>
+
+          <div class="panel"><span class="pin">1</span><h4>Task graph</h4>
+            <div class="scroll-x" tabindex="0" aria-label="Task graph, scrollable"><svg style="min-width:560px" viewBox="0 0 640 170" role="img" aria-label="Dependency graph of 9 tasks: T1 and T2 done, T3 and T5 in progress, T4 blocked, rest planned">
+              <path class="edge" d="M90 40 C130 40 130 40 170 40"/><path class="edge" d="M90 40 C130 40 130 120 170 120"/>
+              <path class="edge" d="M90 120 C130 120 130 120 170 120"/><path class="edge" d="M260 40 C300 40 300 40 340 40"/>
+              <path class="edge" d="M260 120 C300 120 300 120 340 120"/><path class="edge" d="M260 40 C300 40 300 120 340 120"/>
+              <path class="edge" d="M430 40 C470 40 470 80 510 80"/><path class="edge" d="M430 120 C470 120 470 80 510 80"/>
+              <rect class="node n-done" x="10" y="24" width="80" height="32" rx="6"/><text x="22" y="44">T1 done</text>
+              <rect class="node n-done" x="10" y="104" width="80" height="32" rx="6"/><text x="22" y="124">T2 done</text>
+              <rect class="node n-run" x="170" y="24" width="90" height="32" rx="6"/><text x="180" y="44">T3 reviewing</text>
+              <rect class="node n-blk" x="170" y="104" width="90" height="32" rx="6"/><text x="180" y="124">T4 blocked</text>
+              <rect class="node n-rdy" x="340" y="24" width="90" height="32" rx="6"/><text x="352" y="44">T5 ready</text>
+              <rect class="node" x="340" y="104" width="90" height="32" rx="6"/><text x="352" y="124">T6 planned</text>
+              <rect class="node" x="510" y="64" width="110" height="32" rx="6"/><text x="522" y="84">T7 integration</text>
+            </svg></div>
+            <div class="muted">Keyboard: arrow keys move between nodes; "List" view is the equivalent table.</div>
+          </div>
+
+          <div class="grid g4">
+            <div class="panel"><span class="pin">2</span><h4>Ready · 1</h4><div class="rows"><div class="row">T5 parse dates</div></div></div>
+            <div class="panel"><h4>In progress · 1</h4><div class="rows"><div class="row">T3 <span class="st acc">reviewing</span> a2</div></div></div>
+            <div class="panel"><h4>Blocked · 1</h4><div class="rows"><div class="row">T4 <span class="st bad">attempts 3/3</span></div></div></div>
+            <div class="panel"><h4>Done · 2</h4><div class="rows"><div class="row">T1</div><div class="row">T2</div></div></div>
+          </div>
+
+          <div class="grid g3">
+            <div class="panel"><span class="pin">3</span><h4>Budget (epic)</h4>
+              <div class="kv"><span>spent</span><span>$0.00 <span class="chip v">settle</span></span></div>
+              <div class="kv"><span>reserved</span><span>$0.00</span></div>
+              <div class="kv"><span>cap</span><span>$5.00 <span class="chip v">policy</span></span></div>
+              <div class="bar" style="margin-top:6px"><i style="width:0%"></i></div>
+              <div class="muted">Fake runner: costs are scripted.</div>
+            </div>
+            <div class="panel"><span class="pin">4</span><h4>Blocker T4</h4>
+              <div style="font-size:13px">Category <b>attempts</b>. "Same failure twice: test <span class="mono">ledger.month_end</span>."</div>
+              <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><span class="btn">Request unblock</span><span class="chip v">J#405</span></div>
+            </div>
+            <div class="panel"><span class="pin">5</span><h4>Controller health</h4>
+              <div class="kv"><span>journal chain</span><span class="st ok">valid</span></div>
+              <div class="kv"><span>anchor</span><span class="st ok">head = J#412</span></div>
+              <div class="kv"><span>tier</span><span>L2</span></div>
+              <div class="kv"><span>last recovery</span><span class="chip v">J#301</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <aside class="notes" aria-label="Annotations for project dashboard">
+      <h3>Data sources</h3>
+      <ol>
+        <li><span class="pin inline">1</span><span><b>Task graph</b>: tasks and <code>deps</code> from the store snapshot (<code>src/store/types.ts</code>), colour = state from <code>task.transitioned</code>. Layout via ELK; nodes animate only when a transition event arrives.</span></li>
+        <li><span class="pin inline">2</span><span><b>Board</b>: the same projection grouped by the states in <code>src/states.ts</code>; attempt and counters from <code>TaskCounters</code>.</span></li>
+        <li><span class="pin inline">3</span><span><b>Budget</b>: <code>budget.reserve</code>/<code>budget.settle</code> records and caps from <code>policy.json</code> (<code>src/budget.ts</code>, <code>src/policy.ts</code>).</span></li>
+        <li><span class="pin inline">4</span><span><b>Blocker</b>: the escalation record (<code>EscalationRecord</code> in <code>src/controller.ts</code>). "Request unblock" submits an intent that creates an approval; it does not change state.</span></li>
+        <li><span class="pin inline">5</span><span><b>Health</b>: <code>eo doctor</code> report and anchor inspection (<code>src/doctor.ts</code>, <code>src/anchor.ts</code>); tier from the run record.</span></li>
+        <li><span class="pin inline">·</span><span><b>Run ▸</b> sends <code>run.start</code>; the button shows "submitted" until <code>run.started</code> arrives.</span></li>
+      </ol>
+    </aside>
+  </div>
+</section>
+
+<!-- 3 AI MANAGER CHAT -->
+<section class="wf" id="wf3" aria-labelledby="wf3-h">
+  <h2 id="wf3-h">3. AI Manager chat</h2>
+  <p class="sub">Conversation with a persistent manager. The manager proposes intents as cards; the human confirms; the controller decides.</p>
+  <div class="wf-layout">
+    <figure class="frame" style="margin:0" aria-label="Wireframe: AI manager chat">
+      <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url">localhost:8443/w/ws_home/chat/cnv_01JD…</span></div>
+      <div class="app">
+        <div class="rail" aria-hidden="true"><b>Port</b><b>Appr<span class="n">3</span></b><b>Proj</b><b class="on">Chat</b><b>Fleet</b><b>Lib</b><b>Stats</b></div>
+        <div class="main">
+          <div class="grid g-side">
+            <div class="panel" style="display:flex;flex-direction:column;gap:10px"><span class="pin">1</span><h4>Atlas · manager for tinyledger, api-gateway</h4>
+              <div class="chat">
+                <div class="msg me">Why is T4 blocked, and what do you suggest?</div>
+                <div class="msg ai">T4 hit its attempt limit: the same test failed twice <span class="chip v">J#405</span>. The failure evidence is in <span class="chip v">E:T4/a3</span>. I suggest asking the planner to split the month-end case into its own task.
+                  <div class="intent"><span class="pin inline" style="background:var(--accent);color:var(--surface)">2</span>
+                    <div style="font-size:12px"><b>Proposed intent</b> · <span class="mono">scope.change.request</span></div>
+                    <div class="muted">Creates an approval with the plan diff. Nothing changes until you approve it.</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="btn primary">Submit</span><span class="btn">Edit</span><span class="btn">Dismiss</span></div>
+                  </div>
+                </div>
+                <div class="msg ai"><span class="st">submitted</span> waiting for controller… <span class="chip">int_01JD…</span></div>
+              </div>
+              <div class="composer"><span class="ln"></span><span class="btn primary">Send</span></div>
+            </div>
+            <div class="grid" style="align-content:start">
+              <div class="panel"><span class="pin">3</span><h4>Context this reply used</h4>
+                <div class="rows">
+                  <div class="row"><span class="chip v">J#405</span> escalation T4</div>
+                  <div class="row"><span class="chip v">E:T4/a3</span> evidence manifest</div>
+                  <div class="row"><span class="chip r">mem_…</span> "month-end is a known edge case"</div>
+                </div>
+              </div>
+              <div class="panel"><span class="pin">4</span><h4>Manager permissions</h4>
+                <div class="kv"><span>read</span><span>2 projects</span></div>
+                <div class="kv"><span>intents</span><span>plan.request, run.*, *.request</span></div>
+                <div class="kv"><span>approve</span><span class="st bad">never</span></div>
+              </div>
+              <div class="panel"><span class="pin">5</span><h4>Run cost</h4>
+                <div class="kv"><span>this reply</span><span><span class="chip nd">no data</span></span></div>
+                <div class="muted">Live manager runs need M2 runner and CC3 approval.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <aside class="notes" aria-label="Annotations for AI manager chat">
+      <h3>Data sources</h3>
+      <ol>
+        <li><span class="pin inline">1</span><span><b>Messages</b>: <code>conversation.message_posted</code> from the workspace store (hash-chained). Manager text is the agent's claim; facts in it must carry citation chips that resolve.</span></li>
+        <li><span class="pin inline">2</span><span><b>Intent card</b>: the manager's structured <code>proposedIntents[]</code>. "Submit" posts an intent; status moves only on <code>intent.accepted</code>/<code>intent.rejected</code>.</span></li>
+        <li><span class="pin inline">3</span><span><b>Context</b>: the retrieval log of this manager run (journal refs, evidence, accepted memory). Quarantined memory never appears.</span></li>
+        <li><span class="pin inline">4</span><span><b>Permissions</b>: effective capabilities computed by the controller for the manager's run token, not the agent's self-description.</span></li>
+        <li><span class="pin inline">5</span><span><b>Cost</b>: the manager run's <code>budget.settle</code>; until a live runner exists the panel says why it is empty.</span></li>
+      </ol>
+    </aside>
+  </div>
+</section>
+
+<!-- 4 AGENT FLEET -->
+<section class="wf" id="wf4" aria-labelledby="wf4-h">
+  <h2 id="wf4-h">4. Agent fleet</h2>
+  <p class="sub">All agent instances across projects: definition version, model route, permissions, assignments and current activity.</p>
+  <div class="wf-layout">
+    <figure class="frame" style="margin:0" aria-label="Wireframe: agent fleet">
+      <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url">localhost:8443/w/ws_home/agents</span></div>
+      <div class="app">
+        <div class="rail" aria-hidden="true"><b>Port</b><b>Appr<span class="n">3</span></b><b>Proj</b><b>Chat</b><b class="on">Fleet</b><b>Lib</b><b>Stats</b></div>
+        <div class="main">
+          <div class="topbar"><h3>Fleet</h3><span class="grow"></span><span class="btn">Filter: role</span><span class="btn">Filter: project</span><span class="btn">New definition</span></div>
+          <div class="grid g-side">
+            <div class="panel"><span class="pin">1</span><h4>Instances</h4>
+              <div class="rows">
+                <div class="row"><span class="t">Atlas</span><span class="st">manager</span><span class="mono">agd v1.2.0</span><span class="grow"></span><span class="st ok">idle</span></div>
+                <div class="row"><span class="t">Impl-1</span><span class="st">implementer</span><span class="mono">agd v0.3.1</span><span class="grow"></span><span class="st acc">running T5</span></div>
+                <div class="row"><span class="t">Rev-1</span><span class="st">reviewer</span><span class="mono">agd v0.2.0</span><span class="grow"></span><span class="st acc">reviewing T3</span></div>
+                <div class="row"><span class="t">Sec-1</span><span class="st">security</span><span class="mono">agd v0.2.0</span><span class="grow"></span><span class="st">paused</span></div>
+              </div>
+            </div>
+            <div class="grid" style="align-content:start">
+              <div class="panel"><span class="pin">2</span><h4>Rev-1 · effective tools</h4>
+                <div style="display:flex;flex-wrap:wrap;gap:4px"><span class="chip">Read</span><span class="chip">Grep</span><span class="chip">Glob</span></div>
+                <div class="muted" style="margin-top:6px">= definition ∩ policy role profile ∩ skills ∩ run token. No Write, Edit or Bash.</div>
+              </div>
+              <div class="panel"><span class="pin">3</span><h4>Route</h4>
+                <div class="kv"><span>rte_review v4</span><span class="chip v">eval passed</span></div>
+                <div class="kv"><span>differs from</span><span>implementer route</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="grid g2">
+            <div class="panel"><span class="pin">4</span><h4>Live activity · Impl-1 on T5</h4>
+              <div class="log">tool Read  src/ledger.ts
+tool Edit  src/dates.ts (+14 −3)
+tool Bash  node --test tests/dates.test.ts
+"all tests pass"</div>
+              <div style="margin-top:6px"><span class="chip u">unverified · runner stream</span> <span class="muted">Verification result appears only from the verifier (M3).</span></div>
+            </div>
+            <div class="panel"><span class="pin">5</span><h4>Reliability (30 days)</h4>
+              <div class="kv"><span>infra failure rate</span><span>1 / 14 runs <span class="chip v">attempt.end</span></span></div>
+              <div class="kv"><span>first-attempt pass</span><span><span class="chip nd">no data · needs M3</span></span></div>
+              <div class="kv"><span>concurrency in use</span><span>2 / 2 <span class="chip v">policy</span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <aside class="notes" aria-label="Annotations for agent fleet">
+      <h3>Data sources</h3>
+      <ol>
+        <li><span class="pin inline">1</span><span><b>Instances</b>: the agent registry (workspace store) joined with run records; "running T5" means an open run whose <code>attempt.start</code> has no <code>attempt.end</code> yet.</span></li>
+        <li><span class="pin inline">2</span><span><b>Effective tools</b>: computed by the controller from the definition, project policy, pinned skills and token; the same function the runner uses, so the view cannot drift from enforcement.</span></li>
+        <li><span class="pin inline">3</span><span><b>Route</b>: route table version and its eval report artifact (stored evidence). The diversity rule is shown when policy requires it.</span></li>
+        <li><span class="pin inline">4</span><span><b>Live activity</b>: <code>agent.activity</code> from the runner stream, styled as an unverified claim. "all tests pass" here counts for nothing.</span></li>
+        <li><span class="pin inline">5</span><span><b>Reliability</b>: registered metrics over <code>attempt.end</code> and transitions; metrics that need verifier data say which milestone provides it.</span></li>
+      </ol>
+    </aside>
+  </div>
+</section>
+
+<!-- 5 EXECUTION INSPECTOR -->
+<section class="wf" id="wf5" aria-labelledby="wf5-h">
+  <h2 id="wf5-h">5. Execution inspector</h2>
+  <p class="sub">One task attempt end to end: journal timeline, gate results by clause, evidence files with hashes, logs and the replay command.</p>
+  <div class="wf-layout">
+    <figure class="frame" style="margin:0" aria-label="Wireframe: execution inspector">
+      <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url">localhost:8443/w/ws_home/p/prj_tinyledger/t/T3/a/2</span></div>
+      <div class="app">
+        <div class="rail" aria-hidden="true"><b>Port</b><b>Appr<span class="n">3</span></b><b class="on">Proj</b><b>Chat</b><b>Fleet</b><b>Lib</b><b>Stats</b></div>
+        <div class="main">
+          <div class="topbar"><h3>T3 · attempt 2</h3><span class="st acc">reviewing</span><span class="chip">corr 9c1e…</span><span class="grow"></span><span class="btn">Copy replay command</span></div>
+          <div class="grid g-side">
+            <div class="panel"><span class="pin">1</span><h4>Timeline</h4>
+              <div class="tl">
+                <div class="v"><span class="mono">J#398</span><span>budget.reserve $0.20</span></div>
+                <div class="v"><span class="mono">J#399</span><span>ready → implementing (a2)</span></div>
+                <div class="u"><span>runner: 23 tool calls</span><span class="chip u">unverified</span></div>
+                <div class="v"><span class="mono">J#406</span><span>attempt.end completed</span></div>
+                <div class="v"><span class="mono">J#407</span><span>budget.settle reported $0.00</span></div>
+                <div class="v"><span class="mono">J#409</span><span>implementing → verifying</span></div>
+                <div class="v"><span class="mono">J#411</span><span>evidence.sealed</span></div>
+                <div class="v"><span class="mono">J#412</span><span>verifying → reviewing</span></div>
+              </div>
+            </div>
+            <div class="panel"><span class="pin">2</span><h4>Gate results</h4>
+              <div class="rows">
+                <div class="row"><span class="st ok">pass</span> Protected paths intact</div>
+                <div class="row"><span class="st ok">pass</span> Inventory 41 = 41</div>
+                <div class="row"><span class="st ok">pass</span> Canaries + nonce</div>
+                <div class="row"><span class="st ok">pass</span> Holdout 4 / 4</div>
+                <div class="row"><span class="st warn">83%</span> Mutation kill ≥ 80%</div>
+                <div class="row"><span class="st">pending</span> Review verdict</div>
+              </div>
+              <div class="muted" style="margin-top:6px">Gate engine output arrives with M3.</div>
+            </div>
+          </div>
+          <div class="grid g2">
+            <div class="panel"><span class="pin">3</span><h4>Evidence manifest · MAC valid</h4>
+              <div class="rows mono">
+                <div class="row">diff.patch <span class="grow"></span>sha256 3b1f…</div>
+                <div class="row">verify.log <span class="grow"></span>sha256 a90c…</div>
+                <div class="row">results.json <span class="grow"></span>sha256 77de…</div>
+              </div>
+            </div>
+            <div class="panel"><span class="pin">4</span><h4>verify.log</h4>
+              <div class="log">ok 38 - ledger month_end rolls over
+ok 39 - dates parse ISO
+ok 40 - canary.pass nonce=…
+not ok 41 - canary.fail (expected)</div>
+            </div>
+          </div>
+          <div class="panel"><span class="pin">5</span><h4>Implementer's report</h4>
+            <div class="claim">"Fixed the month-end bug and added tests." <b>Unverified claim</b>. Compare with the gate results above.</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <aside class="notes" aria-label="Annotations for execution inspector">
+      <h3>Data sources</h3>
+      <ol>
+        <li><span class="pin inline">1</span><span><b>Timeline</b>: every journal record with this task and attempt (<code>budget.*</code>, <code>task.transition</code>, <code>attempt.end</code>, <code>evidence.sealed</code>), seq shown; runner spans collapsed and marked unverified. Grouped by <code>correlationId</code>.</span></li>
+        <li><span class="pin inline">2</span><span><b>Gates</b>: <code>gate.evaluated</code> from the M3 gate engine, one row per Definition-of-Done clause (docs/02 §6). Before M3 the panel shows "no gate engine yet".</span></li>
+        <li><span class="pin inline">3</span><span><b>Manifest</b>: <code>evidence/&lt;task&gt;/&lt;attempt&gt;/manifest.json</code> (<code>src/evidence.ts</code>); the MAC is re-checked by the controller on every read.</span></li>
+        <li><span class="pin inline">4</span><span><b>Logs</b>: evidence files streamed through the controller read API, never read from a worker clone.</span></li>
+        <li><span class="pin inline">5</span><span><b>Report</b>: the agent's <code>summary</code> from <code>attempt.end</code>, rendered in the claim style.</span></li>
+        <li><span class="pin inline">·</span><span><b>Replay</b>: the recorded <code>eo verify --task T3 --replay</code> command (M3-6).</span></li>
+      </ol>
+    </aside>
+  </div>
+</section>
+
+<!-- 6 APPROVAL CENTER -->
+<section class="wf" id="wf6" aria-labelledby="wf6-h">
+  <h2 id="wf6-h">6. Approval center</h2>
+  <p class="sub">Every human decision across projects. Each decision is bound to a subject hash and needs a fresh passkey check; console-only operations are listed with their command.</p>
+  <div class="wf-layout">
+    <figure class="frame" style="margin:0" aria-label="Wireframe: approval center">
+      <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url">localhost:8443/w/ws_home/approvals/apr_01JD…</span></div>
+      <div class="app">
+        <div class="rail" aria-hidden="true"><b>Port</b><b class="on">Appr<span class="n">3</span></b><b>Proj</b><b>Chat</b><b>Fleet</b><b>Lib</b><b>Stats</b></div>
+        <div class="main">
+          <div class="grid g-side">
+            <div class="grid" style="align-content:start">
+              <div class="panel"><span class="pin">1</span><h4>Pending · 3</h4>
+                <div class="rows">
+                  <div class="row"><span class="st warn">plan</span><span class="t">tinyledger plan v2</span><span class="grow"></span><span class="muted">expires 23 h</span></div>
+                  <div class="row"><span class="st warn">unblock</span><span class="t">T4 · tinyledger</span><span class="grow"></span><span class="muted">no expiry</span></div>
+                  <div class="row"><span class="st warn">skill</span><span class="t">install date-utils 1.0.0</span><span class="grow"></span><span class="muted">7 d</span></div>
+                </div>
+              </div>
+              <div class="panel"><span class="pin">2</span><h4>Console only</h4>
+                <div class="row"><span class="st bad">policy</span><span>budget cap raise</span><span class="mono">eo policy accept</span></div>
+              </div>
+            </div>
+            <div class="panel"><span class="pin">3</span><h4>Plan v2 · tinyledger</h4>
+              <div class="kv"><span>requested by</span><span>Atlas (manager) <span class="chip v">J#388</span></span></div>
+              <div class="kv"><span>subject hash</span><span class="mono">7c2e…e91a</span></div>
+              <div class="kv"><span>est. reservation</span><span>$1.20 of $5.00 cap</span></div>
+              <div style="margin:8px 0 4px;font-size:12px;color:var(--ink-3)">Plan diff</div>
+              <div class="log">+ T8 month-end edge cases (deps: T2)
+~ T4 deps: T2 → T2, T8
+  open questions: 0</div>
+              <div class="claim" style="margin-top:8px">Manager's rationale: "Splitting reduces repeated failures." <b>Unverified</b>.</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center"><span class="pin inline">4</span><span class="btn primary">Approve with passkey</span><span class="btn danger">Reject</span><span class="muted">Reason required for reject.</span></div>
+            </div>
+          </div>
+          <div class="panel"><span class="pin">5</span><h4>Decided (audit)</h4>
+            <div class="rows">
+              <div class="row"><span class="st ok">approved</span><span>plan v1 · tinyledger</span><span class="muted">owner · console</span><span class="grow"></span><span class="chip v">J#12</span></div>
+              <div class="row"><span class="st bad">rejected</span><span>route change rte_impl v3</span><span class="muted">owner · web, passkey</span><span class="grow"></span><span class="chip v">J#77</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <aside class="notes" aria-label="Annotations for approval center">
+      <h3>Data sources</h3>
+      <ol>
+        <li><span class="pin inline">1</span><span><b>Queue</b>: <code>approval.requested</code> without <code>approval.decided</code>/<code>approval.expired</code>, across projects the viewer can read. Expiry comes from the approval record.</span></li>
+        <li><span class="pin inline">2</span><span><b>Console only</b>: operations the API cannot perform (policy edits, repository approval, anchor adoption), shown with the exact <code>eo</code> command (<code>src/cli.ts</code>).</span></li>
+        <li><span class="pin inline">3</span><span><b>Detail</b>: subject hash (for a plan, <code>planHash</code> in <code>src/plan.ts</code>), requester principal, reservation estimate from the budget rules, and the plan diff. The manager's rationale is a claim.</span></li>
+        <li><span class="pin inline">4</span><span><b>Decision</b>: requires a WebAuthn step-up ≤ 5 min old; the controller verifies the assertion and that the subject hash is unchanged, then journals <code>approval.decided</code>. Agents can never reach this control.</span></li>
+        <li><span class="pin inline">5</span><span><b>Audit</b>: decided approvals with actor and channel (web or console); TTY approvals appear here too.</span></li>
+      </ol>
+    </aside>
+  </div>
+</section>
+
+<footer>
+  Engineering Orchestrator · Command Center proposal, deliverable 4 · design and documentation only; nothing here is implemented. Any comparison with Hyperagent is based on the owner's description, not on its site.
+</footer>
+</div>
+</body>
+</html>
