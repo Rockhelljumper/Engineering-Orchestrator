@@ -283,6 +283,7 @@ foreach ($k in $bad.Keys) {
     $snap = $null; $err = ''
     try { $snap = Get-EoSnapshot } catch { $err = $_.Exception.Message }
     Expect 'snapshot: Get-EoSnapshot succeeds with a host adapter present' $err ''
+    Expect 'snapshot: Get-EoSnapshot returned a snapshot' ($null -ne $snap) $true
     if ($snap) {
         Expect 'snapshot: host adapter recorded as (host)' (@($snap.vmAdapters | Where-Object { $_.vm -eq '(host)' -and $_.mac -eq '00155D000002' -and $_.managementOs }).Count) 1
         Expect 'snapshot: VM adapter keeps its VM name' (@($snap.vmAdapters | Where-Object { $_.vm -eq 'other-vm' -and $_.mac -eq '00155D000001' }).Count) 1
