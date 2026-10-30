@@ -251,6 +251,45 @@ foreach ($k in $bad.Keys) {
     if (-not $hit.Count) { $msgs | ForEach-Object { Write-Host "     $_" } }
 }
 
+# --- host snapshot: a host (management OS) adapter whose VMName throws -----------
+# On RH-DT-M3, Get-VMNetworkAdapter -All returns host vNICs whose VMName getter
+# throws "Object reference not set" when Sort-Object reads it (Windows PowerShell
+# 5.1). The CI runner has no Hyper-V, so the cmdlets Get-EoSnapshot calls are
+# replaced by functions returning such an adapter.
+& {
+    function New-FakeAdapter([bool]$Host_, [string]$Vm, [string]$Name, [string]$Mac) {
+        $o = [pscustomobject]@{ Name = $Name; SwitchName = 'Default Switch'; MacAddress = $Mac; IsManagementOs = $Host_ }
+        if ($Host_) { $o | Add-Member -MemberType ScriptProperty -Name VMName -Value { throw [NullReferenceException]::new('Object reference not set to an instance of an object.') } }
+        else { $o | Add-Member -MemberType NoteProperty -Name VMName -Value $Vm }
+        return $o
+    }
+    $adapters = @((New-FakeAdapter $false 'other-vm' 'Network Adapter' '00155D000001'), (New-FakeAdapter $true '' 'Host Vnic 790E58B4' '00155D000002'))
+    function Get-VMNetworkAdapter { $adapters }
+    function Get-VMSwitch { }
+    function Get-VM { }
+    function Get-NetAdapter { }
+    function Get-NetIPAddress { }
+    function Get-NetRoute { }
+    function Get-NetIPInterface { }
+    function Get-NetNat { }
+    function Get-NetFirewallRule { }
+    function Get-Service { }
+    function Get-VMHost { [pscustomobject]@{ EnableEnhancedSessionMode = $true; VirtualHardDiskPath = 'C:\vhd'; VirtualMachinePath = 'C:\vm' } }
+
+    $oldThrew = $false
+    try { $null = @(Get-VMNetworkAdapter -All | Sort-Object VMName, Name) } catch { $oldThrew = $_.Exception.Message -match 'VMName' }
+    if ($PSVersionTable.PSEdition -eq 'Desktop') { Expect 'snapshot: the old sort by VMName fails on a host adapter (5.1, the RH-DT-M3 failure)' $oldThrew $true }
+    else { Write-Host "info the old sort by VMName on a host adapter threw under PowerShell 7: $oldThrew" }
+    $snap = $null; $err = ''
+    try { $snap = Get-EoSnapshot } catch { $err = $_.Exception.Message }
+    Expect 'snapshot: Get-EoSnapshot succeeds with a host adapter present' $err ''
+    if ($snap) {
+        Expect 'snapshot: host adapter recorded as (host)' (@($snap.vmAdapters | Where-Object { $_.vm -eq '(host)' -and $_.mac -eq '00155D000002' -and $_.managementOs }).Count) 1
+        Expect 'snapshot: VM adapter keeps its VM name' (@($snap.vmAdapters | Where-Object { $_.vm -eq 'other-vm' -and $_.mac -eq '00155D000001' }).Count) 1
+        Expect 'snapshot: serializes to JSON' ([bool]($snap | ConvertTo-Json -Depth 6)) $true
+    }
+}
+
 if ($failures.Count) { Write-Host "$($failures.Count) failure(s)"; exit 1 }
 Write-Host 'all host-script self-tests passed'
 exit 0
