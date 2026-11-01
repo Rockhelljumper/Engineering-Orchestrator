@@ -252,3 +252,185 @@ function Get-EoGuardCurrent {
     }
     return @{ Computer = $env:COMPUTERNAME; SwitchId = $(if ($sw) { "$($sw.Id)" } else { $null }); Adapter = $adapter; RuleDescriptions = $desc }
 }
+
+# --- filter guard (01c, B9-R1) -------------------------------------------------
+# 01c unbinds the Npcap and VirtualBox NDIS filters ($EO.FilterTargets) from the
+# host vNIC only. Like 01b, it records every target's state before it changes
+# anything, in a protected file next to the host guard record; the undo restores
+# only from that record, only those components, and only on the same adapter,
+# switch and computer, built on the same 01b instance. Pure Test-*/Get-*Plan
+# functions take plain facts so tests/selftest.ps1 can drive them.
+
+$EoFilterSchema = 'eo-l2-filter-guard/1'
+
+# The filter-guard facts of the host now: the host guard facts (so the same read
+# serves Test-EoGuardState) plus the host vNIC's bindings as @{ <ComponentID> =
+# Enabled }. Bindings holds every binding (-AllBindings, hidden ones included) and
+# is what the target checks use; VisibleBindings holds the default view, the one the
+# allowed list was taken from. Both are empty without the adapter.
+function Get-EoFilterCurrent {
+    $g = Get-EoGuardCurrent
+    $b = @{}; $v = @{}; $names = @{}
+    if ($g.Adapter) {
+        foreach ($x in @(Get-NetAdapterBinding -Name $EO.HostIf -AllBindings -ErrorAction SilentlyContinue)) {
+            $b["$($x.ComponentID)"] = [bool]$x.Enabled; $names["$($x.ComponentID)"] = "$($x.DisplayName)"
+        }
+        foreach ($x in @(Get-NetAdapterBinding -Name $EO.HostIf -ErrorAction SilentlyContinue)) { $v["$($x.ComponentID)"] = [bool]$x.Enabled }
+    }
+    return @{ Computer = $g.Computer; SwitchId = $g.SwitchId; Adapter = $g.Adapter; RuleDescriptions = $g.RuleDescriptions
+        Bindings = $b; VisibleBindings = $v; BindingNames = $names }
+}
+
+# What 01c would do to each target: disable (present and enabled), already-off
+# (present and disabled) or absent. One entry per target, in $EO.FilterTargets order.
+function Get-EoFilterApplyPlan($Bindings) {
+    $p = New-Object System.Collections.Generic.List[object]
+    foreach ($id in $EO.FilterTargets) {
+        $action = if (-not $Bindings.ContainsKey($id)) { 'absent' } elseif ($Bindings[$id]) { 'disable' } else { 'already-off' }
+        $p.Add([pscustomobject]@{ ComponentId = $id; Present = $Bindings.ContainsKey($id); EnabledBefore = ($Bindings.ContainsKey($id) -and [bool]$Bindings[$id]); Action = $action })
+    }
+    return $p
+}
+
+# What the undo would do with each recorded target, given the bindings now:
+#   enable    was enabled before 01c, is disabled now: re-enable it
+#   skip      was enabled, is enabled now (already restored, or 01c stopped before it)
+#   leave-off was not enabled before 01c and is not enabled now: no change
+#   missing   was enabled, is no longer bound to the adapter: cannot be restored
+#   drifted   was not enabled before 01c, is enabled now: someone else changed it
+# The undo refuses before any change on missing or drifted (Test-EoFilterRestorePlan).
+function Get-EoFilterRestorePlan($State, $Bindings) {
+    $p = New-Object System.Collections.Generic.List[object]
+    foreach ($r in @($State.bindings)) {
+        $id = "$(Get-EoProp $r 'componentId')"
+        $was = (Get-EoProp $r 'enabledBefore') -eq $true
+        $on = $Bindings.ContainsKey($id) -and [bool]$Bindings[$id]
+        $action = if (-not $was) { if ($on) { 'drifted' } else { 'leave-off' } } elseif (-not $Bindings.ContainsKey($id)) { 'missing' } elseif ($on) { 'skip' } else { 'enable' }
+        $p.Add([pscustomobject]@{ ComponentId = $id; EnabledBefore = $was; Action = $action })
+    }
+    return $p
+}
+
+# Problems that stop the undo before any change, from a restore plan.
+function Test-EoFilterRestorePlan($Plan) {
+    $p = New-Object System.Collections.Generic.List[string]
+    foreach ($e in @($Plan)) {
+        if ($e.Action -eq 'missing') { $p.Add("$($e.ComponentId) was enabled before 01c but is no longer bound to '$($EO.HostIf)'; it cannot be restored (was the filter uninstalled?)") }
+        if ($e.Action -eq 'drifted') { $p.Add("$($e.ComponentId) was off before 01c but is enabled now; something other than 01c changed it, so the undo will not decide its value") }
+    }
+    return $p
+}
+
+# Problems that stop 01c before any change. Pure: $GuardState is the 01b record (or
+# $null), $Current comes from Get-EoFilterCurrent, $RecordPresent says whether a 01c
+# record exists, $DirNames lists the names in the record folder, $Extensions the
+# vSwitch extensions of eo-l2-int. 01c also checks the folder's ACL and runs
+# verify-host -SwitchOnly first.
+function Test-EoFilterPreconditions($GuardState, $Current, [bool]$RecordPresent, $DirNames, $Extensions) {
+    $p = New-Object System.Collections.Generic.List[string]
+    if ($RecordPresent) { $p.Add("$($EO.FilterState) exists: an earlier 01c was not undone. Run undo-01c-filter-guard.ps1 first") }
+    if ($null -eq $GuardState) { $p.Add("no host guard (01b) record at $($EO.GuardState); 01c runs only after 01b") }
+    else { foreach ($x in @(Test-EoGuardState $GuardState $Current)) { $p.Add("host guard record: $x") } }
+    if (-not $Current.SwitchId -or -not $Current.Adapter) { $p.Add("switch $($EO.SwitchName) or its host adapter is missing") }
+    $leaf = Split-Path -Leaf $EO.GuardState
+    foreach ($n in @($DirNames)) { if ("$n" -cne $leaf) { $p.Add("$($EO.GuardDir) holds '$n', which no step wrote") } }
+    foreach ($x in @(Test-EoUnknownBindings $Current.VisibleBindings)) { $p.Add($x) }
+    foreach ($x in @(Test-EoSwitchExtensions $Extensions)) { $p.Add($x) }
+    return $p
+}
+
+# Changes the binding of filter targets on the host vNIC: the only place 01c and
+# its undo change a binding. Refuses before any change if an id is not a target.
+function Set-EoFilterBindings([string[]]$ComponentIds, [switch]$Enable) {
+    $bad = @($ComponentIds | Where-Object { $_ -cnotin $EO.FilterTargets })
+    if ($bad.Count) { throw "Refusing to change bindings that are not filter-guard targets: $($bad -join ', ')" }
+    foreach ($id in $ComponentIds) {
+        if ($Enable) { Enable-NetAdapterBinding -Name $EO.HostIf -ComponentID $id }
+        else { Disable-NetAdapterBinding -Name $EO.HostIf -ComponentID $id }
+    }
+}
+
+# Problems with a filter guard record (as read from JSON) against the current host
+# and the instance id of the 01b record ($null when there is none).
+function Test-EoFilterState($State, $Current, $GuardInstanceId) {
+    $p = New-Object System.Collections.Generic.List[string]
+    if ($null -eq $State) { $p.Add("no filter guard record at $($EO.FilterState); the bindings before 01c are unknown"); return $p }
+    $names = @($State.PSObject.Properties.Name)
+    foreach ($k in 'schema', 'instanceId', 'computer', 'switchId', 'adapter', 'hostGuardInstanceId', 'bindings') { if ($k -notin $names) { $p.Add("filter record has no '$k'") } }
+    if ($p.Count) { return $p }
+    foreach ($k in 'schema', 'instanceId', 'computer', 'switchId', 'hostGuardInstanceId') { if ($State.$k -isnot [string]) { $p.Add("filter record $k is not a single string") } }
+    if ($p.Count) { return $p }
+    if ($State.schema -cne $EoFilterSchema) { $p.Add("filter record schema is '$($State.schema)', want '$EoFilterSchema'") }
+    foreach ($k in 'instanceId', 'hostGuardInstanceId') { if ($State.$k -cnotmatch '\A[0-9a-f]{32}\z') { $p.Add("filter record $k '$($State.$k)' is malformed") } }
+    $recs = @($State.bindings)
+    $ids = @($recs | ForEach-Object { "$(Get-EoProp $_ 'componentId')" })
+    if ((@($ids | Sort-Object) -join ',') -cne (@($EO.FilterTargets | Sort-Object) -join ',')) { $p.Add("filter record components are '$($ids -join ',')', want '$($EO.FilterTargets -join ',')'") }
+    foreach ($r in $recs) {
+        $pr = Get-EoProp $r 'present'; $eb = Get-EoProp $r 'enabledBefore'
+        if ($pr -isnot [bool] -or $eb -isnot [bool]) { $p.Add("filter record entry '$(Get-EoProp $r 'componentId')' needs boolean present and enabledBefore"); continue }
+        if ($eb -and -not $pr) { $p.Add("filter record entry '$(Get-EoProp $r 'componentId')' is enabledBefore but not present") }
+    }
+    if ($State.computer -ne $Current.Computer) { $p.Add("filter record is for computer '$($State.computer)', this is '$($Current.Computer)'") }
+    $a = $State.adapter
+    foreach ($k in 'interfaceGuid', 'macAddress', 'settingId') { $v = Get-EoProp $a $k; if ($v -isnot [string] -or -not $v) { $p.Add("filter record adapter has no $k") } }
+    if ($Current.Adapter) {
+        if ("$($State.switchId)" -ne "$($Current.SwitchId)") { $p.Add("switch id is $($Current.SwitchId), the filter record has $($State.switchId): another provisioning instance") }
+        foreach ($k in 'InterfaceGuid', 'MacAddress', 'SettingId') {
+            $rec = "$(Get-EoProp $a $k)"
+            if ($rec -ne "$($Current.Adapter[$k])") { $p.Add("adapter $k is '$($Current.Adapter[$k])', the filter record has '$rec': another adapter") }
+        }
+        if ("$GuardInstanceId" -ne "$($State.hostGuardInstanceId)") { $p.Add("the filter record builds on host guard instance '$($State.hostGuardInstanceId)', the host guard record is '$GuardInstanceId'") }
+    } elseif ($Current.SwitchId) {
+        $p.Add("switch $($EO.SwitchName) exists but its host adapter was not found; cannot tell which adapter to restore")
+    }
+    return $p
+}
+
+# Problems with the host vNIC's bindings: each filter target must be absent or
+# disabled. $Bindings: @{ <ComponentID> = Enabled }.
+function Test-EoFilterBindings($Bindings) {
+    $p = New-Object System.Collections.Generic.List[string]
+    foreach ($id in $EO.FilterTargets) { if ($Bindings.ContainsKey($id) -and $Bindings[$id]) { $p.Add("$id is enabled on '$($EO.HostIf)'") } }
+    return $p
+}
+
+# Enabled components on the host vNIC that are neither allowed nor a filter target
+# (targets have their own check), so a newly installed filter or protocol fails the
+# verifier instead of passing silently. Callers pass the default (non-hidden)
+# binding view, which the allowed list was taken from.
+function Test-EoUnknownBindings($Bindings) {
+    $p = New-Object System.Collections.Generic.List[string]
+    foreach ($id in @($Bindings.Keys | Sort-Object)) {
+        if ($Bindings[$id] -and $id -notin $EO.FilterAllowed -and $id -notin $EO.FilterTargets) { $p.Add("$id is enabled on '$($EO.HostIf)' and is not in the allowed list") }
+    }
+    return $p
+}
+
+# Problems with the vSwitch extensions of eo-l2-int: only $EO.SwitchExtAllowed may be
+# enabled (so NDIS Capture or a third-party extension cannot see or inject frames
+# inside the switch). $Extensions: @{ Name; Vendor; Enabled }.
+function Test-EoSwitchExtensions($Extensions) {
+    $p = New-Object System.Collections.Generic.List[string]
+    foreach ($e in @($Extensions)) {
+        if ("$($e.Enabled)" -eq 'True' -and "$($e.Name)" -cnotin $EO.SwitchExtAllowed) { $p.Add("switch extension '$($e.Name)' ($($e.Vendor)) is enabled on $($EO.SwitchName)") }
+    }
+    return $p
+}
+
+# How verify-host treats the filter guard: 'absent' (before 01b: the record must
+# not exist), 'check' (rows are mandatory) or 'skip' (-SwitchOnly before 01c, with
+# no record yet). Full verification (the VM exists, B9) always checks.
+function Get-EoFilterGuardMode([bool]$SwitchOnly, [bool]$BeforeGuard, [bool]$Require, [bool]$RecordPresent) {
+    if ($BeforeGuard) { return 'absent' }
+    if ($Require -or -not $SwitchOnly -or $RecordPresent) { return 'check' }
+    return 'skip'
+}
+
+# The filter guard record, or $null when there is none. Throws when the folder or
+# file is not protected (Administrators and SYSTEM only, no link).
+function Read-EoFilterState {
+    if (-not (Test-Path -LiteralPath $EO.FilterState)) { return $null }
+    $p = @(Test-EoAclFacts (Get-EoAclFacts $EO.GuardDir) -Container) + @(Test-EoAclFacts (Get-EoAclFacts $EO.FilterState))
+    if ($p.Count) { throw "the filter guard record is not protected: $($p -join '; ')" }
+    return (Get-Content -LiteralPath $EO.FilterState -Raw | ConvertFrom-Json)
+}

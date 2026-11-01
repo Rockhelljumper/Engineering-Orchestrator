@@ -274,6 +274,10 @@ foreach ($k in $bad.Keys) {
     function Get-NetNat { }
     function Get-NetFirewallRule { }
     function Get-Service { }
+    function Get-NetAdapterBinding { [CmdletBinding()] param($Name, [switch]$AllBindings, [switch]$IncludeHidden)
+        $all = @([pscustomobject]@{ Name = $EO.HostIf; ComponentID = 'ms_tcpip'; Enabled = $true }, [pscustomobject]@{ Name = $EO.HostIf; ComponentID = 'INSECURE_NPCAP'; Enabled = $false },
+            [pscustomobject]@{ Name = 'Ethernet'; ComponentID = 'INSECURE_NPCAP'; Enabled = $true })
+        if ($Name) { $all | Where-Object Name -eq $Name } else { $all } }
     function Get-VMHost { [pscustomobject]@{ EnableEnhancedSessionMode = $true; VirtualHardDiskPath = 'C:\vhd'; VirtualMachinePath = 'C:\vm' } }
 
     $oldThrew = $false
@@ -288,6 +292,9 @@ foreach ($k in $bad.Keys) {
         Expect 'snapshot: host adapter recorded as (host)' (@($snap.vmAdapters | Where-Object { $_.vm -eq '(host)' -and $_.mac -eq '00155D000002' -and $_.managementOs }).Count) 1
         Expect 'snapshot: VM adapter keeps its VM name' (@($snap.vmAdapters | Where-Object { $_.vm -eq 'other-vm' -and $_.mac -eq '00155D000001' }).Count) 1
         Expect 'snapshot: serializes to JSON' ([bool]($snap | ConvertTo-Json -Depth 6)) $true
+        Expect 'snapshot: eo-l2-int bindings listed in full' ($snap.eoBindings -join ',') 'INSECURE_NPCAP|False,ms_tcpip|True'
+        Expect 'snapshot: other adapters digested' "$($snap.otherBindings.count)/$($snap.otherBindings.sha256.Length)" '1/64'
+
     }
 }
 
@@ -367,6 +374,221 @@ foreach ($k in $bad.Keys) {
             try { $got = Invoke-UndoRules $c.Extent.Text $n -Condition } catch { $got = "threw: $($_.Exception.Message)" }
             Expect "undo rules: '$($c.Extent.Text)' with $n rule(s)" $got "$($n -gt 0)"
         }
+    }
+}
+
+
+# --- filter guard (01c, B9-R1) ----------------------------------------------------
+$npc = 'INSECURE_NPCAP'; $vbx = 'oracle_VBoxNetLwf'
+function PlanText($Plan) { (@($Plan) | ForEach-Object { "$($_.ComponentId)=$($_.Action)/$($_.EnabledBefore)" }) -join ',' }
+# Under StrictMode, for 0, 1 and 2 enabled targets (the lesson of D-2).
+& {
+    Set-StrictMode -Version 3.0
+    foreach ($c in @(
+            @(@{}, "$npc=absent/False,$vbx=absent/False", 0),
+            @(@{ $npc = $false; $vbx = $false }, "$npc=already-off/False,$vbx=already-off/False", 0),
+            @(@{ $npc = $true; $vbx = $false; 'ms_tcpip' = $true }, "$npc=disable/True,$vbx=already-off/False", 1),
+            @(@{ $vbx = $true }, "$npc=absent/False,$vbx=disable/True", 1),
+            @(@{ $npc = $true; $vbx = $true }, "$npc=disable/True,$vbx=disable/True", 2))) {
+        $got = ''; $n = -1
+        try { $plan = @(Get-EoFilterApplyPlan $c[0]); $got = PlanText $plan; $n = @($plan | Where-Object Action -eq 'disable').Count } catch { $got = "threw: $($_.Exception.Message)" }
+        Expect "filter plan: $($c[1])" $got $c[1]
+        Expect "filter plan: $($c[1]) counts $($c[2]) to disable under StrictMode" $n $c[2]
+    }
+}
+$fguid = '{94ebb62f-0000-4000-8000-00000000abcd}'
+$fGuardId = '0123456789abcdef0123456789abcdef'
+$fJson = @"
+{ "schema": "eo-l2-filter-guard/1", "instanceId": "fedcba9876543210fedcba9876543210", "createdAt": "2026-11-02T00:00:00Z",
+  "computer": "$env:COMPUTERNAME", "switchId": "11111111-2222-3333-4444-555555555555",
+  "adapter": { "name": "vEthernet (eo-l2-int)", "interfaceGuid": "$fguid", "macAddress": "00-15-5D-0A-1C-02", "settingId": "$fguid" },
+  "hostGuardInstanceId": "$fGuardId",
+  "bindings": [ { "componentId": "INSECURE_NPCAP", "displayName": "Npcap Packet Driver (NPCAP)", "present": true, "enabledBefore": true }, { "componentId": "oracle_VBoxNetLwf", "displayName": "VirtualBox NDIS6 Bridged Networking Driver", "present": true, "enabledBefore": false } ],
+  "drivers": { "npcap.sys": "1.75", "VBoxNetLwf.sys": "7.2.4" } }
+"@
+function FCur([hashtable]$Over) {
+    $c = @{ Computer = $env:COMPUTERNAME; SwitchId = '11111111-2222-3333-4444-555555555555'
+        Adapter = @{ InterfaceGuid = $fguid; MacAddress = '00-15-5D-0A-1C-02'; SettingId = $fguid }
+        RuleDescriptions = @{}; Bindings = @{ $npc = $false; $vbx = $false; 'ms_tcpip' = $true }
+        VisibleBindings = @{ $npc = $false; $vbx = $false; 'ms_tcpip' = $true; 'ms_pacer' = $true; 'ms_l2bridge' = $true; 'ms_l1vhlwf' = $true } }
+    foreach ($k in $Over.Keys) { $c[$k] = $Over[$k] }
+    return $c
+}
+function FState([string]$Find, [string]$Replace) { ($fJson.Replace($Find, $Replace)) | ConvertFrom-Json }
+Expect 'filter record: matching record passes' (@(Test-EoFilterState ($fJson | ConvertFrom-Json) (FCur @{}) $fGuardId).Count) 0
+Expect 'filter record: switch and adapter gone passes (nothing to restore)' (@(Test-EoFilterState ($fJson | ConvertFrom-Json) (FCur @{ SwitchId = $null; Adapter = $null }) $null).Count) 0
+$fbad = [ordered]@{
+    'no record'                        = @($null, (FCur @{}), $fGuardId, 'no filter guard record')
+    'no bindings'                      = @((FState '"bindings":' '"bindingz":'), (FCur @{}), $fGuardId, "no 'bindings'")
+    'another schema'                   = @((FState 'eo-l2-filter-guard/1' 'eo-l2-host-guard/1'), (FCur @{}), $fGuardId, 'schema is')
+    'schema as a list'                 = @((FState '"schema": "eo-l2-filter-guard/1"' '"schema": ["eo-l2-filter-guard/1"]'), (FCur @{}), $fGuardId, 'schema is not a single string')
+    'malformed instance id'            = @((FState 'fedcba9876543210fedcba9876543210' 'fedcba98'), (FCur @{}), $fGuardId, 'instanceId')
+    'malformed host guard id'          = @((FState """hostGuardInstanceId"": ""$fGuardId""" '"hostGuardInstanceId": "X"'), (FCur @{}), 'X', 'hostGuardInstanceId')
+    'host guard id as a number'        = @((FState """hostGuardInstanceId"": ""$fGuardId""" '"hostGuardInstanceId": 5'), (FCur @{}), $fGuardId, 'hostGuardInstanceId is not a single string')
+    'another host guard instance'      = @(($fJson | ConvertFrom-Json), (FCur @{}), 'ffffffffffffffffffffffffffffffff', 'builds on host guard instance')
+    'no host guard record now'         = @(($fJson | ConvertFrom-Json), (FCur @{}), $null, 'builds on host guard instance')
+    'a component that is not a target' = @((FState '"componentId": "oracle_VBoxNetLwf"' '"componentId": "ms_tcpip"'), (FCur @{}), $fGuardId, 'components are')
+    'a target recorded twice'          = @((FState '"componentId": "oracle_VBoxNetLwf"' '"componentId": "INSECURE_NPCAP"'), (FCur @{}), $fGuardId, 'components are')
+    'a target in another case'         = @((FState '"componentId": "INSECURE_NPCAP"' '"componentId": "insecure_npcap"'), (FCur @{}), $fGuardId, 'components are')
+    'one target left out'              = @((FState ', { "componentId": "oracle_VBoxNetLwf", "displayName": "VirtualBox NDIS6 Bridged Networking Driver", "present": true, "enabledBefore": false }' ''), (FCur @{}), $fGuardId, 'components are')
+    'enabledBefore as a string'        = @((FState '"present": true, "enabledBefore": true' '"present": true, "enabledBefore": "true"'), (FCur @{}), $fGuardId, 'needs boolean')
+    'present missing'                  = @((FState '"present": true, "enabledBefore": true' '"enabledBefore": true'), (FCur @{}), $fGuardId, 'needs boolean')
+    'enabled before but not present'   = @((FState '"present": true, "enabledBefore": true' '"present": false, "enabledBefore": true'), (FCur @{}), $fGuardId, 'is enabledBefore but not present')
+    'another computer'                 = @((FState """computer"": ""$env:COMPUTERNAME""" '"computer": "OTHER-PC"'), (FCur @{}), $fGuardId, 'is for computer')
+    'another switch'                   = @(($fJson | ConvertFrom-Json), (FCur @{ SwitchId = '99999999-2222-3333-4444-555555555555' }), $fGuardId, 'another provisioning instance')
+    'another adapter (GUID)'           = @(($fJson | ConvertFrom-Json), (FCur @{ Adapter = @{ InterfaceGuid = '{00000000-0000-4000-8000-000000000001}'; MacAddress = '00-15-5D-0A-1C-02'; SettingId = $fguid } }), $fGuardId, 'adapter InterfaceGuid')
+    'another adapter (MAC)'            = @(($fJson | ConvertFrom-Json), (FCur @{ Adapter = @{ InterfaceGuid = $fguid; MacAddress = '00-15-5D-00-00-01'; SettingId = $fguid } }), $fGuardId, 'adapter MacAddress')
+    'another adapter (setting id)'     = @(($fJson | ConvertFrom-Json), (FCur @{ Adapter = @{ InterfaceGuid = $fguid; MacAddress = '00-15-5D-0A-1C-02'; SettingId = '{00000000-0000-4000-8000-000000000002}' } }), $fGuardId, 'adapter SettingId')
+    'record without the adapter GUID'  = @((FState """interfaceGuid"": ""$fguid"", " ''), (FCur @{}), $fGuardId, 'adapter has no interfaceGuid')
+    'switch present, adapter missing'  = @(($fJson | ConvertFrom-Json), (FCur @{ Adapter = $null }), $fGuardId, 'cannot tell which adapter')
+}
+foreach ($k in $fbad.Keys) {
+    $threw = $false; $msgs = @()
+    try { $msgs = @(Test-EoFilterState $fbad[$k][0] $fbad[$k][1] $fbad[$k][2]) } catch { $threw = $true; $msgs = @("threw: $($_.Exception.Message)") }
+    $hit = @($msgs | Where-Object { $_.Contains($fbad[$k][3]) })
+    Expect "filter record: $k refused for its own reason" ($hit.Count -gt 0 -and -not $threw) $true
+    if (-not $hit.Count) { $msgs | ForEach-Object { Write-Host "     $_" } }
+}
+
+# The undo's plan: only targets recorded as enabled are re-enabled, and it refuses on
+# a target it cannot restore or one something else enabled.
+$fRec = $fJson | ConvertFrom-Json
+foreach ($c in @(
+        @(@{ $npc = $false; $vbx = $false }, "$npc=enable/True,$vbx=leave-off/False", 0),
+        @(@{ $npc = $true; $vbx = $false }, "$npc=skip/True,$vbx=leave-off/False", 0),
+        @(@{ $vbx = $false }, "$npc=missing/True,$vbx=leave-off/False", 1),
+        @(@{ $npc = $false }, "$npc=enable/True,$vbx=leave-off/False", 0),
+        @(@{ $npc = $false; $vbx = $true }, "$npc=enable/True,$vbx=drifted/False", 1))) {
+    & {
+        Set-StrictMode -Version 3.0
+        $got = ''; $n = -1
+        try { $plan = @(Get-EoFilterRestorePlan $fRec $c[0]); $got = PlanText $plan; $n = @(Test-EoFilterRestorePlan $plan).Count } catch { $got = "threw: $($_.Exception.Message)" }
+        Expect "filter undo plan: $($c[1])" $got $c[1]
+        Expect "filter undo plan: $($c[1]) gives $($c[2]) refusal(s)" $n $c[2]
+    }
+}
+$both = FState '"present": true, "enabledBefore": false' '"present": true, "enabledBefore": true'
+Expect 'filter undo plan: both recorded enabled, both off now' (PlanText (Get-EoFilterRestorePlan $both @{ $npc = $false; $vbx = $false })) "$npc=enable/True,$vbx=enable/True"
+
+# Bindings, unknown components and switch extensions, as verify-host checks them.
+Expect 'filter bindings: both off passes' (@(Test-EoFilterBindings @{ $npc = $false; $vbx = $false; 'ms_tcpip' = $true }).Count) 0
+Expect 'filter bindings: both absent passes' (@(Test-EoFilterBindings @{ 'ms_tcpip' = $true }).Count) 0
+Expect 'filter bindings: Npcap enabled fails' (@(Test-EoFilterBindings @{ $npc = $true; $vbx = $false }) -join ';') "$npc is enabled on '$($EO.HostIf)'"
+Expect 'filter bindings: VirtualBox enabled fails' (@(Test-EoFilterBindings @{ $vbx = $true }) -join ';') "$vbx is enabled on '$($EO.HostIf)'"
+$clean = (FCur @{}).VisibleBindings
+Expect 'unknown bindings: the 2026-11-01 inventory after 01c passes' (@(Test-EoUnknownBindings $clean).Count) 0
+$c2 = $clean.Clone(); $c2[$npc] = $true; $c2[$vbx] = $true
+Expect 'unknown bindings: enabled targets are left to their own check' (@(Test-EoUnknownBindings $c2).Count) 0
+$c2 = $clean.Clone(); $c2['WINPCAP'] = $true
+Expect 'unknown bindings: a new enabled filter fails' (@(Test-EoUnknownBindings $c2) -join ';') "WINPCAP is enabled on '$($EO.HostIf)' and is not in the allowed list"
+$c2 = $clean.Clone(); $c2['ms_msclient'] = $true
+Expect 'unknown bindings: client for Microsoft networks re-enabled fails' (@(Test-EoUnknownBindings $c2).Count) 1
+$c2 = $clean.Clone(); $c2['ms_server'] = $false
+Expect 'unknown bindings: a disabled unknown component passes' (@(Test-EoUnknownBindings $c2).Count) 0
+$ext = @(@{ Name = 'Microsoft Windows Filtering Platform'; Vendor = 'Microsoft'; Enabled = 'True' }, @{ Name = 'Microsoft NDIS Capture'; Vendor = 'Microsoft'; Enabled = 'False' })
+Expect 'switch extensions: WFP on, NDIS Capture off passes' (@(Test-EoSwitchExtensions $ext).Count) 0
+Expect 'switch extensions: none passes' (@(Test-EoSwitchExtensions @()).Count) 0
+$e2 = @($ext[0], @{ Name = 'Microsoft NDIS Capture'; Vendor = 'Microsoft'; Enabled = 'True' })
+Expect 'switch extensions: NDIS Capture on fails' (@(Test-EoSwitchExtensions $e2) -join ';') "switch extension 'Microsoft NDIS Capture' (Microsoft) is enabled on $($EO.SwitchName)"
+$e2 = @($ext[0], @{ Name = 'Contoso Mirror'; Vendor = 'Contoso'; Enabled = 'True' })
+Expect 'switch extensions: a third-party extension on fails' (@(Test-EoSwitchExtensions $e2).Count) 1
+
+# When verify-host checks the filter guard.
+foreach ($c in @(
+        @($true, $false, $false, $false, 'skip'), @($true, $false, $false, $true, 'check'), @($true, $false, $true, $false, 'check'),
+        @($false, $false, $false, $false, 'check'), @($false, $false, $false, $true, 'check'),
+        @($true, $true, $false, $false, 'absent'), @($true, $true, $false, $true, 'absent'), @($true, $true, $true, $true, 'absent'))) {
+    Expect "filter mode: SwitchOnly=$($c[0]) BeforeGuard=$($c[1]) Require=$($c[2]) Record=$($c[3])" (Get-EoFilterGuardMode $c[0] $c[1] $c[2] $c[3]) $c[4]
+}
+
+# 01c's preconditions: it refuses before any change.
+$gRec = $goodJson | ConvertFrom-Json
+$gCur = FCur @{ Adapter = @{ InterfaceGuid = $guid; MacAddress = '00-15-5D-AA-BB-CC'; SettingId = $guid }; RuleDescriptions = (Cur @{}).RuleDescriptions }
+$leaf = Split-Path -Leaf $EO.GuardState
+Expect 'filter preconditions: 01b recorded and verified, clean inventory passes' (@(Test-EoFilterPreconditions $gRec $gCur $false @($leaf) $ext).Count) 0
+$fpre = [ordered]@{
+    '01c record already exists'      = @($gRec, $gCur, $true, @($leaf), $ext, 'an earlier 01c was not undone')
+    'no 01b record'                  = @($null, $gCur, $false, @(), $ext, 'no host guard (01b) record')
+    'adapter differs from 01b'       = @($gRec, (FCur @{ Adapter = @{ InterfaceGuid = '{00000000-0000-4000-8000-000000000009}'; MacAddress = '00-15-5D-AA-BB-CC'; SettingId = $guid }; RuleDescriptions = (Cur @{}).RuleDescriptions }), $false, @($leaf), $ext, 'host guard record: adapter InterfaceGuid')
+    'switch from another instance'   = @($gRec, (FCur @{ SwitchId = '99999999-2222-3333-4444-555555555555'; Adapter = $gCur.Adapter; RuleDescriptions = (Cur @{}).RuleDescriptions }), $false, @($leaf), $ext, 'another provisioning instance')
+    'adapter missing'                = @($gRec, (FCur @{ Adapter = $null; RuleDescriptions = (Cur @{}).RuleDescriptions }), $false, @($leaf), $ext, 'or its host adapter is missing')
+    'a stray file in the folder'     = @($gRec, $gCur, $false, @($leaf, 'filter-guard-state.json.tmp'), $ext, "holds 'filter-guard-state.json.tmp'")
+    'an unknown filter enabled'      = @($gRec, (FCur @{ Adapter = $gCur.Adapter; RuleDescriptions = (Cur @{}).RuleDescriptions; VisibleBindings = @{ 'ms_tcpip' = $true; 'WINPCAP' = $true } }), $false, @($leaf), $ext, 'WINPCAP is enabled')
+    'NDIS Capture on the switch'     = @($gRec, $gCur, $false, @($leaf), @(@{ Name = 'Microsoft NDIS Capture'; Vendor = 'Microsoft'; Enabled = 'True' }), 'NDIS Capture')
+}
+foreach ($k in $fpre.Keys) {
+    $a = $fpre[$k]; $threw = $false; $msgs = @()
+    try { $msgs = @(Test-EoFilterPreconditions $a[0] $a[1] $a[2] $a[3] $a[4]) } catch { $threw = $true; $msgs = @("threw: $($_.Exception.Message)") }
+    $hit = @($msgs | Where-Object { $_.Contains($a[5]) })
+    Expect "filter preconditions: $k refused for its own reason" ($hit.Count -gt 0 -and -not $threw) $true
+    if (-not $hit.Count) { $msgs | ForEach-Object { Write-Host "     $_" } }
+}
+
+# The only place a binding changes: targets only, on the host vNIC only, nothing
+# changed when any id is not a target.
+& {
+    $script:calls = New-Object System.Collections.Generic.List[string]
+    function Enable-NetAdapterBinding { [CmdletBinding()] param($Name, $ComponentID) $script:calls.Add("enable $Name $ComponentID") }
+    function Disable-NetAdapterBinding { [CmdletBinding()] param($Name, $ComponentID) $script:calls.Add("disable $Name $ComponentID") }
+    foreach ($c in @(
+            @(@($npc, $vbx), $false, "disable $($EO.HostIf) $npc;disable $($EO.HostIf) $vbx"),
+            @(@($npc), $true, "enable $($EO.HostIf) $npc"),
+            @(@(), $false, ''),
+            @(@('ms_tcpip'), $false, 'refused:'),
+            @(@($npc, 'ms_tcpip'), $true, 'refused:'),
+            @(@('insecure_npcap'), $false, 'refused:'))) {
+        $script:calls.Clear(); $got = ''
+        try { Set-EoFilterBindings $c[0] -Enable:$c[1]; $got = $script:calls -join ';' } catch { $got = "refused:$($script:calls -join ';')" }
+        Expect "filter set: '$($c[0] -join ',')' enable=$($c[1])" $got $c[2]
+    }
+}
+
+# Structure: in the 01c scripts and the verifier, every call to a function that
+# returns a list sits directly in @(), so 0 or 1 results cannot break .Count under
+# StrictMode (D-2); and 01c verifies with the filter guard required.
+& {
+    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
+    foreach ($f in '01c-filter-guard.ps1', 'undo-01c-filter-guard.ps1', 'verify-host.ps1', '_guard.ps1') {
+        $t = $null; $e = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir $f), [ref]$t, [ref]$e)
+        # verify-host reads one known binding (ms_tcpip6) as a single object, never counted.
+        $fns = if ($f -eq 'verify-host.ps1') { @($listFns | Where-Object { $_ -ne 'Get-NetAdapterBinding' }) } else { $listFns }
+        $calls = @($ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -in $fns }, $true))
+        $bare = @($calls | Where-Object {
+                $q = $_.Parent; $ok = $false
+                # A call inside the expression of an @( ) in a pipeline, a subexpression or an if inside @().
+                for ($i = 0; $i -lt 6 -and $q; $i++) { if ($q -is [System.Management.Automation.Language.ArrayExpressionAst]) { $ok = $true; break }; if ($q -is [System.Management.Automation.Language.AssignmentStatementAst] -or $q -is [System.Management.Automation.Language.FunctionDefinitionAst]) { break }; $q = $q.Parent }
+                -not $ok -and -not ($_.Parent.Parent -is [System.Management.Automation.Language.ForEachStatementAst]) })
+        Expect "filter structure: $f has $($calls.Count) list call(s), none outside @()" (($bare | ForEach-Object { "$($_.Extent.StartLineNumber): $($_.Extent.Text)" }) -join ' | ') ''
+    }
+    $t = $null; $e = $null
+    $c01 = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir '01c-filter-guard.ps1'), [ref]$t, [ref]$e)
+    $v = @($c01.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and "$($n.CommandElements[0])" -match 'verify-host' }, $true) | ForEach-Object { "$($_.Extent.Text)" })
+    Expect 'filter structure: 01c verifies before (SwitchOnly) and after (RequireFilterGuard)' (@($v | Where-Object { $_ -match '-SwitchOnly$' }).Count -eq 1 -and @($v | Where-Object { $_ -match '-SwitchOnly -RequireFilterGuard$' }).Count -eq 1) $true
+    $bindingCalls = @($c01.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -match 'NetAdapterBinding$' -and $n.GetCommandName() -ne 'Get-NetAdapterBinding' }, $true))
+    Expect 'filter structure: 01c changes bindings only through Set-EoFilterBindings' $bindingCalls.Count 0
+    $u01 = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir 'undo-01c-filter-guard.ps1'), [ref]$t, [ref]$e)
+    $bindingCalls = @($u01.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -match 'NetAdapterBinding$' -and $n.GetCommandName() -ne 'Get-NetAdapterBinding' }, $true))
+    Expect 'filter structure: undo-01c changes bindings only through Set-EoFilterBindings' $bindingCalls.Count 0
+
+    # verify-host's filter record line, run as shipped for 0, 1 and 3 problems and an unreadable record.
+    $vast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir 'verify-host.ps1'), [ref]$t, [ref]$e)
+    $assigns = @($vast.FindAll({ param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and "$($n.Left)" -eq '$fp' }, $true))
+    Expect 'filter problems: verify-host.ps1 assigns $fp exactly once' $assigns.Count 1
+    foreach ($case in @(@(0, $null, '0|'), @(1, $null, '1|problem 1'), @(3, $null, '3|problem 1; problem 2; problem 3'), @(0, 'bad json', '1|filter record unreadable: bad json'))) {
+        $got = ''
+        try {
+            $got = & {
+                Set-StrictMode -Version 3.0
+                $ErrorActionPreference = 'Stop'
+                $N = $case[0]
+                function Test-EoFilterState($State, $Current, $Gid) { $p = New-Object System.Collections.Generic.List[string]; for ($i = 1; $i -le $N; $i++) { $p.Add("problem $i") }; return $p }
+                $ferr = $case[1]; $fstate = $null; $fcur = $null; $gid = $null
+                . ([scriptblock]::Create($assigns[0].Extent.Text))
+                "$($fp.Count)|$($fp -join '; ')"
+            }
+        } catch { $got = "threw: $($_.Exception.Message)" }
+        Expect "filter problems: shipped line, $($case[0]) problem(s), record error '$($case[1])'" $got $case[2]
     }
 }
 

@@ -2,7 +2,7 @@
 
 This folder holds every script that changes RH-DT-M3 or the `eo-l2` guest. Each changing script prints its plan and waits until the operator types the step name; anything else stops it before a change. Each one writes a transcript, plus a before-and-after host snapshot with the differences, to `%USERPROFILE%\eo-l2-evidence` (host) or `/var/log/eo-l2` (guest).
 
-The five approved host changes, and the script for each:
+The host changes, and the script for each:
 
 | Approved change | Script | Privilege | Undo |
 |---|---|---|---|
@@ -12,6 +12,7 @@ The five approved host changes, and the script for each:
 | 4. Temporary setup NIC on the Default Switch | `host/04a-add-setup-nic.ps1`, removed by `host/04b-remove-setup-nic.ps1` | Elevated | 04b is the undo, and it is mandatory |
 | 5. Passphrase-protected key and `Host eo-l2` entry | `host/05-ssh.ps1` | Standard user | `host/undo-05-ssh.ps1` |
 | 6. Host guard on `eo-l2-int` (NetBIOS off; outbound UDP, ICMPv4 and TCP other than port 22 blocked), approved 2026-10-29 | `host/01b-host-guard.ps1` | Elevated | `host/undo-01b-host-guard.ps1` (restores NetBIOS only from the value 01b recorded; refuses otherwise) |
+| 7. Filter guard on `eo-l2-int` (B9-R1): the Npcap (`INSECURE_NPCAP`) and VirtualBox (`oracle_VBoxNetLwf`) NDIS filters unbound from the host vNIC only. **Implemented for review; not approved to run** | `host/01c-filter-guard.ps1` | Elevated | `host/undo-01c-filter-guard.ps1` (re-enables only the targets 01c recorded as enabled; refuses otherwise) |
 
 Read-only helpers: `host/00-preflight.ps1`, `host/verify-host.ps1`, `host/b9-targets.ps1`.
 
@@ -25,7 +26,7 @@ Every line marked **(you)** is typed by the operator in an attended session. "El
 
 1. **Preflight** (elevated, read-only): `powershell -ExecutionPolicy Bypass -File .\00-preflight.ps1`. Stop if it prints `PREFLIGHT FAILED`.
 2. **ISO** (normal PowerShell): `.\03-fetch-iso.ps1`. It stops unless `SHA256SUMS` is signed by the Debian CD key `DF9B 9C49 EAA9 2984 3258 9D76 DA87 E80D 6294 BE9B` and the ISO matches.
-3. **Switch** (elevated): `.\01-switch.ps1`, then the host guard: `.\01b-host-guard.ps1`.
+3. **Switch** (elevated): `.\01-switch.ps1`, then the host guard: `.\01b-host-guard.ps1`, then, once approved, the filter guard: `.\01c-filter-guard.ps1`. 01c refuses unless 01b is recorded and `verify-host.ps1 -SwitchOnly` passes. From 01c on, `verify-host.ps1` checks the filter guard whenever its record exists, and the full check (04b, B9) always requires it.
 4. **VM** (elevated): `.\02-vm.ps1`. It checks the ISO's signature again and shows its hash; compare it with the published `SHA256SUMS` before typing `vm`. The VM is created switched off.
 5. **SSH key** (normal PowerShell): `.\05-ssh.ps1`. Choose the passphrase when asked. It stops if `ssh -G eo-l2` shows anything but the planned settings.
 6. **Setup NIC** (elevated): `.\04a-add-setup-nic.ps1`.
@@ -103,4 +104,27 @@ Rerun steps 15 to 16, each time with fresh targets copied in, after every Window
 
 ## Rolling back
 
-To undo everything, run in this order: `undo-02-vm.ps1` (elevated; deletes the guest), `undo-01b-host-guard.ps1` if 01b ran (elevated), `undo-01-switch.ps1` (elevated), `undo-05-ssh.ps1` (normal), then delete `%USERPROFILE%\Downloads\eo-l2-iso`. Keep `%USERPROFILE%\eo-l2-evidence` as the record. Each undo prints its own before-and-after diff.
+To undo everything, run in this order: `undo-02-vm.ps1` (elevated; deletes the guest), `undo-01c-filter-guard.ps1` if 01c ran (elevated), `undo-01b-host-guard.ps1` if 01b ran (elevated), `undo-01-switch.ps1` (elevated), `undo-05-ssh.ps1` (normal), then delete `%USERPROFILE%\Downloads\eo-l2-iso`. Keep `%USERPROFILE%\eo-l2-evidence` as the record. Each undo prints its own before-and-after diff.
+
+`undo-01b-host-guard.ps1` refuses while the 01c record exists and the adapter is present, and `undo-01-switch.ps1` refuses while either record exists.
+
+### The filter guard record and its undo
+
+01c writes `%ProgramData%\eo-l2\filter-guard-state.json` before it changes a binding, in the folder 01b protected (Administrators and SYSTEM only, owned by Administrators, no link). It holds, per target, whether it was bound and whether it was enabled, plus the computer, switch id, adapter GUID, MAC and SettingID and the 01b instance it builds on. An evidence copy goes to `%USERPROFILE%\eo-l2-evidence`.
+
+- If 01c stops after writing the record, the record still holds every original value. `undo-01c-filter-guard.ps1` then re-enables only the targets the record shows as enabled before 01c and skips any already as recorded, so it also completes a 01c that stopped part way.
+- The undo refuses before any change when the record is missing, malformed, unprotected or for another computer, switch, adapter or 01b instance; when a target that was enabled is no longer bound (it cannot be restored); or when a target that was off before 01c is enabled now (something else changed it).
+- It closes the record (moves it to the evidence folder) only when every target reads back as recorded and no other binding on the adapter changed. Otherwise the record stays.
+- Declining at its `undo-filter-guard` prompt changes nothing, so its plan can be reviewed ahead of time.
+- If the switch is already gone, it only closes the record.
+
+### Residual limits of the filter guard
+
+01c removes two known paths onto the isolated segment from unprivileged software. It is not a complete boundary against the host, and it does not try to be:
+
+- **Administrators and privileged processes.** Anything running elevated or as SYSTEM can re-bind the filters, load another NDIS filter or protocol driver, or open the adapter by other means. verify-host detects a re-bound target, a new enabled component in the default binding view and an enabled vSwitch extension, but only when it runs; it does not prevent them.
+- **Hidden bindings.** The allowed list covers the default binding view, as inventoried on 2026-11-01. Hidden components (for example the WFP and NDIS Capture lightweight filters) are not allowlisted until a read-only `-AllBindings` inventory is reviewed. The two targets are checked in both views.
+- **Built-in capture and mirroring.** `pktmon`, `netsh trace` and NDIS Capture (all administrator-only), and Hyper-V port mirroring on a VM adapter, can still see eo-l2-int traffic. verify-host fails if an extension other than the Windows Filtering Platform is enabled on the switch, which covers NDIS Capture on the switch, not host-wide tracing.
+- **Other NDIS paths.** `ms_l2bridge` and `ms_l1vhlwf` stay bound (Windows components needed by the vNIC); a network bridge built over eo-l2-int, or a kernel debugger over the network (KDNET; a hidden "Ethernet (Kernel Debugger)" adapter exists, check with an elevated `bcdedit /enum`), is outside 01c.
+- **Other adapters and software.** Npcap stays installed with `AdminOnly=0`, so standard users can still capture on every other adapter; changing that (Npcap reinstall with admin-only mode) is a separate owner decision. The VirtualBox and BlueStacks kernel drivers stay loaded next to Hyper-V.
+- **Drift.** A reinstall or upgrade of Npcap or VirtualBox, a Windows network reset or feature update, or recreating the switch can re-bind the filters. verify-host runs before every later step and in B9, so drift fails it; 01-switch.ps1 does not yet unbind the targets on a newly created adapter (a separate reviewed change).

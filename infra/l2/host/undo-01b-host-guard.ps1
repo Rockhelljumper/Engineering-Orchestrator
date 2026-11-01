@@ -6,7 +6,8 @@
 # instance's tag. It checks all of that again after the plan is confirmed. It never
 # falls back to a default NetBIOS value.
 # If the switch is already gone (undo-01 ran), there is no adapter to restore and
-# only the record is closed. Needs an elevated PowerShell.
+# only the record is closed. While the adapter exists it refuses until the filter
+# guard (01c) is undone. Needs an elevated PowerShell.
 
 . (Join-Path $PSScriptRoot '_common.ps1')
 Assert-EoAdmin
@@ -16,6 +17,9 @@ try {
     $state = $null
     try { $state = Read-EoGuardState } catch { throw "Refusing to undo 01b; nothing was changed: $($EO.GuardState) cannot be used ($($_.Exception.Message))." }
     $cur = Get-EoGuardCurrent
+    # Undo order: 01c before 01b. While the filter guard is recorded and the adapter
+    # exists, its record names this 01b instance, so this record must stay.
+    if ((Test-Path -LiteralPath $EO.FilterState) -and $cur.Adapter) { throw "Refusing to undo 01b; nothing was changed: the filter guard (01c) is still recorded in $($EO.FilterState). Run undo-01c-filter-guard.ps1 first." }
     $problems = @(Test-EoGuardState $state $cur)
     if ($problems.Count) {
         throw "Refusing to undo 01b; nothing was changed: $($problems -join '; '). Restore NetBIOS on '$($EO.HostIf)' by hand only after checking its original value (adapter Properties > IPv4 > Advanced > WINS)."
@@ -38,6 +42,7 @@ try {
     $cur2 = Get-EoGuardCurrent
     $problems = @(Test-EoGuardState $state2 $cur2)
     if ("$(Get-EoProp $state2 'instanceId')" -cne "$($state.instanceId)") { $problems += 'the record changed while the plan waited' }
+    if ((Test-Path -LiteralPath $EO.FilterState) -and $cur2.Adapter) { $problems += "the filter guard (01c) is recorded in $($EO.FilterState); run undo-01c-filter-guard.ps1 first" }
     if ([bool]$cur2.Adapter -ne [bool]$cur.Adapter -or ($cur.Adapter -and "$($cur2.Adapter.InterfaceGuid)" -ne "$($cur.Adapter.InterfaceGuid)")) { $problems += 'the host adapter changed while the plan waited' }
     if ($problems.Count) { throw "Refusing to undo 01b; nothing was changed: $($problems -join '; ')" }
     $cur = $cur2; $rules = @(Get-GuardRules)

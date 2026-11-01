@@ -7,9 +7,12 @@
 #   in the active policy with their address and interface filters, with Windows
 #   Firewall on, applying local rules, not exempting eo-l2-int, and no enabled rule
 #   that may override block rules. -SwitchOnly runs only the switch and host
-#   checks (used by 01 and 01b, before the VM exists). The host guard (01b) is
+#   checks (used by 01, 01b and 01c, before the VM exists). The host guard (01b) is
 #   required; only 01-switch.ps1, which runs before 01b, passes -BeforeGuard.
-param([switch]$NoLog, [switch]$SwitchOnly, [switch]$BeforeGuard)
+#   The filter guard (01c, B9-R1) is checked whenever its record exists, always in
+#   the full check (B9), and with -RequireFilterGuard (01c's own verification);
+#   only -SwitchOnly before 01c skips it, and -BeforeGuard requires its absence.
+param([switch]$NoLog, [switch]$SwitchOnly, [switch]$BeforeGuard, [switch]$RequireFilterGuard)
 
 . (Join-Path $PSScriptRoot '_common.ps1')
 Assert-EoAdmin
@@ -45,8 +48,9 @@ try {
     $gstate = $null; $gerr = $null
     try { $gstate = Read-EoGuardState } catch { $gerr = $_.Exception.Message }
     $gfile = Test-Path -LiteralPath $EO.GuardState
-    if ($BeforeGuard -and ($present.Count -or $gfile)) {
-        Row 'Host guard not present yet (-BeforeGuard)' $false ("present: $($present -join ', '); state record: $gfile")
+    $ffile = Test-Path -LiteralPath $EO.FilterState
+    if ($BeforeGuard -and ($present.Count -or $gfile -or $ffile)) {
+        Row 'Host guard not present yet (-BeforeGuard)' $false ("present: $($present -join ', '); state record: $gfile; filter guard record: $ffile")
     } elseif (-not $BeforeGuard) {
         Row 'Host guard: all three rules present (none or all)' ($present.Count -eq $EO.GuardRules.Count) ("present: " + ($present -join ', '))
         foreach ($n in $specs.Guard.Keys) {
@@ -63,6 +67,25 @@ try {
         Row 'Host guard: NetBIOS over TCP/IP off on eo-l2-int' ("$nb" -eq '2') "TcpipNetbiosOptions=$nb"
     } else {
         Write-Host 'Host guard (01b) not checked: -BeforeGuard (step 01 only).'
+    }
+    $fmode = Get-EoFilterGuardMode $SwitchOnly $BeforeGuard $RequireFilterGuard $ffile
+    if ($fmode -eq 'check') {
+        $fcur = Get-EoFilterCurrent
+        $fb = @(Test-EoFilterBindings $fcur.Bindings)
+        Row 'Filter guard: Npcap and VirtualBox filters absent or off on eo-l2-int' ($fb.Count -eq 0) ($fb -join '; ')
+        $fstate = $null; $ferr = $null
+        try { $fstate = Read-EoFilterState } catch { $ferr = $_.Exception.Message }
+        $gid = if ($gstate) { "$(Get-EoProp $gstate 'instanceId')" } else { $null }
+        # @() around the whole if, as for $sp above.
+        $fp = @(if ($ferr) { "filter record unreadable: $ferr" } else { Test-EoFilterState $fstate $fcur $gid })
+        Row 'Filter guard: record valid, for this computer, switch, adapter and host guard instance' ($fp.Count -eq 0) ($fp -join '; ')
+        $fu = @(Test-EoUnknownBindings $fcur.VisibleBindings)
+        Row 'Filter guard: no other enabled component on eo-l2-int outside the allowed list' ($fu.Count -eq 0) $(if ($fu.Count) { $fu -join '; ' } else { (@($fcur.VisibleBindings.Keys | Where-Object { $fcur.VisibleBindings[$_] } | Sort-Object) -join ', ') })
+        $fe = @(); $fx = @()
+        try { $fx = @(@(Get-VMSwitchExtension -VMSwitchName $EO.SwitchName) | ForEach-Object { @{ Name = "$($_.Name)"; Vendor = "$($_.Vendor)"; Enabled = "$($_.Enabled)" } }); $fe = @(Test-EoSwitchExtensions $fx) } catch { $fe = @("switch extensions not read: $($_.Exception.Message)") }
+        Row 'Filter guard: only allowed vSwitch extensions enabled on eo-l2-int (no NDIS Capture)' ($fe.Count -eq 0) $(if ($fe.Count) { $fe -join '; ' } else { (@($fx | Where-Object { $_.Enabled -eq 'True' } | ForEach-Object { $_.Name }) -join ', ') })
+    } elseif ($fmode -eq 'skip') {
+        Write-Host 'Filter guard (01c) not checked: -SwitchOnly and no 01c record yet. It is checked once 01c has run, and always in the full (B9) verification.'
     }
     $known = @($specs.Inbound.Keys) + @($specs.Guard.Keys)
     $unexpected = @(Get-NetFirewallRule -PolicyStore ActiveStore -Group $EO.FwGroup -ErrorAction SilentlyContinue | Where-Object { $_.Name -notin $known })

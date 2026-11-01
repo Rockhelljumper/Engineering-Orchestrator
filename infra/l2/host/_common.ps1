@@ -50,6 +50,16 @@ $EO = [ordered]@{
     # What 01b changed, written before it changes anything; the undo needs it.
     GuardDir     = Join-Path $env:ProgramData 'eo-l2'
     GuardState   = Join-Path $env:ProgramData 'eo-l2\host-guard-state.json'
+    # Filter guard (01c, B9-R1): third-party NDIS filters that can capture or send
+    # raw frames below the firewall, unbound from the host vNIC only. 01c and its
+    # undo change these component IDs on $EO.HostIf and nothing else.
+    FilterTargets = @('INSECURE_NPCAP', 'oracle_VBoxNetLwf')
+    # Components that may stay enabled on the host vNIC (inventory of 2026-11-01,
+    # after 01 removed client, server, discovery and IPv6).
+    FilterAllowed = @('ms_tcpip', 'ms_pacer', 'ms_l2bridge', 'ms_l1vhlwf')
+    # The only vSwitch extension that may be enabled on eo-l2-int.
+    SwitchExtAllowed = @('Microsoft Windows Filtering Platform')
+    FilterState  = Join-Path $env:ProgramData 'eo-l2\filter-guard-state.json'
 }
 
 . (Join-Path $PSScriptRoot '_guard.ps1')
@@ -158,7 +168,7 @@ function Confirm-EoPlan([string]$Step, [string[]]$Lines) {
 }
 
 # A JSON snapshot of the host state the steps must not disturb. Taken before and
-# after every changing host step (01, 01b, 02, 04a, 04b and the undos; 03 and 05
+# after every changing host step (01, 01b, 01c, 02, 04a, 04b and the undos; 03 and 05
 # change only files in the user profile); Compare-EoSnapshot prints every
 # difference for the operator to read.
 function Get-EoSnapshot {
@@ -176,6 +186,11 @@ function Get-EoSnapshot {
     $sha            = [Security.Cryptography.SHA256]::Create()
     $s.firewall     = [ordered]@{ count = $rules.Count; sha256 = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes(($rules -join "`n")))) -replace '-', '').ToLower(); eoRules = @(Get-NetFirewallRule -Group $EO.FwGroup -ErrorAction SilentlyContinue | ForEach-Object { $_.DisplayName }) }
     $s.services     = @(Get-Service -Name vmms, vmcompute, HvHost, LxssManager, WSLService, com.docker.service, VBoxSDS, ssh-agent -ErrorAction SilentlyContinue | Sort-Object Name | ForEach-Object { [ordered]@{ name = $_.Name; status = "$($_.Status)"; start = "$($_.StartType)" } })
+    # The host vNIC's bindings in full, and a digest of every other adapter's, so the
+    # 01c diff shows that only the filter targets on eo-l2-int changed.
+    $s.eoBindings   = @(@(Get-NetAdapterBinding -Name $EO.HostIf -AllBindings -ErrorAction SilentlyContinue) | Sort-Object ComponentID | ForEach-Object { "$($_.ComponentID)|$($_.Enabled)" })
+    $other          = @(@(Get-NetAdapterBinding -IncludeHidden -AllBindings -ErrorAction SilentlyContinue) | Where-Object { $_.Name -ne $EO.HostIf } | ForEach-Object { "$($_.Name)|$($_.ComponentID)|$($_.Enabled)" } | Sort-Object)
+    $s.otherBindings = [ordered]@{ count = $other.Count; sha256 = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes(($other -join "`n")))) -replace '-', '').ToLower() }
     $s.vmHost       = [ordered]@{ enhancedSession = (Get-VMHost).EnableEnhancedSessionMode; vhdPath = (Get-VMHost).VirtualHardDiskPath; vmPath = (Get-VMHost).VirtualMachinePath }
     return $s
 }
