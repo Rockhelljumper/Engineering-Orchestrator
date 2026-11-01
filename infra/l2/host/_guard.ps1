@@ -272,10 +272,13 @@ function Get-EoFilterCurrent {
     $g = Get-EoGuardCurrent
     $b = @{}; $v = @{}; $names = @{}
     if ($g.Adapter) {
-        foreach ($x in @(Get-NetAdapterBinding -Name $EO.HostIf -AllBindings -ErrorAction SilentlyContinue)) {
+        # A read error stops the caller: empty bindings would read as "targets absent".
+        foreach ($x in @(Get-NetAdapterBinding -Name $EO.HostIf -AllBindings -ErrorAction Stop)) {
             $b["$($x.ComponentID)"] = [bool]$x.Enabled; $names["$($x.ComponentID)"] = "$($x.DisplayName)"
         }
-        foreach ($x in @(Get-NetAdapterBinding -Name $EO.HostIf -ErrorAction SilentlyContinue)) { $v["$($x.ComponentID)"] = [bool]$x.Enabled }
+        foreach ($x in @(Get-NetAdapterBinding -Name $EO.HostIf -ErrorAction Stop)) { $v["$($x.ComponentID)"] = [bool]$x.Enabled }
+        # IPv4 is always bound to the host vNIC; without it in both views the read is not trusted.
+        if (-not $b.ContainsKey('ms_tcpip') -or -not $v.ContainsKey('ms_tcpip')) { throw "the bindings of '$($EO.HostIf)' did not read completely (ms_tcpip missing)" }
     }
     return @{ Computer = $g.Computer; SwitchId = $g.SwitchId; Adapter = $g.Adapter; RuleDescriptions = $g.RuleDescriptions
         Bindings = $b; VisibleBindings = $v; BindingNames = $names }

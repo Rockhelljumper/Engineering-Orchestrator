@@ -15,7 +15,7 @@
 Assert-EoAdmin
 
 $stamp = Start-EoLog 'filter-guard'
-$before = $null
+$before = $null; $changed = $false
 try {
     # Every precondition is read-only; anything wrong stops here.
     function Get-Preconditions {
@@ -82,7 +82,11 @@ try {
     $state | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 -LiteralPath $tmp
     Move-Item -LiteralPath $tmp -Destination $EO.FilterState
     Invoke-EoNative icacls.exe @($EO.FilterState, '/setowner', '*S-1-5-32-544') | Write-Host
-    Copy-Item -LiteralPath $EO.FilterState (Join-Path $EO.Evidence "$stamp-filter-guard-state.json")
+    $evid = Join-Path $EO.Evidence "$stamp-filter-guard-state.json"
+    Copy-Item -LiteralPath $EO.FilterState $evid
+    $h1 = (Get-FileHash -Algorithm SHA256 -LiteralPath $EO.FilterState).Hash; $h2 = (Get-FileHash -Algorithm SHA256 -LiteralPath $evid).Hash
+    Write-Host "record SHA256 $h1; evidence copy SHA256 $h2"
+    if ($h1 -ne $h2) { throw 'The evidence copy of the filter guard record does not match it.' }
     $rec = Read-EoFilterState
     $check = @(Test-EoFilterState $rec (Get-EoFilterCurrent) "$($pre2.Guard.instanceId)")
     $recPlan = @(@($rec.bindings) | ForEach-Object { "$($_.componentId)=$($_.enabledBefore)" }) -join ','
@@ -91,6 +95,7 @@ try {
     if ($check.Count) { throw "The filter guard record does not read back cleanly: $($check -join '; ')" }
 
     # The only binding change: the targets that are enabled, on the host vNIC only.
+    $changed = $true
     Set-EoFilterBindings $change
 
     $now = Get-EoFilterCurrent
@@ -105,12 +110,19 @@ try {
 
     $after = Save-EoSnapshot $stamp 'after'
     Compare-EoSnapshot $before $after
+    # Enforced, not only printed: no other adapter's bindings changed, and on eo-l2-int
+    # only the target entries did.
+    $sb = Get-Content -LiteralPath $before -Raw | ConvertFrom-Json; $sa = Get-Content -LiteralPath $after -Raw | ConvertFrom-Json
+    if ("$($sb.otherBindings.sha256)" -ne "$($sa.otherBindings.sha256)" -or "$($sb.otherBindings.count)" -ne "$($sa.otherBindings.count)") { throw "Bindings on another adapter changed during 01c (digest $($sb.otherBindings.sha256) -> $($sa.otherBindings.sha256))." }
+    $nonTarget = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -notin $EO.FilterTargets }) -join ',' }
+    if ((& $nonTarget $sb.eoBindings) -ne (& $nonTarget $sa.eoBindings)) { throw "Bindings on '$($EO.HostIf)' other than the targets changed during 01c." }
     & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly -RequireFilterGuard
     if ($LASTEXITCODE -ne 0) { throw 'Host-side verification failed.' }
     Write-Host 'STEP 01c DONE: Npcap and VirtualBox filters unbound from eo-l2-int and verified.'
 } catch {
     Write-Host "STEP 01c STOPPED: $($_.Exception.Message)"
-    if ($before) { Write-Host 'Changes may be partly made; the record keeps every original value. Review the transcript, then run undo-01c-filter-guard.ps1 (elevated, attended) to restore them.' }
+    if ($changed) { Write-Host 'Bindings may be partly changed; the record keeps every original value. Review the transcript, then run undo-01c-filter-guard.ps1 (elevated, attended) to restore them.' }
+    elseif ($before) { Write-Host "No binding was changed. If $($EO.FilterState) exists, review it, then run undo-01c-filter-guard.ps1 (elevated, attended) to close it." }
     throw
 } finally {
     Stop-EoLog

@@ -571,6 +571,17 @@ foreach ($k in $fpre.Keys) {
     $bindingCalls = @($u01.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -match 'NetAdapterBinding$' -and $n.GetCommandName() -ne 'Get-NetAdapterBinding' }, $true))
     Expect 'filter structure: undo-01c changes bindings only through Set-EoFilterBindings' $bindingCalls.Count 0
 
+    # Order in the scripts: preconditions read before and again after the typed
+    # confirmation, the record moved into place before any binding changes, and the
+    # binding change after the second read.
+    function Offsets($Ast, [string]$Cmd, [string]$Match = '') { @($Ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -eq $Cmd -and "$($n.Extent.Text)" -match $Match }, $true) | ForEach-Object { $_.Extent.StartOffset } | Sort-Object) }
+    $conf = @(Offsets $c01 'Confirm-EoPlan'); $pre = @(Offsets $c01 'Get-Preconditions'); $mv = @(Offsets $c01 'Move-Item' 'FilterState'); $set = @(Offsets $c01 'Set-EoFilterBindings')
+    Expect 'filter order: 01c reads preconditions once before and once after its confirmation' ($conf.Count -eq 1 -and $pre.Count -eq 2 -and $pre[0] -lt $conf[0] -and $pre[1] -gt $conf[0]) $true
+    Expect 'filter order: 01c moves the record into place before it changes a binding' ($mv.Count -eq 1 -and $set.Count -eq 1 -and $mv[0] -gt $pre[1] -and $mv[0] -lt $set[0]) $true
+    $conf = @(Offsets $u01 'Confirm-EoPlan'); $pre = @(Offsets $u01 'Get-UndoFacts'); $set = @(Offsets $u01 'Set-EoFilterBindings'); $mv = @(Offsets $u01 'Move-Item' 'FilterState')
+    Expect 'filter order: undo-01c reads its facts once before and once after its confirmation' ($conf.Count -eq 1 -and $pre.Count -eq 2 -and $pre[0] -lt $conf[0] -and $pre[1] -gt $conf[0]) $true
+    Expect 'filter order: undo-01c changes bindings after the second read and closes the record after that' ($set.Count -eq 1 -and $mv.Count -eq 1 -and $set[0] -gt $pre[1] -and $mv[0] -gt $set[0]) $true
+
     # verify-host's filter record line, run as shipped for 0, 1 and 3 problems and an unreadable record.
     $vast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir 'verify-host.ps1'), [ref]$t, [ref]$e)
     $assigns = @($vast.FindAll({ param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and "$($n.Left)" -eq '$fp' }, $true))

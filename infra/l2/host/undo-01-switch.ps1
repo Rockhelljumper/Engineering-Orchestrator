@@ -16,6 +16,8 @@ try {
         "Remove-NetFirewallRule -Group $($EO.FwGroup) ($(@(Get-NetFirewallRule -Group $EO.FwGroup -ErrorAction SilentlyContinue).Count) rules)"
         "Remove-VMSwitch -Name $($EO.SwitchName) (removes '$($EO.HostIf)' and $($EO.HostIp))"
     )
+    # Checked again after the plan: a guard step may have run while it waited.
+    if ((Test-Path -LiteralPath $EO.FilterState) -or (Test-Path -LiteralPath $EO.GuardState)) { throw 'A host guard (01b) or filter guard (01c) record appeared while the plan waited; nothing was changed. Undo them first.' }
     $before = Save-EoSnapshot $stamp 'before'
     Get-NetFirewallRule -Group $EO.FwGroup -ErrorAction SilentlyContinue | Remove-NetFirewallRule
     if (Get-VMSwitch -Name $EO.SwitchName -ErrorAction SilentlyContinue) { Remove-VMSwitch -Name $EO.SwitchName -Force }

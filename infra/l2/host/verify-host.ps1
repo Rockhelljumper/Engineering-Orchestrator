@@ -70,16 +70,18 @@ try {
     }
     $fmode = Get-EoFilterGuardMode $SwitchOnly $BeforeGuard $RequireFilterGuard $ffile
     if ($fmode -eq 'check') {
-        $fcur = Get-EoFilterCurrent
-        $fb = @(Test-EoFilterBindings $fcur.Bindings)
+        $fcur = $null; $fread = $null
+        try { $fcur = Get-EoFilterCurrent } catch { $fread = "bindings not read: $($_.Exception.Message)" }
+        if (-not $fcur) { $fcur = @{ Computer = $env:COMPUTERNAME; SwitchId = $null; Adapter = $null; Bindings = @{}; VisibleBindings = @{} } }
+        $fb = @(if ($fread) { $fread } else { Test-EoFilterBindings $fcur.Bindings })
         Row 'Filter guard: Npcap and VirtualBox filters absent or off on eo-l2-int' ($fb.Count -eq 0) ($fb -join '; ')
         $fstate = $null; $ferr = $null
         try { $fstate = Read-EoFilterState } catch { $ferr = $_.Exception.Message }
         $gid = if ($gstate) { "$(Get-EoProp $gstate 'instanceId')" } else { $null }
         # @() around the whole if, as for $sp above.
-        $fp = @(if ($ferr) { "filter record unreadable: $ferr" } else { Test-EoFilterState $fstate $fcur $gid })
+        $fp = @(if ($ferr) { "filter record unreadable: $ferr" } elseif ($fread) { $fread } else { Test-EoFilterState $fstate $fcur $gid })
         Row 'Filter guard: record valid, for this computer, switch, adapter and host guard instance' ($fp.Count -eq 0) ($fp -join '; ')
-        $fu = @(Test-EoUnknownBindings $fcur.VisibleBindings)
+        $fu = @(if ($fread) { $fread } else { Test-EoUnknownBindings $fcur.VisibleBindings })
         Row 'Filter guard: no other enabled component on eo-l2-int outside the allowed list' ($fu.Count -eq 0) $(if ($fu.Count) { $fu -join '; ' } else { (@($fcur.VisibleBindings.Keys | Where-Object { $fcur.VisibleBindings[$_] } | Sort-Object) -join ', ') })
         $fe = @(); $fx = @()
         try { $fx = @(@(Get-VMSwitchExtension -VMSwitchName $EO.SwitchName) | ForEach-Object { @{ Name = "$($_.Name)"; Vendor = "$($_.Vendor)"; Enabled = "$($_.Enabled)" } }); $fe = @(Test-EoSwitchExtensions $fx) } catch { $fe = @("switch extensions not read: $($_.Exception.Message)") }
