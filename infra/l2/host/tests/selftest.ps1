@@ -586,7 +586,7 @@ foreach ($k in $fpre.Keys) {
     $vast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir 'verify-host.ps1'), [ref]$t, [ref]$e)
     $assigns = @($vast.FindAll({ param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and "$($n.Left)" -eq '$fp' }, $true))
     Expect 'filter problems: verify-host.ps1 assigns $fp exactly once' $assigns.Count 1
-    foreach ($case in @(@(0, $null, '0|'), @(1, $null, '1|problem 1'), @(3, $null, '3|problem 1; problem 2; problem 3'), @(0, 'bad json', '1|filter record unreadable: bad json'))) {
+    foreach ($case in @(@(0, $null, '0|', $null), @(1, $null, '1|problem 1', $null), @(3, $null, '3|problem 1; problem 2; problem 3', $null), @(0, 'bad json', '1|filter record unreadable: bad json', $null), @(0, $null, '1|bindings not read: x', 'bindings not read: x'))) {
         $got = ''
         try {
             $got = & {
@@ -594,12 +594,12 @@ foreach ($k in $fpre.Keys) {
                 $ErrorActionPreference = 'Stop'
                 $N = $case[0]
                 function Test-EoFilterState($State, $Current, $Gid) { $p = New-Object System.Collections.Generic.List[string]; for ($i = 1; $i -le $N; $i++) { $p.Add("problem $i") }; return $p }
-                $ferr = $case[1]; $fstate = $null; $fcur = $null; $gid = $null
+                $ferr = $case[1]; $fread = $case[3]; $fstate = $null; $fcur = $null; $gid = $null
                 . ([scriptblock]::Create($assigns[0].Extent.Text))
                 "$($fp.Count)|$($fp -join '; ')"
             }
         } catch { $got = "threw: $($_.Exception.Message)" }
-        Expect "filter problems: shipped line, $($case[0]) problem(s), record error '$($case[1])'" $got $case[2]
+        Expect "filter problems: shipped line, $($case[0]) problem(s), record error '$($case[1])', read error '$($case[3])'" $got $case[2]
     }
 }
 
