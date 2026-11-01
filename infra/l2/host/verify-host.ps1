@@ -56,7 +56,7 @@ try {
         $gcur = Get-EoGuardCurrent
         # @() around the whole if: an if statement's output is unrolled, so wrapping only
         # its branches gives $null or a bare string for 0 or 1 problems, and .Count on
-        # those throws under StrictMode in Windows PowerShell 5.1.
+        # those throws under StrictMode (Windows PowerShell 5.1, and PowerShell 7.6 too).
         $sp = @(if ($gerr) { "state record unreadable: $gerr" } else { Test-EoGuardState $gstate $gcur })
         Row 'Host guard: state record valid, for this computer, switch, adapter and these rules' ($sp.Count -eq 0) ($sp -join '; ')
         $nb = if ($gcur.Adapter) { $gcur.Adapter.Netbios } else { $null }

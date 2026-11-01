@@ -331,6 +331,45 @@ foreach ($k in $bad.Keys) {
     }
 }
 
+# The same 5.1 StrictMode unrolling in undo-01b-host-guard.ps1: Get-GuardRules
+# returns 0, 1 or 3 rules, and each shipped use of it, taken from the script by
+# the parser, must give a count without throwing. The rule check after the
+# restore runs on every successful undo, when 0 rules remain.
+& {
+    $utokens = $null; $uerrors = $null
+    $uast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir 'undo-01b-host-guard.ps1'), [ref]$utokens, [ref]$uerrors)
+    $fn = @($uast.FindAll({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Get-GuardRules' }, $true))
+    $assigns = @($uast.FindAll({ param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and "$($n.Left)" -eq '$rules' }, $true))
+    $conds = @($uast.FindAll({ param($n) $n -is [System.Management.Automation.Language.IfStatementAst] }, $true) | ForEach-Object { $_.Clauses } | ForEach-Object { $_.Item1 } | Where-Object { "$_" -match 'Get-GuardRules' })
+    $calls = @($uast.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -eq 'Get-GuardRules' }, $true))
+    Expect 'undo rules: Get-GuardRules defined once' $fn.Count 1
+    Expect 'undo rules: two $rules assignments and one rule check' "$($assigns.Count)/$($conds.Count)" '2/1'
+    Expect 'undo rules: every Get-GuardRules call sits in @()' (@($calls | Where-Object { -not ($_.Parent.Parent.Parent -is [System.Management.Automation.Language.ArrayExpressionAst]) }).Count) 0
+    function Invoke-UndoRules([string]$Text, [int]$N, [switch]$Condition) {
+        & {
+            Set-StrictMode -Version 3.0
+            $ErrorActionPreference = 'Stop'
+            # Serves the first $N guard rules asked for; the rest are missing.
+            function Get-NetFirewallRule { [CmdletBinding()] param($PolicyStore, $Name) if ($script:served -lt $N) { $script:served++; [pscustomobject]@{ Name = $Name } } }
+            $script:served = 0
+            . ([scriptblock]::Create($fn[0].Extent.Text))
+            if ($Condition) { [bool](. ([scriptblock]::Create($Text))) } else { . ([scriptblock]::Create($Text)); "$($rules.Count)" }
+        }
+    }
+    foreach ($n in 0, 1, 3) {
+        foreach ($a in $assigns) {
+            $got = ''
+            try { $got = Invoke-UndoRules $a.Extent.Text $n } catch { $got = "threw: $($_.Exception.Message)" }
+            Expect "undo rules: '$($a.Extent.Text)' with $n rule(s)" $got "$n"
+        }
+        foreach ($c in $conds) {
+            $got = ''
+            try { $got = Invoke-UndoRules $c.Extent.Text $n -Condition } catch { $got = "threw: $($_.Exception.Message)" }
+            Expect "undo rules: '$($c.Extent.Text)' with $n rule(s)" $got "$($n -gt 0)"
+        }
+    }
+}
+
 if ($failures.Count) { Write-Host "$($failures.Count) failure(s)"; exit 1 }
 Write-Host 'all host-script self-tests passed'
 exit 0

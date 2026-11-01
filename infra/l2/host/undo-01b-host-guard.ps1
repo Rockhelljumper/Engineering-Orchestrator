@@ -22,7 +22,9 @@ try {
     }
     # By name, in any group: a guard rule moved out of eo-l2 is still this instance's (its tag was checked).
     function Get-GuardRules { @($EO.GuardRules | ForEach-Object { Get-NetFirewallRule -PolicyStore PersistentStore -Name $_ -ErrorAction SilentlyContinue }) }
-    $rules = Get-GuardRules
+    # @() at each call: a function's output is unrolled, so 0 or 1 rule would be $null or a
+    # bare rule, and .Count on those throws under StrictMode (5.1, and 7.6 too).
+    $rules = @(Get-GuardRules)
     $restore = [uint32]$state.netbiosBefore
     Confirm-EoPlan 'undo-host-guard' @(
         "Instance $($state.instanceId), made $($state.createdAt) on $($state.computer)"
@@ -38,7 +40,7 @@ try {
     if ("$(Get-EoProp $state2 'instanceId')" -cne "$($state.instanceId)") { $problems += 'the record changed while the plan waited' }
     if ([bool]$cur2.Adapter -ne [bool]$cur.Adapter -or ($cur.Adapter -and "$($cur2.Adapter.InterfaceGuid)" -ne "$($cur.Adapter.InterfaceGuid)")) { $problems += 'the host adapter changed while the plan waited' }
     if ($problems.Count) { throw "Refusing to undo 01b; nothing was changed: $($problems -join '; ')" }
-    $cur = $cur2; $rules = Get-GuardRules
+    $cur = $cur2; $rules = @(Get-GuardRules)
     $before = Save-EoSnapshot $stamp 'before'
     $rules | Remove-NetFirewallRule
     if ($cur.Adapter) {
@@ -47,7 +49,7 @@ try {
         $now = (Get-EoGuardCurrent).Adapter.Netbios
         if ([int]$now -ne [int]$restore) { throw "NetBIOS reads $now after the restore, want $restore; the record is kept" }
     }
-    if ((Get-GuardRules).Count) { throw 'Host guard rules still present; the record is kept.' }
+    if (@(Get-GuardRules).Count) { throw 'Host guard rules still present; the record is kept.' }
     Move-Item -LiteralPath $EO.GuardState -Destination (Join-Path $EO.Evidence "host-guard-state.undone-$stamp.json")
     if (-not @(Get-ChildItem -LiteralPath $EO.GuardDir -Force).Count) { Remove-Item -LiteralPath $EO.GuardDir }
     $after = Save-EoSnapshot $stamp 'after'
