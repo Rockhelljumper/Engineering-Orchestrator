@@ -54,7 +54,10 @@ try {
             Row "Host guard rule $n exact and in force" ($bad.Count -eq 0) ($bad -join '; ')
         }
         $gcur = Get-EoGuardCurrent
-        $sp = if ($gerr) { @("state record unreadable: $gerr") } else { @(Test-EoGuardState $gstate $gcur) }
+        # @() around the whole if: an if statement's output is unrolled, so wrapping only
+        # its branches gives $null or a bare string for 0 or 1 problems, and .Count on
+        # those throws under StrictMode in Windows PowerShell 5.1.
+        $sp = @(if ($gerr) { "state record unreadable: $gerr" } else { Test-EoGuardState $gstate $gcur })
         Row 'Host guard: state record valid, for this computer, switch, adapter and these rules' ($sp.Count -eq 0) ($sp -join '; ')
         $nb = if ($gcur.Adapter) { $gcur.Adapter.Netbios } else { $null }
         Row 'Host guard: NetBIOS over TCP/IP off on eo-l2-int' ("$nb" -eq '2') "TcpipNetbiosOptions=$nb"

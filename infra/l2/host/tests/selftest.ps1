@@ -291,6 +291,46 @@ foreach ($k in $bad.Keys) {
     }
 }
 
+# On RH-DT-M3, step 01b's verify-host.ps1 crashed on "$sp.Count": the old line
+# wrapped only the branches of an if statement in @(), the if output was unrolled,
+# and .Count on $null (0 problems) or a bare string (1 problem) throws under
+# StrictMode in Windows PowerShell 5.1. This runs the shipped assignment, taken
+# from verify-host.ps1 by the parser, for 0, 1 and 3 problems and for the
+# unreadable-record branch.
+& {
+    $vtokens = $null; $verrors = $null
+    $vast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir 'verify-host.ps1'), [ref]$vtokens, [ref]$verrors)
+    $assigns = @($vast.FindAll({ param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and "$($n.Left)" -eq '$sp' }, $true))
+    Expect 'guard problems: verify-host.ps1 assigns $sp exactly once' $assigns.Count 1
+    $shipped = "$($assigns[0].Extent.Text)"
+    $old = '$sp = if ($gerr) { @("state record unreadable: $gerr") } else { @(Test-EoGuardState $gstate $gcur) }'
+    function Invoke-SpAssignment([string]$Text, [int]$N, $GErr) {
+        & {
+            Set-StrictMode -Version 3.0
+            $ErrorActionPreference = 'Stop'
+            function Test-EoGuardState($State, $Current) {
+                $p = New-Object System.Collections.Generic.List[string]
+                for ($i = 1; $i -le $N; $i++) { $p.Add("problem $i") }
+                return $p
+            }
+            $gerr = $GErr; $gstate = $null; $gcur = $null
+            . ([scriptblock]::Create($Text))
+            "$($sp.Count)|$($sp -join '; ')"
+        }
+    }
+    foreach ($case in @(@(0, $null, '0|'), @(1, $null, '1|problem 1'), @(3, $null, '3|problem 1; problem 2; problem 3'), @(0, 'bad json', '1|state record unreadable: bad json'))) {
+        $got = ''
+        try { $got = Invoke-SpAssignment $shipped $case[0] $case[1] } catch { $got = "threw: $($_.Exception.Message)" }
+        Expect "guard problems: shipped line, $($case[0]) problem(s), record error '$($case[1])'" $got $case[2]
+    }
+    foreach ($n in 0, 1) {
+        $oldThrew = $false
+        try { $null = Invoke-SpAssignment $old $n $null } catch { $oldThrew = $true }
+        if ($PSVersionTable.PSEdition -eq 'Desktop') { Expect "guard problems: the old line throws with $n problem(s) (5.1, the RH-DT-M3 failure)" $oldThrew $true }
+        else { Write-Host "info the old line with $n problem(s) threw under PowerShell 7: $oldThrew" }
+    }
+}
+
 if ($failures.Count) { Write-Host "$($failures.Count) failure(s)"; exit 1 }
 Write-Host 'all host-script self-tests passed'
 exit 0
