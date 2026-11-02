@@ -295,6 +295,7 @@ foreach ($k in $bad.Keys) {
         Expect 'snapshot: serializes to JSON' ([bool]($snap | ConvertTo-Json -Depth 6)) $true
         Expect 'snapshot: eo-l2-int bindings listed in full' ($snap.eoBindings -join ',') 'INSECURE_NPCAP|False,ms_tcpip|True'
         Expect 'snapshot: eo-l2-int switch extensions listed' ($snap.eoSwitchExtensions -join ',') 'Microsoft NDIS Capture|True,Microsoft Windows Filtering Platform|False'
+        Expect 'snapshot: other switches extension digest present' "$($snap.otherSwitchExtensions.count)/$($snap.otherSwitchExtensions.sha256.Length)" '0/64'
         Expect 'snapshot: other adapters digested' "$($snap.otherBindings.count)/$($snap.otherBindings.sha256.Length)" '1/64'
 
     }
@@ -601,19 +602,30 @@ foreach ($k in $finst.Keys) {
         try { Set-EoFilterBindings $c[0] -Enable:$c[1]; $got = $script:calls -join ';' } catch { $got = "refused:$($script:calls -join ';')" }
         Expect "filter set: '$($c[0] -join ',')' enable=$($c[1])" $got $c[2]
     }
-    function Enable-VMSwitchExtension { [CmdletBinding()] param($VMSwitchName, $Name) $script:calls.Add("enable-ext $VMSwitchName $Name") }
-    function Disable-VMSwitchExtension { [CmdletBinding()] param($VMSwitchName, $Name) $script:calls.Add("disable-ext $VMSwitchName $Name") }
+    function Enable-VMSwitchExtension { [CmdletBinding()] param($VMSwitch, $Name) $script:calls.Add("enable-ext $($VMSwitch.Id) $Name") }
+    function Disable-VMSwitchExtension { [CmdletBinding()] param($VMSwitch, $Name) $script:calls.Add("disable-ext $($VMSwitch.Id) $Name") }
+    $swId = '3d1cfb06-8390-426d-8579-bd79b6bf3aa4'; $dupId = '11111111-8390-426d-8579-bd79b6bf3aa4'; $extId = '22222222-8390-426d-8579-bd79b6bf3aa4'
+    function Get-VMSwitch { [CmdletBinding()] param($Id)
+        switch ($Id) {
+            $swId { [pscustomobject]@{ Id = $swId; Name = $EO.SwitchName; SwitchType = 'Internal' } }
+            $dupId { [pscustomobject]@{ Id = $dupId; Name = 'Default Switch'; SwitchType = 'Internal' } }
+            $extId { [pscustomobject]@{ Id = $extId; Name = $EO.SwitchName; SwitchType = 'External' } }
+        } }
     $ndc = 'Microsoft NDIS Capture'
     foreach ($c in @(
-            @(@($ndc), $false, "disable-ext $($EO.SwitchName) $ndc"),
-            @(@($ndc), $true, "enable-ext $($EO.SwitchName) $ndc"),
-            @(@(), $true, ''),
-            @(@('Microsoft Windows Filtering Platform'), $false, 'refused:'),
-            @(@($ndc, 'Microsoft Azure VFP Switch Filter Extension'), $true, 'refused:'),
-            @(@('microsoft ndis capture'), $false, 'refused:'))) {
+            @(@($ndc), $false, $swId, "disable-ext $swId $ndc"),
+            @(@($ndc), $true, $swId, "enable-ext $swId $ndc"),
+            @(@(), $true, $swId, ''),
+            @(@('Microsoft Windows Filtering Platform'), $false, $swId, 'refused:'),
+            @(@($ndc, 'Microsoft Azure VFP Switch Filter Extension'), $true, $swId, 'refused:'),
+            @(@('microsoft ndis capture'), $false, $swId, 'refused:'),
+            @(@($ndc), $false, $dupId, 'refused:'),
+            @(@($ndc), $false, $extId, 'refused:'),
+            @(@($ndc), $false, '99999999-8390-426d-8579-bd79b6bf3aa4', 'refused:'),
+            @(@($ndc), $false, '', 'refused:'))) {
         $script:calls.Clear(); $got = ''
-        try { Set-EoSwitchExtensions $c[0] -Enable:$c[1]; $got = $script:calls -join ';' } catch { $got = "refused:$($script:calls -join ';')" }
-        Expect "filter set extension: '$($c[0] -join ',')' enable=$($c[1])" $got $c[2]
+        try { Set-EoSwitchExtensions $c[0] $c[2] -Enable:$c[1]; $got = $script:calls -join ';' } catch { $got = "refused:$($script:calls -join ';')" }
+        Expect "filter set extension: '$($c[0] -join ',')' on '$($c[2])' enable=$($c[1])" $got $c[3]
     }
 }
 

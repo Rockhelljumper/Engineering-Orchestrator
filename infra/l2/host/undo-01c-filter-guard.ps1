@@ -74,7 +74,7 @@ try {
     if ($cur.Adapter) {
         # The only binding change: targets the record shows as enabled, on the host vNIC only.
         Set-EoFilterBindings @($plan | Where-Object Action -eq 'enable' | ForEach-Object ComponentId) -Enable
-        Set-EoSwitchExtensions @($xplan | Where-Object Action -eq 'enable' | ForEach-Object ComponentId) -Enable
+        Set-EoSwitchExtensions @($xplan | Where-Object Action -eq 'enable' | ForEach-Object ComponentId) $cur.SwitchId -Enable
         $now = Get-EoFilterCurrent
         $bad = @()
         foreach ($r in @($st.bindings)) {

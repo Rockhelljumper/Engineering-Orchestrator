@@ -370,13 +370,19 @@ function Set-EoFilterBindings([string[]]$ComponentIds, [switch]$Enable) {
 }
 
 # Changes extension targets on the eo-l2-int switch: the only place 01c and its undo
-# change a vSwitch extension. Refuses before any change if a name is not a target.
-function Set-EoSwitchExtensions([string[]]$Names, [switch]$Enable) {
+# change a vSwitch extension. Acts on the switch object with the recorded id, never
+# by name (two switches could share a name), and refuses before any change if a
+# name is not a target or that id is not exactly one Internal switch named eo-l2-int.
+function Set-EoSwitchExtensions([string[]]$Names, [string]$SwitchId, [switch]$Enable) {
     $bad = @($Names | Where-Object { $_ -cnotin $EO.SwitchExtTargets })
     if ($bad.Count) { throw "Refusing to change switch extensions that are not filter-guard targets: $($bad -join ', ')" }
+    if (-not @($Names).Count) { return }
+    if ("$SwitchId" -notmatch '\A[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\z') { throw "Refusing to change switch extensions: switch id '$SwitchId' is malformed" }
+    $sw = @(Get-VMSwitch -Id $SwitchId -ErrorAction Stop)
+    if ($sw.Count -ne 1 -or "$($sw[0].Name)" -cne $EO.SwitchName -or "$($sw[0].SwitchType)" -ne 'Internal') { throw "Refusing to change switch extensions: id $SwitchId is not exactly one Internal switch named $($EO.SwitchName)" }
     foreach ($n in $Names) {
-        if ($Enable) { Enable-VMSwitchExtension -VMSwitchName $EO.SwitchName -Name $n }
-        else { Disable-VMSwitchExtension -VMSwitchName $EO.SwitchName -Name $n }
+        if ($Enable) { Enable-VMSwitchExtension -VMSwitch $sw[0] -Name $n }
+        else { Disable-VMSwitchExtension -VMSwitch $sw[0] -Name $n }
     }
 }
 

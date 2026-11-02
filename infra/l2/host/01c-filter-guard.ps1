@@ -112,7 +112,7 @@ try {
     # extension targets on the eo-l2-int switch.
     $changed = $true
     Set-EoFilterBindings $change
-    Set-EoSwitchExtensions $xchange
+    Set-EoSwitchExtensions $xchange $cur.SwitchId
 
     $now = Get-EoFilterCurrent
     $bad = @(Test-EoFilterBindings $now.Bindings)
@@ -137,6 +137,8 @@ try {
     # only the target entries did.
     $sb = Get-Content -LiteralPath $before -Raw | ConvertFrom-Json; $sa = Get-Content -LiteralPath $after -Raw | ConvertFrom-Json
     if ("$($sb.otherBindings.sha256)" -ne "$($sa.otherBindings.sha256)" -or "$($sb.otherBindings.count)" -ne "$($sa.otherBindings.count)") { throw "Bindings on another adapter changed during 01c (digest $($sb.otherBindings.sha256) -> $($sa.otherBindings.sha256))." }
+    if ("$($sb.otherSwitchExtensions.sha256)" -ne "$($sa.otherSwitchExtensions.sha256)" -or "$($sb.otherSwitchExtensions.count)" -ne "$($sa.otherSwitchExtensions.count)") { throw 'Extensions on another Hyper-V switch changed during 01c.' }
+    if ("$($sb.firewall.sha256)" -ne "$($sa.firewall.sha256)" -or (@($sb.firewall.eoRules) -join ',') -ne (@($sa.firewall.eoRules) -join ',')) { throw 'Firewall rules changed during 01c; the 01b host guard must stay as it is.' }
     $nonTarget = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -notin $EO.FilterTargets }) -join ',' }
     if ((& $nonTarget $sb.eoBindings) -ne (& $nonTarget $sa.eoBindings)) { throw "Bindings on '$($EO.HostIf)' other than the targets changed during 01c." }
     if (-not @($sb.eoSwitchExtensions).Count -and @($cur.Extensions).Count) { throw "The before snapshot holds no switch extensions though $($EO.SwitchName) has $(@($cur.Extensions).Count); the extension diff cannot be checked." }
