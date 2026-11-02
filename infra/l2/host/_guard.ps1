@@ -401,7 +401,8 @@ function Test-EoFilterState($State, $Current, $GuardInstanceId) {
         if ($eb -and -not $pr) { $p.Add("filter record entry '$(Get-EoProp $r 'componentId')' is enabledBefore but not present") }
     }
     $xrecs = @($State.switchExtensions)
-    foreach ($r in $xrecs) { if ((Get-EoProp $r 'name') -isnot [string]) { $p.Add("filter record extension name '$(Get-EoProp $r 'name')' is not a single string") } }
+    # Read the value directly: a function's output would unroll a one-item list into a string.
+    foreach ($r in $xrecs) { $np = if ($r -is [psobject]) { $r.PSObject.Properties['name'] } else { $null }; if (-not $np -or $np.Value -isnot [string]) { $p.Add("filter record extension name '$(Get-EoProp $r 'name')' is not a single string") } }
     $xn = @($xrecs | ForEach-Object { "$(Get-EoProp $_ 'name')" })
     if ((@($xn | Sort-Object) -join ',') -cne (@($EO.SwitchExtTargets | Sort-Object) -join ',')) { $p.Add("filter record switch extensions are '$($xn -join ',')', want '$($EO.SwitchExtTargets -join ',')'") }
     foreach ($r in $xrecs) {
