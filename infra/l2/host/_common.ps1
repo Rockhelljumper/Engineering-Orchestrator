@@ -50,10 +50,15 @@ $EO = [ordered]@{
     # What 01b changed, written before it changes anything; the undo needs it.
     GuardDir     = Join-Path $env:ProgramData 'eo-l2'
     GuardState   = Join-Path $env:ProgramData 'eo-l2\host-guard-state.json'
-    # Filter guard (01c, B9-R1): third-party NDIS filters that can capture or send
-    # raw frames below the firewall, unbound from the host vNIC only. 01c and its
-    # undo change these component IDs on $EO.HostIf and nothing else.
-    FilterTargets = @('INSECURE_NPCAP', 'oracle_VBoxNetLwf')
+    # Filter guard (01c, B9-R1): components that can capture or send frames on the
+    # host vNIC outside the firewall rules, unbound from the host vNIC only. 01c and
+    # its undo change these component IDs on $EO.HostIf and nothing else.
+    #   INSECURE_NPCAP, oracle_VBoxNetLwf: third-party NDIS filters below WFP
+    #   ms_pppoe: PPPoE, so a host user cannot dial a link over eo-l2-int whose PPP
+    #     interface sits outside the interface-scoped rules (owner decision 2026-11-02)
+    #   ms_ndisuio: NDIS user-mode I/O, a raw frame path (owner decision 2026-11-02)
+    # The last two are hidden bindings (seen only with -AllBindings).
+    FilterTargets = @('INSECURE_NPCAP', 'oracle_VBoxNetLwf', 'ms_pppoe', 'ms_ndisuio')
     # Components that may stay enabled on the host vNIC (inventory of 2026-11-01,
     # after 01 removed client, server, discovery and IPv6).
     FilterAllowed = @('ms_tcpip', 'ms_pacer', 'ms_l2bridge', 'ms_l1vhlwf')

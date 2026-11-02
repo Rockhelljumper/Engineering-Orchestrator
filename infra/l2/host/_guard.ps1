@@ -254,16 +254,18 @@ function Get-EoGuardCurrent {
 }
 
 # --- filter guard (01c, B9-R1) -------------------------------------------------
-# 01c unbinds the Npcap and VirtualBox NDIS filters ($EO.FilterTargets) from the
-# host vNIC only, and disables the NDIS Capture extension ($EO.SwitchExtTargets) on
+# 01c unbinds the Npcap and VirtualBox NDIS filters, PPPoE and NDIS user-mode I/O
+# ($EO.FilterTargets) from the host vNIC only, and disables the NDIS Capture extension ($EO.SwitchExtTargets) on
 # the eo-l2-int switch only. Like 01b, it records every target's state before it changes
 # anything, in a protected file next to the host guard record; the undo restores
 # only from that record, only those components, and only on the same adapter,
 # switch and computer, built on the same 01b instance. Pure Test-*/Get-*Plan
 # functions take plain facts so tests/selftest.ps1 can drive them.
 
-# /2 adds switchExtensions. No /1 record was ever written on a host (01c first ran at /2).
-$EoFilterSchema = 'eo-l2-filter-guard/2'
+# /2 added switchExtensions; /3 adds the ms_pppoe and ms_ndisuio targets, so a record
+# of another target set is refused by its schema as well as by its entries. No /1 or
+# /2 record was ever written on a host (01c has not run yet).
+$EoFilterSchema = 'eo-l2-filter-guard/3'
 
 # The filter-guard facts of the host now: the host guard facts (so the same read
 # serves Test-EoGuardState) plus the host vNIC's bindings as @{ <ComponentID> =
@@ -363,12 +365,15 @@ function Test-EoFilterPreconditions($GuardState, $Current, [bool]$RecordPresent,
 
 # Changes the binding of filter targets on the host vNIC: the only place 01c and
 # its undo change a binding. Refuses before any change if an id is not a target.
+# -AllBindings, because ms_pppoe and ms_ndisuio are hidden bindings: without it the
+# cmdlets do not see them (the same view Get-EoFilterCurrent reads). A failed call
+# stops the caller.
 function Set-EoFilterBindings([string[]]$ComponentIds, [switch]$Enable) {
     $bad = @($ComponentIds | Where-Object { $_ -cnotin $EO.FilterTargets })
     if ($bad.Count) { throw "Refusing to change bindings that are not filter-guard targets: $($bad -join ', ')" }
     foreach ($id in $ComponentIds) {
-        if ($Enable) { Enable-NetAdapterBinding -Name $EO.HostIf -ComponentID $id }
-        else { Disable-NetAdapterBinding -Name $EO.HostIf -ComponentID $id }
+        if ($Enable) { Enable-NetAdapterBinding -Name $EO.HostIf -ComponentID $id -AllBindings -ErrorAction Stop }
+        else { Disable-NetAdapterBinding -Name $EO.HostIf -ComponentID $id -AllBindings -ErrorAction Stop }
     }
 }
 
@@ -492,9 +497,83 @@ function Test-EoSwitchAdapterBindings($Bindings, $ExtensionStates) {
     return $p
 }
 
+# Waits (read-only, up to $Seconds) until the host vNIC holds its IPv4 address in
+# the Preferred state again: a binding change restarts the adapter, and the after
+# snapshot must not catch it mid-restart. True when it is back.
+function Wait-EoHostIfAddress([int]$Seconds = 30) {
+    for ($i = 0; $i -lt $Seconds; $i++) {
+        $ip = @(Get-NetIPAddress -InterfaceAlias $EO.HostIf -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { "$($_.IPAddress)" -eq $EO.HostIp -and "$($_.AddressState)" -eq 'Preferred' })
+        if ($ip.Count) { return $true }
+        Start-Sleep -Seconds 1
+    }
+    return $false
+}
+
+# What must not change while 01c or its undo runs, from Get-EoFilterCurrent before
+# the change and after it: the switch id, the host vNIC identity, its NetBIOS value,
+# every binding on it other than the targets, and every extension on eo-l2-int
+# other than the targets. Pure.
+function Test-EoFilterUnchanged($Before, $Now) {
+    $p = New-Object System.Collections.Generic.List[string]
+    if ("$($Before.SwitchId)" -ne "$($Now.SwitchId)") { $p.Add("switch id changed from '$($Before.SwitchId)' to '$($Now.SwitchId)'") }
+    if ([bool]$Before.Adapter -ne [bool]$Now.Adapter) { $p.Add("host adapter '$($EO.HostIf)' $(if ($Now.Adapter) { 'appeared' } else { 'disappeared' })") }
+    elseif ($Before.Adapter) {
+        foreach ($k in 'InterfaceGuid', 'MacAddress', 'SettingId', 'Netbios') { if ("$($Before.Adapter[$k])" -ne "$($Now.Adapter[$k])") { $p.Add("adapter $k changed from '$($Before.Adapter[$k])' to '$($Now.Adapter[$k])'") } }
+    }
+    foreach ($id in @(@($Before.Bindings.Keys) + @($Now.Bindings.Keys) | Sort-Object -Unique)) {
+        if ($id -cin $EO.FilterTargets) { continue }
+        $was = if ($Before.Bindings.ContainsKey($id)) { "$($Before.Bindings[$id])" } else { 'absent' }
+        $is = if ($Now.Bindings.ContainsKey($id)) { "$($Now.Bindings[$id])" } else { 'absent' }
+        if ($was -ne $is) { $p.Add("$id on '$($EO.HostIf)' changed from $was to $is") }
+    }
+    foreach ($n in @(@($Before.ExtensionStates.Keys) + @($Now.ExtensionStates.Keys) | Sort-Object -Unique)) {
+        if ($n -cin $EO.SwitchExtTargets) { continue }
+        $was = if ($Before.ExtensionStates.ContainsKey($n)) { "$($Before.ExtensionStates[$n])" } else { 'absent' }
+        $is = if ($Now.ExtensionStates.ContainsKey($n)) { "$($Now.ExtensionStates[$n])" } else { 'absent' }
+        if ($was -ne $is) { $p.Add("switch extension '$n' on $($EO.SwitchName) changed from $was to $is") }
+    }
+    return $p
+}
+
+# Collateral changes between the before and after snapshots of 01c or its undo (as
+# read back from JSON), enforced, not only printed:
+#   - every other adapter's bindings (digest; the Default Switch and WSL switch
+#     adapters included), every other switch's extensions (digest), the switches;
+#   - the firewall (digest and the eo-l2 rule names), so the 01b guard is untouched;
+#   - the IPv4 addresses and routes on the host vNIC;
+#   - on the host vNIC only the target bindings, on eo-l2-int only the target
+#     extensions, and on its switch adapter only the targets' components
+#     (ms_ndiscap is the NDIS Capture extension itself).
+# -RequireSwitch (01c): the before snapshot must list the switch's extensions and
+# its switch adapter's bindings, so those comparisons are not vacuous. Pure.
+function Test-EoSnapshotCollateral($Before, $After, [switch]$RequireSwitch) {
+    $p = New-Object System.Collections.Generic.List[string]
+    foreach ($k in 'otherBindings', 'otherSwitchExtensions', 'firewall') {
+        $b = Get-EoProp $Before $k; $a = Get-EoProp $After $k
+        if ("$(Get-EoProp $b 'sha256')" -ne "$(Get-EoProp $a 'sha256')" -or "$(Get-EoProp $b 'count')" -ne "$(Get-EoProp $a 'count')" -or -not "$(Get-EoProp $b 'sha256')") { $p.Add("$k changed (digest $(Get-EoProp $b 'sha256') -> $(Get-EoProp $a 'sha256'))") }
+    }
+    $j = { param($o, [string]$k) @(Get-EoProp $o $k) | ConvertTo-Json -Depth 4 -Compress }
+    if ((@(Get-EoProp (Get-EoProp $Before 'firewall') 'eoRules') -join ',') -cne (@(Get-EoProp (Get-EoProp $After 'firewall') 'eoRules') -join ',')) { $p.Add('the eo-l2 firewall rules changed') }
+    if ((& $j $Before 'vmSwitches') -cne (& $j $After 'vmSwitches')) { $p.Add('the Hyper-V switches changed') }
+    $eoIp = { param($o) (@(Get-EoProp $o 'ipAddresses') | Where-Object { "$(Get-EoProp $_ 'if')" -eq $EO.HostIf } | ForEach-Object { "$(Get-EoProp $_ 'ip')/$(Get-EoProp $_ 'prefix')" } | Sort-Object) -join ',' }
+    if ((& $eoIp $Before) -cne (& $eoIp $After)) { $p.Add("the IPv4 addresses on '$($EO.HostIf)' changed from '$(& $eoIp $Before)' to '$(& $eoIp $After)'") }
+    $eoRt = { param($o) (@(Get-EoProp $o 'routes') | Where-Object { "$_".EndsWith(" on $($EO.HostIf)") } | Sort-Object) -join ',' }
+    if ((& $eoRt $Before) -cne (& $eoRt $After)) { $p.Add("the routes on '$($EO.HostIf)' changed") }
+    $xc = @($EO.SwitchExtTargets | ForEach-Object { "$($EO.SwitchExtComponents[$_])" })
+    $keep = { param($l, $t) @(@($l) | Where-Object { ("$_" -split '\|')[0] -cnotin $t }) -join ',' }
+    foreach ($c in @(@('eoBindings', $EO.FilterTargets, "'$($EO.HostIf)'"), @('eoSwitchExtensions', $EO.SwitchExtTargets, "the extensions of $($EO.SwitchName)"), @('eoSwitchAdapterBindings', $xc, "'$($EO.SwitchAdapter)'"))) {
+        if ((& $keep (Get-EoProp $Before $c[0]) $c[1]) -cne (& $keep (Get-EoProp $After $c[0]) $c[1])) { $p.Add("$($c[2]) changed outside the targets") }
+    }
+    if ($RequireSwitch) {
+        if (-not @(Get-EoProp $Before 'eoSwitchExtensions').Count) { $p.Add("the before snapshot lists no extensions of $($EO.SwitchName); the extension diff cannot be checked") }
+        if (-not @(Get-EoProp $Before 'eoSwitchAdapterBindings').Count) { $p.Add("the before snapshot lists no bindings of '$($EO.SwitchAdapter)'; the switch adapter diff cannot be checked") }
+    }
+    return $p
+}
+
 # Problems that stop a later step (04a) unless 01c is installed: a valid record for
-# this computer, switch, adapter and 01b instance, the adapter present, and both
-# targets absent or off. Pure; the caller also runs verify-host -RequireFilterGuard.
+# this computer, switch, adapter and 01b instance, the adapter present, and every
+# binding and extension target absent or off. Pure; the caller also runs verify-host -RequireFilterGuard.
 function Test-EoFilterInstalled($State, $Current, $GuardInstanceId) {
     $p = New-Object System.Collections.Generic.List[string]
     if ($null -eq $State) { $p.Add("the filter guard (01c) is not installed: no record at $($EO.FilterState)"); return $p }

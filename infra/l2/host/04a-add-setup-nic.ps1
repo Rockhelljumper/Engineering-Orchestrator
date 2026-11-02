@@ -3,8 +3,8 @@
 # package download only. Step 04b removes it, and it must run before any eo code
 # is copied into the guest. Fails closed unless the filter guard (01c) is installed
 # and verified: the setup NIC is followed by 04b, whose full verification requires
-# it, and the guest must not run while the segment is exposed to Npcap or
-# VirtualBox. Needs an elevated PowerShell.
+# it, and the guest must not run while the segment is exposed to Npcap,
+# VirtualBox, PPPoE or NDIS user-mode I/O. Needs an elevated PowerShell.
 
 . (Join-Path $PSScriptRoot '_common.ps1')
 Assert-EoAdmin

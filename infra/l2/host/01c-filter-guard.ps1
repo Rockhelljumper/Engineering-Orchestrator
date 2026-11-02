@@ -1,8 +1,9 @@
 # Step 01c (B9-R1; run it only with the owner's separate approval, after 01b is
-# verified): the filter guard on eo-l2-int. Unbinds the Npcap and VirtualBox NDIS
-# filters ($EO.FilterTargets: INSECURE_NPCAP, oracle_VBoxNetLwf) from the host vNIC
-# 'vEthernet (eo-l2-int)' only. Both work below the Windows Filtering Platform, so
-# the 01 and 01b firewall rules do not constrain what they capture or send there.
+# verified): the filter guard on eo-l2-int. Unbinds $EO.FilterTargets from the host
+# vNIC 'vEthernet (eo-l2-int)' only: the Npcap and VirtualBox NDIS filters
+# (INSECURE_NPCAP, oracle_VBoxNetLwf), which work below the Windows Filtering
+# Platform, so the 01 and 01b firewall rules do not constrain what they capture or
+# send there; and PPPoE and NDIS user-mode I/O (ms_pppoe, ms_ndisuio, hidden bindings).
 # It also disables the Microsoft NDIS Capture vSwitch extension ($EO.SwitchExtTargets)
 # on the eo-l2-int switch only (Windows enables it on every switch by default), so
 # frames inside the switch cannot be captured through it.
@@ -50,7 +51,7 @@ try {
         $(foreach ($e in $plan) {
                 $dn = if ($cur.BindingNames.ContainsKey($e.ComponentId)) { " ($($cur.BindingNames[$e.ComponentId]))" } else { '' }
                 switch ($e.Action) {
-                    'disable' { "Disable-NetAdapterBinding -Name '$($EO.HostIf)' -ComponentID $($e.ComponentId)$dn (enabled now)" }
+                    'disable' { "Disable-NetAdapterBinding -Name '$($EO.HostIf)' -ComponentID $($e.ComponentId) -AllBindings$dn (enabled now)" }
                     'already-off' { "$($e.ComponentId)$dn is already disabled on this adapter: no change" }
                     'absent' { "$($e.ComponentId) is not bound to this adapter: no change" }
                 }
@@ -116,45 +117,25 @@ try {
     Set-EoFilterBindings $change
     Set-EoSwitchExtensions $xchange $cur.SwitchId
 
+    if ($change.Count -and -not (Wait-EoHostIfAddress)) { Write-Host "note: $($EO.HostIp) on '$($EO.HostIf)' is not back in the Preferred state after 30 s; the checks below will show it" }
     $now = Get-EoFilterCurrent
     $bad = @(Test-EoFilterBindings $now.Bindings)
-    foreach ($id in @(@($cur.Bindings.Keys) + @($now.Bindings.Keys) | Sort-Object -Unique)) {
-        if ($id -in $EO.FilterTargets) { continue }
-        $was = if ($cur.Bindings.ContainsKey($id)) { "$($cur.Bindings[$id])" } else { 'absent' }
-        $is = if ($now.Bindings.ContainsKey($id)) { "$($now.Bindings[$id])" } else { 'absent' }
-        if ($was -ne $is) { $bad += "$id on '$($EO.HostIf)' changed from $was to $is" }
-    }
     $bad += @(Test-EoFilterExtensions $now.ExtensionStates)
-    foreach ($n in @(@($cur.ExtensionStates.Keys) + @($now.ExtensionStates.Keys) | Sort-Object -Unique)) {
-        if ($n -in $EO.SwitchExtTargets) { continue }
-        $was = if ($cur.ExtensionStates.ContainsKey($n)) { "$($cur.ExtensionStates[$n])" } else { 'absent' }
-        $is = if ($now.ExtensionStates.ContainsKey($n)) { "$($now.ExtensionStates[$n])" } else { 'absent' }
-        if ($was -ne $is) { $bad += "switch extension '$n' on $($EO.SwitchName) changed from $was to $is" }
-    }
+    $bad += @(Test-EoFilterUnchanged $cur $now)
     $bad += @(Test-EoSwitchAdapterBindings @(Get-NetAdapterBinding -Name $EO.SwitchAdapter -IncludeHidden -AllBindings -ErrorAction Stop) $now.ExtensionStates)
     if ($bad.Count) { throw "Bindings or extensions do not read back as planned: $($bad -join '; ')" }
 
     $after = Save-EoSnapshot $stamp 'after'
     Compare-EoSnapshot $before $after
-    # Enforced, not only printed: no other adapter's bindings changed, and on eo-l2-int
-    # only the target entries did (on its switch adapter, only ms_ndiscap, which is the
-    # NDIS Capture extension itself).
+    # Enforced, not only printed (Test-EoSnapshotCollateral): no other adapter, switch,
+    # extension, firewall rule, address or route changed, and on eo-l2-int only the
+    # targets did (on its switch adapter, only ms_ndiscap, the NDIS Capture extension).
     $sb = Get-Content -LiteralPath $before -Raw | ConvertFrom-Json; $sa = Get-Content -LiteralPath $after -Raw | ConvertFrom-Json
-    if ("$($sb.otherBindings.sha256)" -ne "$($sa.otherBindings.sha256)" -or "$($sb.otherBindings.count)" -ne "$($sa.otherBindings.count)") { throw "Bindings on another adapter changed during 01c (digest $($sb.otherBindings.sha256) -> $($sa.otherBindings.sha256))." }
-    if ("$($sb.otherSwitchExtensions.sha256)" -ne "$($sa.otherSwitchExtensions.sha256)" -or "$($sb.otherSwitchExtensions.count)" -ne "$($sa.otherSwitchExtensions.count)") { throw 'Extensions on another Hyper-V switch changed during 01c.' }
-    if ("$($sb.firewall.sha256)" -ne "$($sa.firewall.sha256)" -or (@($sb.firewall.eoRules) -join ',') -ne (@($sa.firewall.eoRules) -join ',')) { throw 'Firewall rules changed during 01c; the 01b host guard must stay as it is.' }
-    $nonTarget = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -notin $EO.FilterTargets }) -join ',' }
-    if ((& $nonTarget $sb.eoBindings) -ne (& $nonTarget $sa.eoBindings)) { throw "Bindings on '$($EO.HostIf)' other than the targets changed during 01c." }
-    if (-not @($sb.eoSwitchExtensions).Count -and @($cur.Extensions).Count) { throw "The before snapshot holds no switch extensions though $($EO.SwitchName) has $(@($cur.Extensions).Count); the extension diff cannot be checked." }
-    $nonTargetExt = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -notin $EO.SwitchExtTargets }) -join ',' }
-    if ((& $nonTargetExt $sb.eoSwitchExtensions) -ne (& $nonTargetExt $sa.eoSwitchExtensions)) { throw "Extensions on $($EO.SwitchName) other than the targets changed during 01c." }
-    $xc = @($EO.SwitchExtTargets | ForEach-Object { $EO.SwitchExtComponents[$_] })
-    $nonTargetSa = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -cnotin $xc }) -join ',' }
-    if (-not @($sb.eoSwitchAdapterBindings).Count) { throw "The before snapshot holds no bindings for '$($EO.SwitchAdapter)'; the switch adapter diff cannot be checked." }
-    if ((& $nonTargetSa $sb.eoSwitchAdapterBindings) -ne (& $nonTargetSa $sa.eoSwitchAdapterBindings)) { throw "Bindings on '$($EO.SwitchAdapter)' other than $($xc -join ', ') changed during 01c." }
+    $col = @(Test-EoSnapshotCollateral $sb $sa -RequireSwitch)
+    if ($col.Count) { throw "Changes outside the 01c targets: $($col -join '; ')" }
     & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly -RequireFilterGuard
     if ($LASTEXITCODE -ne 0) { throw 'Host-side verification failed.' }
-    Write-Host 'STEP 01c DONE: Npcap and VirtualBox filters unbound from eo-l2-int, NDIS Capture disabled on its switch, and verified.'
+    Write-Host 'STEP 01c DONE: Npcap, VirtualBox, PPPoE and NDIS user-mode I/O unbound from eo-l2-int, NDIS Capture disabled on its switch, and verified.'
 } catch {
     Write-Host "STEP 01c STOPPED: $($_.Exception.Message)"
     if ($changed) { Write-Host 'Bindings or the extension may be partly changed; the record keeps every original value. Review the transcript, then run undo-01c-filter-guard.ps1 (elevated, attended) to restore them.' }

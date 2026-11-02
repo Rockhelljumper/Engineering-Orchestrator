@@ -74,7 +74,7 @@ try {
         try { $fcur = Get-EoFilterCurrent } catch { $fread = "bindings or switch extensions not read: $($_.Exception.Message)" }
         if (-not $fcur) { $fcur = @{ Computer = $env:COMPUTERNAME; SwitchId = $null; Adapter = $null; Bindings = @{}; VisibleBindings = @{}; Extensions = @(); ExtensionStates = @{} } }
         $fb = @(if ($fread) { $fread } else { Test-EoFilterBindings $fcur.Bindings })
-        Row 'Filter guard: Npcap and VirtualBox filters absent or off on eo-l2-int' ($fb.Count -eq 0) ($fb -join '; ')
+        Row 'Filter guard: Npcap, VirtualBox, PPPoE and NDIS user-mode I/O bindings absent or off on eo-l2-int' ($fb.Count -eq 0) ($fb -join '; ')
         $fstate = $null; $ferr = $null
         try { $fstate = Read-EoFilterState } catch { $ferr = $_.Exception.Message }
         $gid = if ($gstate) { "$(Get-EoProp $gstate 'instanceId')" } else { $null }

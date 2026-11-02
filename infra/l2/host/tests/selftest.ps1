@@ -395,17 +395,23 @@ foreach ($k in $bad.Keys) {
 
 
 # --- filter guard (01c, B9-R1) ----------------------------------------------------
-$npc = 'INSECURE_NPCAP'; $vbx = 'oracle_VBoxNetLwf'
+$npc = 'INSECURE_NPCAP'; $vbx = 'oracle_VBoxNetLwf'; $ppp = 'ms_pppoe'; $uio = 'ms_ndisuio'
+Expect 'filter targets: exactly the four approved component IDs, in order' ($EO.FilterTargets -join ',') "$npc,$vbx,$ppp,$uio"
 function PlanText($Plan) { (@($Plan) | ForEach-Object { "$($_.ComponentId)=$($_.Action)/$($_.EnabledBefore)" }) -join ',' }
-# Under StrictMode, for 0, 1 and 2 enabled targets (the lesson of D-2).
+# Under StrictMode, for 0, 1, 2 and 4 enabled targets (the lesson of D-2), including
+# the hidden-only targets ms_pppoe and ms_ndisuio and the real host state of
+# 2026-11-02 (all four enabled).
 & {
     Set-StrictMode -Version 3.0
     foreach ($c in @(
-            @(@{}, "$npc=absent/False,$vbx=absent/False", 0),
-            @(@{ $npc = $false; $vbx = $false }, "$npc=already-off/False,$vbx=already-off/False", 0),
-            @(@{ $npc = $true; $vbx = $false; 'ms_tcpip' = $true }, "$npc=disable/True,$vbx=already-off/False", 1),
-            @(@{ $vbx = $true }, "$npc=absent/False,$vbx=disable/True", 1),
-            @(@{ $npc = $true; $vbx = $true }, "$npc=disable/True,$vbx=disable/True", 2))) {
+            @(@{}, "$npc=absent/False,$vbx=absent/False,$ppp=absent/False,$uio=absent/False", 0),
+            @(@{ $npc = $false; $vbx = $false; $ppp = $false; $uio = $false }, "$npc=already-off/False,$vbx=already-off/False,$ppp=already-off/False,$uio=already-off/False", 0),
+            @(@{ $npc = $true; $vbx = $false; 'ms_tcpip' = $true }, "$npc=disable/True,$vbx=already-off/False,$ppp=absent/False,$uio=absent/False", 1),
+            @(@{ $vbx = $true }, "$npc=absent/False,$vbx=disable/True,$ppp=absent/False,$uio=absent/False", 1),
+            @(@{ $ppp = $true; 'ms_tcpip' = $true }, "$npc=absent/False,$vbx=absent/False,$ppp=disable/True,$uio=absent/False", 1),
+            @(@{ $uio = $true; $ppp = $false }, "$npc=absent/False,$vbx=absent/False,$ppp=already-off/False,$uio=disable/True", 1),
+            @(@{ $npc = $true; $vbx = $true }, "$npc=disable/True,$vbx=disable/True,$ppp=absent/False,$uio=absent/False", 2),
+            @(@{ $npc = $true; $vbx = $true; $ppp = $true; $uio = $true; 'ms_tcpip' = $true; 'ms_wfplwf_lower' = $true }, "$npc=disable/True,$vbx=disable/True,$ppp=disable/True,$uio=disable/True", 4))) {
         $got = ''; $n = -1
         try { $plan = @(Get-EoFilterApplyPlan $c[0]); $got = PlanText $plan; $n = @($plan | Where-Object Action -eq 'disable').Count } catch { $got = "threw: $($_.Exception.Message)" }
         Expect "filter plan: $($c[1])" $got $c[1]
@@ -415,11 +421,11 @@ function PlanText($Plan) { (@($Plan) | ForEach-Object { "$($_.ComponentId)=$($_.
 $fguid = '{94ebb62f-0000-4000-8000-00000000abcd}'
 $fGuardId = '0123456789abcdef0123456789abcdef'
 $fJson = @"
-{ "schema": "eo-l2-filter-guard/2", "instanceId": "fedcba9876543210fedcba9876543210", "createdAt": "2026-11-02T00:00:00Z",
+{ "schema": "eo-l2-filter-guard/3", "instanceId": "fedcba9876543210fedcba9876543210", "createdAt": "2026-11-02T00:00:00Z",
   "computer": "$env:COMPUTERNAME", "switchId": "11111111-2222-3333-4444-555555555555",
   "adapter": { "name": "vEthernet (eo-l2-int)", "interfaceGuid": "$fguid", "macAddress": "00-15-5D-0A-1C-02", "settingId": "$fguid" },
   "hostGuardInstanceId": "$fGuardId",
-  "bindings": [ { "componentId": "INSECURE_NPCAP", "displayName": "Npcap Packet Driver (NPCAP)", "present": true, "enabledBefore": true }, { "componentId": "oracle_VBoxNetLwf", "displayName": "VirtualBox NDIS6 Bridged Networking Driver", "present": true, "enabledBefore": false } ],
+  "bindings": [ { "componentId": "INSECURE_NPCAP", "displayName": "Npcap Packet Driver (NPCAP)", "present": true, "enabledBefore": true }, { "componentId": "oracle_VBoxNetLwf", "displayName": "VirtualBox NDIS6 Bridged Networking Driver", "present": true, "enabledBefore": false }, { "componentId": "ms_pppoe", "displayName": "Point to Point Protocol Over Ethernet", "present": true, "enabledBefore": false }, { "componentId": "ms_ndisuio", "displayName": "NDIS Usermode I/O Protocol", "present": true, "enabledBefore": false } ],
   "switchExtensions": [ { "name": "Microsoft NDIS Capture", "present": true, "enabledBefore": true } ],
   "drivers": { "npcap.sys": "1.75", "VBoxNetLwf.sys": "7.2.4" } }
 "@
@@ -439,8 +445,11 @@ Expect 'filter record: switch and adapter gone passes (nothing to restore)' (@(T
 $fbad = [ordered]@{
     'no record'                        = @($null, (FCur @{}), $fGuardId, 'no filter guard record')
     'no bindings'                      = @((FState '"bindings":' '"bindingz":'), (FCur @{}), $fGuardId, "no 'bindings'")
-    'another schema'                   = @((FState 'eo-l2-filter-guard/2' 'eo-l2-filter-guard/1'), (FCur @{}), $fGuardId, 'schema is')
-    'schema as a list'                 = @((FState '"schema": "eo-l2-filter-guard/2"' '"schema": ["eo-l2-filter-guard/2"]'), (FCur @{}), $fGuardId, 'schema is not a single string')
+    'another schema'                   = @((FState 'eo-l2-filter-guard/3' 'eo-l2-filter-guard/1'), (FCur @{}), $fGuardId, 'schema is')
+    'the /2 schema (two targets)'      = @((FState 'eo-l2-filter-guard/3' 'eo-l2-filter-guard/2'), (FCur @{}), $fGuardId, 'schema is')
+    'a new target left out'            = @((FState ', { "componentId": "ms_ndisuio", "displayName": "NDIS Usermode I/O Protocol", "present": true, "enabledBefore": false }' ''), (FCur @{}), $fGuardId, 'components are')
+    'a new target in another case'     = @((FState '"componentId": "ms_pppoe"' '"componentId": "MS_PPPOE"'), (FCur @{}), $fGuardId, 'components are')
+    'schema as a list'                 = @((FState '"schema": "eo-l2-filter-guard/3"' '"schema": ["eo-l2-filter-guard/3"]'), (FCur @{}), $fGuardId, 'schema is not a single string')
     'malformed instance id'            = @((FState 'fedcba9876543210fedcba9876543210' 'fedcba98'), (FCur @{}), $fGuardId, 'instanceId')
     'malformed host guard id'          = @((FState """hostGuardInstanceId"": ""$fGuardId""" '"hostGuardInstanceId": "X"'), (FCur @{}), 'X', 'hostGuardInstanceId')
     'host guard id as a number'        = @((FState """hostGuardInstanceId"": ""$fGuardId""" '"hostGuardInstanceId": 5'), (FCur @{}), $fGuardId, 'hostGuardInstanceId is not a single string')
@@ -478,11 +487,11 @@ foreach ($k in $fbad.Keys) {
 # a target it cannot restore or one something else enabled.
 $fRec = $fJson | ConvertFrom-Json
 foreach ($c in @(
-        @(@{ $npc = $false; $vbx = $false }, "$npc=enable/True,$vbx=leave-off/False", 0),
-        @(@{ $npc = $true; $vbx = $false }, "$npc=skip/True,$vbx=leave-off/False", 0),
-        @(@{ $vbx = $false }, "$npc=missing/True,$vbx=leave-off/False", 1),
-        @(@{ $npc = $false }, "$npc=enable/True,$vbx=leave-off/False", 0),
-        @(@{ $npc = $false; $vbx = $true }, "$npc=enable/True,$vbx=drifted/False", 1))) {
+        @(@{ $npc = $false; $vbx = $false }, "$npc=enable/True,$vbx=leave-off/False,$ppp=leave-off/False,$uio=leave-off/False", 0),
+        @(@{ $npc = $true; $vbx = $false }, "$npc=skip/True,$vbx=leave-off/False,$ppp=leave-off/False,$uio=leave-off/False", 0),
+        @(@{ $vbx = $false }, "$npc=missing/True,$vbx=leave-off/False,$ppp=leave-off/False,$uio=leave-off/False", 1),
+        @(@{ $npc = $false }, "$npc=enable/True,$vbx=leave-off/False,$ppp=leave-off/False,$uio=leave-off/False", 0),
+        @(@{ $npc = $false; $vbx = $true }, "$npc=enable/True,$vbx=drifted/False,$ppp=leave-off/False,$uio=leave-off/False", 1))) {
     & {
         Set-StrictMode -Version 3.0
         $got = ''; $n = -1
@@ -523,11 +532,35 @@ Expect 'switch adapter: a single binding object works under StrictMode' (@(Test-
 Expect 'switch adapter: extension not listed fails' (@(Test-EoSwitchAdapterBindings $sabOn @{}).Count) 1
 Expect 'switch adapter: component matched case-exactly' (@(Test-EoSwitchAdapterBindings @([pscustomobject]@{ ComponentID = 'MS_NDISCAP'; Enabled = $true }) @{ 'Microsoft NDIS Capture' = $true }).Count) 1
 $both = FState '"present": true, "enabledBefore": false' '"present": true, "enabledBefore": true'
-Expect 'filter undo plan: both recorded enabled, both off now' (PlanText (Get-EoFilterRestorePlan $both @{ $npc = $false; $vbx = $false })) "$npc=enable/True,$vbx=enable/True"
+Expect 'filter undo plan: all four recorded enabled, all off now' (PlanText (Get-EoFilterRestorePlan $both @{ $npc = $false; $vbx = $false; $ppp = $false; $uio = $false })) "$npc=enable/True,$vbx=enable/True,$ppp=enable/True,$uio=enable/True"
+# The real host (all four enabled before 01c), under StrictMode: a full undo, a partial
+# 01c or undo (some already as recorded), a removed component and a drift.
+& {
+    Set-StrictMode -Version 3.0
+    foreach ($c in @(
+            @(@{ $npc = $false; $vbx = $false; $ppp = $false; $uio = $false }, "$npc=enable/True,$vbx=enable/True,$ppp=enable/True,$uio=enable/True", 4, 0),
+            @(@{ $npc = $false; $vbx = $true; $ppp = $true; $uio = $true }, "$npc=enable/True,$vbx=skip/True,$ppp=skip/True,$uio=skip/True", 1, 0),
+            @(@{ $npc = $true; $vbx = $true; $ppp = $false; $uio = $false }, "$npc=skip/True,$vbx=skip/True,$ppp=enable/True,$uio=enable/True", 2, 0),
+            @(@{ $npc = $true; $vbx = $true; $ppp = $true; $uio = $true }, "$npc=skip/True,$vbx=skip/True,$ppp=skip/True,$uio=skip/True", 0, 0),
+            @(@{ $npc = $false; $vbx = $false; $ppp = $false }, "$npc=enable/True,$vbx=enable/True,$ppp=enable/True,$uio=missing/True", 3, 1))) {
+        $got = ''; $n = -1; $r = -1
+        try { $plan = @(Get-EoFilterRestorePlan $both $c[0]); $got = PlanText $plan; $n = @($plan | Where-Object Action -eq 'enable').Count; $r = @(Test-EoFilterRestorePlan $plan).Count } catch { $got = "threw: $($_.Exception.Message)" }
+        Expect "filter undo plan (four enabled): $($c[1])" $got $c[1]
+        Expect "filter undo plan (four enabled): $($c[1]) enables $($c[2]), refuses $($c[3])" "$n/$r" "$($c[2])/$($c[3])"
+    }
+    $mixed = FState '"componentId": "ms_pppoe", "displayName": "Point to Point Protocol Over Ethernet", "present": true, "enabledBefore": false' '"componentId": "ms_pppoe", "displayName": "Point to Point Protocol Over Ethernet", "present": true, "enabledBefore": true'
+    $plan = @(Get-EoFilterRestorePlan $mixed @{ $npc = $false; $vbx = $false; $ppp = $false; $uio = $true })
+    Expect 'filter undo plan: ms_ndisuio recorded off but enabled now is drift, and refuses' "$(PlanText $plan)|$(@(Test-EoFilterRestorePlan $plan).Count)" "$npc=enable/True,$vbx=leave-off/False,$ppp=enable/True,$uio=drifted/False|1"
+}
 
 # Bindings, unknown components and switch extensions, as verify-host checks them.
 Expect 'filter bindings: both off passes' (@(Test-EoFilterBindings @{ $npc = $false; $vbx = $false; 'ms_tcpip' = $true }).Count) 0
 Expect 'filter bindings: both absent passes' (@(Test-EoFilterBindings @{ 'ms_tcpip' = $true }).Count) 0
+Expect 'filter bindings: all four off passes' (@(Test-EoFilterBindings @{ $npc = $false; $vbx = $false; $ppp = $false; $uio = $false; 'ms_tcpip' = $true }).Count) 0
+Expect 'filter bindings: ms_pppoe enabled fails' (@(Test-EoFilterBindings @{ $npc = $false; $vbx = $false; $ppp = $true; $uio = $false }) -join ';') "$ppp is enabled on '$($EO.HostIf)'"
+Expect 'filter bindings: ms_ndisuio enabled fails' (@(Test-EoFilterBindings @{ $uio = $true }) -join ';') "$uio is enabled on '$($EO.HostIf)'"
+Expect 'filter bindings: all four enabled gives four problems' (@(Test-EoFilterBindings @{ $npc = $true; $vbx = $true; $ppp = $true; $uio = $true }).Count) 4
+Expect 'filter unknown: hidden-only targets in the default view are not unknown' (@(Test-EoUnknownBindings @{ $ppp = $true; $uio = $true; 'ms_tcpip' = $true }).Count) 0
 Expect 'filter bindings: Npcap enabled fails' (@(Test-EoFilterBindings @{ $npc = $true; $vbx = $false }) -join ';') "$npc is enabled on '$($EO.HostIf)'"
 Expect 'filter bindings: VirtualBox enabled fails' (@(Test-EoFilterBindings @{ $vbx = $true }) -join ';') "$vbx is enabled on '$($EO.HostIf)'"
 $clean = (FCur @{}).VisibleBindings
@@ -589,6 +622,9 @@ Expect 'filter installed: matching record, targets off passes' (@(Test-EoFilterI
 $finst = [ordered]@{
     'no 01c record'               = @($null, (FCur @{}), $fGuardId, 'is not installed')
     'a target enabled again'      = @($fRecOk, (FCur @{ Bindings = @{ $npc = $true; $vbx = $false; 'ms_tcpip' = $true } }), $fGuardId, "$npc is enabled")
+    'ms_pppoe enabled again'      = @($fRecOk, (FCur @{ Bindings = @{ $npc = $false; $vbx = $false; $ppp = $true; 'ms_tcpip' = $true } }), $fGuardId, "$ppp is enabled")
+    'ms_ndisuio enabled again'    = @($fRecOk, (FCur @{ Bindings = @{ $npc = $false; $vbx = $false; $uio = $true; 'ms_tcpip' = $true } }), $fGuardId, "$uio is enabled")
+    'a /2 record (two targets)'   = @(($fJson.Replace('eo-l2-filter-guard/3', 'eo-l2-filter-guard/2') | ConvertFrom-Json), (FCur @{}), $fGuardId, 'schema is')
     'NDIS Capture enabled again'  = @($fRecOk, (FCur @{ ExtensionStates = @{ 'Microsoft NDIS Capture' = $true } }), $fGuardId, "'Microsoft NDIS Capture' is enabled")
     'adapter gone'                = @($fRecOk, (FCur @{ SwitchId = $null; Adapter = $null }), $fGuardId, 'not found')
     'record for another adapter'  = @($fRecOk, (FCur @{ Adapter = @{ InterfaceGuid = '{00000000-0000-4000-8000-000000000001}'; MacAddress = '00-15-5D-0A-1C-02'; SettingId = $fguid } }), $fGuardId, 'adapter InterfaceGuid')
@@ -599,6 +635,96 @@ foreach ($k in $finst.Keys) {
     try { $msgs = @(Test-EoFilterInstalled $a[0] $a[1] $a[2]) } catch { $msgs = @("threw: $($_.Exception.Message)") }
     Expect "filter installed: $k refused for its own reason" (@($msgs | Where-Object { $_.Contains($a[3]) }).Count -gt 0) $true
 }
+# What must not change while 01c or its undo runs (Test-EoFilterUnchanged), from
+# Get-EoFilterCurrent facts: targets may change, nothing else on the adapter or switch.
+& {
+    Set-StrictMode -Version 3.0
+    $b0 = FCur @{ Bindings = @{ $npc = $true; $vbx = $true; $ppp = $true; $uio = $true; 'ms_tcpip' = $true; 'ms_wfplwf_lower' = $true; 'ms_netbt' = $true }
+        ExtensionStates = @{ 'Microsoft NDIS Capture' = $true; 'Microsoft Windows Filtering Platform' = $false } }
+    $b0.Adapter['Netbios'] = 2
+    $mk = { param([hashtable]$Bind, [hashtable]$Ext, [hashtable]$Ad)
+        $n = FCur @{ Bindings = $Bind; ExtensionStates = $Ext }
+        $n.Adapter = @{ InterfaceGuid = $fguid; MacAddress = '00-15-5D-0A-1C-02'; SettingId = $fguid; Netbios = 2 }
+        if ($Ad) { foreach ($k in $Ad.Keys) { $n.Adapter[$k] = $Ad[$k] } }
+        $n }
+    $offAll = @{ $npc = $false; $vbx = $false; $ppp = $false; $uio = $false; 'ms_tcpip' = $true; 'ms_wfplwf_lower' = $true; 'ms_netbt' = $true }
+    $extOff = @{ 'Microsoft NDIS Capture' = $false; 'Microsoft Windows Filtering Platform' = $false }
+    Expect 'unchanged: all four targets and NDIS Capture off, nothing else, passes' (@(Test-EoFilterUnchanged $b0 (& $mk $offAll $extOff $null)).Count) 0
+    Expect 'unchanged: one target off (partial), nothing else, passes' (@(Test-EoFilterUnchanged $b0 (& $mk @{ $npc = $false; $vbx = $true; $ppp = $true; $uio = $true; 'ms_tcpip' = $true; 'ms_wfplwf_lower' = $true; 'ms_netbt' = $true } $b0.ExtensionStates $null)).Count) 0
+    $cases = [ordered]@{
+        'IPv4 binding off'            = @(@{ 'ms_tcpip' = $false }, $null, $null, 'ms_tcpip on')
+        'WFP filter unbound'          = @(@{ 'ms_wfplwf_lower' = $false }, $null, $null, 'ms_wfplwf_lower on')
+        'NetBT binding removed'       = @(@{ 'ms_netbt' = $null }, $null, $null, 'ms_netbt on')
+        'a new binding appears'       = @(@{ 'ms_lldp' = $true }, $null, $null, 'ms_lldp on')
+        'WFP extension enabled'       = @($null, @{ 'Microsoft Windows Filtering Platform' = $true }, $null, "'Microsoft Windows Filtering Platform'")
+        'NetBIOS value changed'       = @($null, $null, @{ Netbios = 0 }, 'adapter Netbios')
+        'adapter replaced (GUID)'     = @($null, $null, @{ InterfaceGuid = '{00000000-0000-4000-8000-000000000009}' }, 'adapter InterfaceGuid')
+        'adapter MAC changed'         = @($null, $null, @{ MacAddress = '00-15-5D-00-00-09' }, 'adapter MacAddress')
+    }
+    foreach ($k in $cases.Keys) {
+        $c = $cases[$k]; $bind = $offAll.Clone(); $ext = $extOff.Clone()
+        if ($c[0]) { foreach ($x in $c[0].Keys) { if ($null -eq $c[0][$x]) { $bind.Remove($x) } else { $bind[$x] = $c[0][$x] } } }
+        if ($c[1]) { foreach ($x in $c[1].Keys) { $ext[$x] = $c[1][$x] } }
+        $msgs = @(); try { $msgs = @(Test-EoFilterUnchanged $b0 (& $mk $bind $ext $c[2])) } catch { $msgs = @("threw: $($_.Exception.Message)") }
+        Expect "unchanged: $k is caught" (@($msgs | Where-Object { $_.Contains($c[3]) }).Count -eq 1 -and $msgs.Count -eq 1) $true
+        if ($msgs.Count -ne 1) { $msgs | ForEach-Object { Write-Host "     $_" } }
+    }
+    $n2 = & $mk $offAll $extOff $null; $n2.SwitchId = '99999999-2222-3333-4444-555555555555'
+    Expect 'unchanged: another switch id is caught' (@(Test-EoFilterUnchanged $b0 $n2) -join ';') "switch id changed from '11111111-2222-3333-4444-555555555555' to '99999999-2222-3333-4444-555555555555'"
+    $n3 = & $mk $offAll $extOff $null; $n3.Adapter = $null
+    Expect 'unchanged: the adapter disappearing is caught' (@(Test-EoFilterUnchanged $b0 $n3).Count -ge 1) $true
+}
+
+# Collateral changes between the before and after snapshots (Test-EoSnapshotCollateral),
+# with the real layout: on eo-l2-int only the targets may change, on its switch
+# adapter only ms_ndiscap; every other adapter, switch, firewall rule, address and
+# route stays as it was.
+& {
+    Set-StrictMode -Version 3.0
+    $snapJson = @'
+{ "vmSwitches": [ { "name": "Default Switch", "type": "Internal", "adapter": null }, { "name": "eo-l2-int", "type": "Internal", "adapter": null }, { "name": "WSL", "type": "Internal", "adapter": null } ],
+  "ipAddresses": [ { "if": "vEthernet (eo-l2-int)", "ip": "192.168.250.1", "prefix": 29 }, { "if": "vEthernet (Default Switch)", "ip": "172.20.0.1", "prefix": 20 } ],
+  "routes": [ "192.168.250.0/29 via 0.0.0.0 on vEthernet (eo-l2-int)", "0.0.0.0/0 via 192.168.1.1 on Ethernet" ],
+  "firewall": { "count": 1139, "sha256": "ae29ad22eb51", "eoRules": [ "eo-l2 a", "eo-l2 b", "eo-l2 c", "eo-l2 d", "eo-l2 e" ] },
+  "eoBindings": [ "INSECURE_NPCAP|True", "ms_ndisuio|True", "ms_pppoe|True", "ms_tcpip|True", "ms_wfplwf_lower|True", "oracle_VBoxNetLwf|True" ],
+  "eoSwitchExtensions": [ "Microsoft Azure VFP Switch Filter Extension|False", "Microsoft NDIS Capture|True", "Microsoft Windows Filtering Platform|False" ],
+  "eoSwitchAdapterBindings": [ "ms_ndiscap|True", "ms_wfplwf_vswitch|False", "ms_winvfp|False", "vms_vsf|True", "vms_vsp|True" ],
+  "otherSwitchExtensions": { "count": 6, "sha256": "d0b715be3ecd" },
+  "otherBindings": { "count": 349, "sha256": "311e2bfb3819" } }
+'@
+    $sb = $snapJson | ConvertFrom-Json
+    $ok = $snapJson.Replace('"INSECURE_NPCAP|True", "ms_ndisuio|True", "ms_pppoe|True"', '"INSECURE_NPCAP|False", "ms_ndisuio|False", "ms_pppoe|False"').Replace('"oracle_VBoxNetLwf|True"', '"oracle_VBoxNetLwf|False"').Replace('"Microsoft NDIS Capture|True"', '"Microsoft NDIS Capture|False"').Replace('"ms_ndiscap|True"', '"ms_ndiscap|False"')
+    Expect 'collateral: the planned 01c change (four bindings, NDIS Capture and its ms_ndiscap) passes' (@(Test-EoSnapshotCollateral $sb ($ok | ConvertFrom-Json) -RequireSwitch) -join ';') ''
+    Expect 'collateral: no change passes' (@(Test-EoSnapshotCollateral $sb $sb -RequireSwitch).Count) 0
+    Expect 'collateral: the undo direction passes' (@(Test-EoSnapshotCollateral ($ok | ConvertFrom-Json) $sb).Count) 0
+    $one = $snapJson.Replace('"ms_pppoe|True"', '"ms_pppoe|False"')
+    Expect 'collateral: one target changed (partial) passes' (@(Test-EoSnapshotCollateral $sb ($one | ConvertFrom-Json) -RequireSwitch).Count) 0
+    $bad = [ordered]@{
+        'another adapter''s bindings (digest)' = @($ok.Replace('"311e2bfb3819"', '"aaaaaaaaaaaa"'), 'otherBindings changed')
+        'another adapter added (count)'        = @($ok.Replace('"count": 349', '"count": 350'), 'otherBindings changed')
+        'another switch''s extensions'         = @($ok.Replace('"d0b715be3ecd"', '"bbbbbbbbbbbb"'), 'otherSwitchExtensions changed')
+        'a firewall rule (digest)'             = @($ok.Replace('"ae29ad22eb51"', '"cccccccccccc"'), 'firewall changed')
+        'an eo-l2 rule renamed'                = @($ok.Replace('"eo-l2 e"', '"eo-l2 x"'), 'eo-l2 firewall rules changed')
+        'a switch added'                       = @($ok.Replace('{ "name": "WSL", "type": "Internal", "adapter": null }', '{ "name": "WSL", "type": "Internal", "adapter": null }, { "name": "new", "type": "External", "adapter": "Wi-Fi" }'), 'Hyper-V switches changed')
+        'the host IPv4 address'                = @($ok.Replace('"ip": "192.168.250.1"', '"ip": "192.168.250.2"'), 'IPv4 addresses')
+        'the host IPv4 address gone'           = @($ok.Replace('{ "if": "vEthernet (eo-l2-int)", "ip": "192.168.250.1", "prefix": 29 }, ', ''), 'IPv4 addresses')
+        'a route on the host vNIC'             = @($ok.Replace('"192.168.250.0/29 via 0.0.0.0 on vEthernet (eo-l2-int)"', '"0.0.0.0/0 via 192.168.250.2 on vEthernet (eo-l2-int)"'), 'routes on')
+        'IPv4 unbound on the host vNIC'        = @($ok.Replace('"ms_tcpip|True"', '"ms_tcpip|False"'), "'$($EO.HostIf)' changed outside the targets")
+        'a secondary binding on the host vNIC' = @($ok.Replace('"ms_wfplwf_lower|True"', '"ms_wfplwf_lower|False"'), "'$($EO.HostIf)' changed outside the targets")
+        'another extension on eo-l2-int'       = @($ok.Replace('"Microsoft Windows Filtering Platform|False"', '"Microsoft Windows Filtering Platform|True"'), 'extensions of eo-l2-int changed outside')
+        'vms_vsf on the switch adapter'        = @($ok.Replace('"vms_vsf|True"', '"vms_vsf|False"'), "'$($EO.SwitchAdapter)' changed outside")
+        'VFP on the switch adapter'            = @($ok.Replace('"ms_winvfp|False"', '"ms_winvfp|True"'), "'$($EO.SwitchAdapter)' changed outside")
+    }
+    foreach ($k in $bad.Keys) {
+        $msgs = @(); try { $msgs = @(Test-EoSnapshotCollateral $sb ($bad[$k][0] | ConvertFrom-Json) -RequireSwitch) } catch { $msgs = @("threw: $($_.Exception.Message)") }
+        Expect "collateral: $k is caught, alone" (@($msgs | Where-Object { $_.Contains($bad[$k][1]) }).Count -eq 1 -and $msgs.Count -eq 1) $true
+        if ($msgs.Count -ne 1) { $msgs | ForEach-Object { Write-Host "     $_" } }
+    }
+    $empty = $snapJson.Replace('"eoSwitchAdapterBindings": [ "ms_ndiscap|True", "ms_wfplwf_vswitch|False", "ms_winvfp|False", "vms_vsf|True", "vms_vsp|True" ]', '"eoSwitchAdapterBindings": []') | ConvertFrom-Json
+    Expect 'collateral: 01c refuses a before snapshot without the switch adapter' (@(Test-EoSnapshotCollateral $empty $empty -RequireSwitch).Count) 1
+    Expect 'collateral: the undo after the switch is gone does not need it' (@(Test-EoSnapshotCollateral $empty $empty).Count) 0
+}
+
 & {
     $t = $null; $e = $null
     $a4 = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir '04a-add-setup-nic.ps1'), [ref]$t, [ref]$e)
@@ -613,11 +739,24 @@ foreach ($k in $finst.Keys) {
 # changed when any id is not a target.
 & {
     $script:calls = New-Object System.Collections.Generic.List[string]
-    function Enable-NetAdapterBinding { [CmdletBinding()] param($Name, $ComponentID) $script:calls.Add("enable $Name $ComponentID") }
-    function Disable-NetAdapterBinding { [CmdletBinding()] param($Name, $ComponentID) $script:calls.Add("disable $Name $ComponentID") }
+    # Like the real cmdlets on RH-DT-M3: a hidden binding (ms_pppoe, ms_ndisuio) is
+    # matched only with -AllBindings, and a failure must stop the caller.
+    $hidden = @('ms_pppoe', 'ms_ndisuio')
+    function Enable-NetAdapterBinding { [CmdletBinding()] param($Name, $ComponentID, [switch]$AllBindings)
+        if ($ComponentID -in $hidden -and -not $AllBindings) { return }
+        if ($ErrorActionPreference -ne 'Stop' -and $PSBoundParameters['ErrorAction'] -ne 'Stop') { $script:calls.Add('no-stop') }
+        $script:calls.Add("enable $Name $ComponentID") }
+    function Disable-NetAdapterBinding { [CmdletBinding()] param($Name, $ComponentID, [switch]$AllBindings)
+        if ($ComponentID -in $hidden -and -not $AllBindings) { return }
+        if ($ErrorActionPreference -ne 'Stop' -and $PSBoundParameters['ErrorAction'] -ne 'Stop') { $script:calls.Add('no-stop') }
+        $script:calls.Add("disable $Name $ComponentID") }
     foreach ($c in @(
             @(@($npc, $vbx), $false, "disable $($EO.HostIf) $npc;disable $($EO.HostIf) $vbx"),
             @(@($npc), $true, "enable $($EO.HostIf) $npc"),
+            @(@($npc, $vbx, $ppp, $uio), $false, "disable $($EO.HostIf) $npc;disable $($EO.HostIf) $vbx;disable $($EO.HostIf) $ppp;disable $($EO.HostIf) $uio"),
+            @(@($ppp, $uio), $true, "enable $($EO.HostIf) $ppp;enable $($EO.HostIf) $uio"),
+            @(@($ppp, 'ms_netbt'), $false, 'refused:'),
+            @(@('ms_ndiscap'), $false, 'refused:'),
             @(@(), $false, ''),
             @(@('ms_tcpip'), $false, 'refused:'),
             @(@($npc, 'ms_tcpip'), $true, 'refused:'),
@@ -657,7 +796,7 @@ foreach ($k in $finst.Keys) {
 # returns a list sits directly in @(), so 0 or 1 results cannot break .Count under
 # StrictMode (D-2); and 01c verifies with the filter guard required.
 & {
-    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoFilterInstalled', 'Test-EoFilterExtensions', 'Test-EoSwitchAdapterBindings', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
+    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoFilterInstalled', 'Test-EoFilterExtensions', 'Test-EoSwitchAdapterBindings', 'Test-EoFilterUnchanged', 'Test-EoSnapshotCollateral', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
     foreach ($f in '01c-filter-guard.ps1', 'undo-01c-filter-guard.ps1', 'verify-host.ps1', '_guard.ps1', '04a-add-setup-nic.ps1') {
         $t = $null; $e = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir $f), [ref]$t, [ref]$e)

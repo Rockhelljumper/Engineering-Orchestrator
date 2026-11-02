@@ -44,7 +44,7 @@ try {
                 "Adapter '$($EO.HostIf)' only: InterfaceGuid $($cur.Adapter.InterfaceGuid), MAC $($cur.Adapter.MacAddress)"
                 foreach ($e in $plan) {
                     switch ($e.Action) {
-                        'enable' { "Enable-NetAdapterBinding -Name '$($EO.HostIf)' -ComponentID $($e.ComponentId) (enabled before 01c, disabled now)" }
+                        'enable' { "Enable-NetAdapterBinding -Name '$($EO.HostIf)' -ComponentID $($e.ComponentId) -AllBindings (enabled before 01c, disabled now)" }
                         'skip' { "$($e.ComponentId) is already enabled as recorded: no change" }
                         'leave-off' { "$($e.ComponentId) was not enabled before 01c: stays as it is" }
                     }
@@ -75,6 +75,7 @@ try {
         # The only binding change: targets the record shows as enabled, on the host vNIC only.
         Set-EoFilterBindings @($plan | Where-Object Action -eq 'enable' | ForEach-Object ComponentId) -Enable
         Set-EoSwitchExtensions @($xplan | Where-Object Action -eq 'enable' | ForEach-Object ComponentId) $cur.SwitchId -Enable
+        if (@($plan | Where-Object Action -eq 'enable').Count -and -not (Wait-EoHostIfAddress)) { Write-Host "note: $($EO.HostIp) on '$($EO.HostIf)' is not back in the Preferred state after 30 s; the checks below will show it" }
         $now = Get-EoFilterCurrent
         $bad = @()
         foreach ($r in @($st.bindings)) {
@@ -82,23 +83,12 @@ try {
             $on = $now.Bindings.ContainsKey($id) -and [bool]$now.Bindings[$id]
             if ($on -ne [bool]$r.enabledBefore) { $bad += "$id reads $(if ($on) { 'enabled' } else { 'not enabled' }), the record has enabledBefore $($r.enabledBefore)" }
         }
-        foreach ($id in @(@($cur.Bindings.Keys) + @($now.Bindings.Keys) | Sort-Object -Unique)) {
-            if ($id -in $EO.FilterTargets) { continue }
-            $was = if ($cur.Bindings.ContainsKey($id)) { "$($cur.Bindings[$id])" } else { 'absent' }
-            $is = if ($now.Bindings.ContainsKey($id)) { "$($now.Bindings[$id])" } else { 'absent' }
-            if ($was -ne $is) { $bad += "$id on '$($EO.HostIf)' changed from $was to $is" }
-        }
         foreach ($r in @($st.switchExtensions)) {
             $n = "$($r.name)"
             $on = $now.ExtensionStates.ContainsKey($n) -and [bool]$now.ExtensionStates[$n]
             if ($on -ne [bool]$r.enabledBefore) { $bad += "switch extension '$n' reads $(if ($on) { 'enabled' } else { 'not enabled' }), the record has enabledBefore $($r.enabledBefore)" }
         }
-        foreach ($n in @(@($cur.ExtensionStates.Keys) + @($now.ExtensionStates.Keys) | Sort-Object -Unique)) {
-            if ($n -in $EO.SwitchExtTargets) { continue }
-            $was = if ($cur.ExtensionStates.ContainsKey($n)) { "$($cur.ExtensionStates[$n])" } else { 'absent' }
-            $is = if ($now.ExtensionStates.ContainsKey($n)) { "$($now.ExtensionStates[$n])" } else { 'absent' }
-            if ($was -ne $is) { $bad += "switch extension '$n' on $($EO.SwitchName) changed from $was to $is" }
-        }
+        $bad += @(Test-EoFilterUnchanged $cur $now)
         $bad += @(Test-EoSwitchAdapterBindings @(Get-NetAdapterBinding -Name $EO.SwitchAdapter -IncludeHidden -AllBindings -ErrorAction Stop) $now.ExtensionStates)
         if ($bad.Count) { throw "Bindings or extensions do not read back as recorded: $($bad -join '; '). The record is kept; rerun this undo after checking." }
     }
@@ -106,14 +96,10 @@ try {
     if (-not @(Get-ChildItem -LiteralPath $EO.GuardDir -Force).Count) { Remove-Item -LiteralPath $EO.GuardDir }
     $after = Save-EoSnapshot $stamp 'after'
     Compare-EoSnapshot $before $after
-    # Enforced, as in 01c: nothing outside eo-l2-int changed while the undo ran.
+    # Enforced, as in 01c (Test-EoSnapshotCollateral): nothing outside the targets changed while the undo ran.
     $sb = Get-Content -LiteralPath $before -Raw | ConvertFrom-Json; $sa = Get-Content -LiteralPath $after -Raw | ConvertFrom-Json
-    foreach ($k in 'otherBindings', 'otherSwitchExtensions', 'firewall') {
-        if ("$($sb.$k.sha256)" -ne "$($sa.$k.sha256)" -or "$($sb.$k.count)" -ne "$($sa.$k.count)") { throw "$k changed while the undo ran (outside what it restores). The bindings and extension are restored and the record is closed; review the snapshot diff above." }
-    }
-    $xc = @($EO.SwitchExtTargets | ForEach-Object { $EO.SwitchExtComponents[$_] })
-    $nonTargetSa = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -cnotin $xc }) -join ',' }
-    if ((& $nonTargetSa $sb.eoSwitchAdapterBindings) -ne (& $nonTargetSa $sa.eoSwitchAdapterBindings)) { throw "Bindings on '$($EO.SwitchAdapter)' other than $($xc -join ', ') changed while the undo ran. The bindings and extension are restored and the record is closed; review the snapshot diff above." }
+    $col = @(Test-EoSnapshotCollateral $sb $sa)
+    if ($col.Count) { throw "Changes outside what the undo restores: $($col -join '; '). The targets are restored and the record is closed; review the snapshot diff above." }
     if ($cur.Adapter) {
         & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly
         if ($LASTEXITCODE -ne 0) { throw 'Host-side verification failed after the undo; the bindings are restored and the record is closed. Review the transcript.' }
