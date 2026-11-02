@@ -71,7 +71,7 @@ try {
     $fmode = Get-EoFilterGuardMode $SwitchOnly $BeforeGuard $RequireFilterGuard $ffile
     if ($fmode -eq 'check') {
         $fcur = $null; $fread = $null
-        try { $fcur = Get-EoFilterCurrent } catch { $fread = "bindings not read: $($_.Exception.Message)" }
+        try { $fcur = Get-EoFilterCurrent } catch { $fread = "bindings or switch extensions not read: $($_.Exception.Message)" }
         if (-not $fcur) { $fcur = @{ Computer = $env:COMPUTERNAME; SwitchId = $null; Adapter = $null; Bindings = @{}; VisibleBindings = @{}; Extensions = @(); ExtensionStates = @{} } }
         $fb = @(if ($fread) { $fread } else { Test-EoFilterBindings $fcur.Bindings })
         Row 'Filter guard: Npcap and VirtualBox filters absent or off on eo-l2-int' ($fb.Count -eq 0) ($fb -join '; ')

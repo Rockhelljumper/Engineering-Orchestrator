@@ -401,7 +401,7 @@ function PlanText($Plan) { (@($Plan) | ForEach-Object { "$($_.ComponentId)=$($_.
 $fguid = '{94ebb62f-0000-4000-8000-00000000abcd}'
 $fGuardId = '0123456789abcdef0123456789abcdef'
 $fJson = @"
-{ "schema": "eo-l2-filter-guard/1", "instanceId": "fedcba9876543210fedcba9876543210", "createdAt": "2026-11-02T00:00:00Z",
+{ "schema": "eo-l2-filter-guard/2", "instanceId": "fedcba9876543210fedcba9876543210", "createdAt": "2026-11-02T00:00:00Z",
   "computer": "$env:COMPUTERNAME", "switchId": "11111111-2222-3333-4444-555555555555",
   "adapter": { "name": "vEthernet (eo-l2-int)", "interfaceGuid": "$fguid", "macAddress": "00-15-5D-0A-1C-02", "settingId": "$fguid" },
   "hostGuardInstanceId": "$fGuardId",
@@ -425,8 +425,8 @@ Expect 'filter record: switch and adapter gone passes (nothing to restore)' (@(T
 $fbad = [ordered]@{
     'no record'                        = @($null, (FCur @{}), $fGuardId, 'no filter guard record')
     'no bindings'                      = @((FState '"bindings":' '"bindingz":'), (FCur @{}), $fGuardId, "no 'bindings'")
-    'another schema'                   = @((FState 'eo-l2-filter-guard/1' 'eo-l2-host-guard/1'), (FCur @{}), $fGuardId, 'schema is')
-    'schema as a list'                 = @((FState '"schema": "eo-l2-filter-guard/1"' '"schema": ["eo-l2-filter-guard/1"]'), (FCur @{}), $fGuardId, 'schema is not a single string')
+    'another schema'                   = @((FState 'eo-l2-filter-guard/2' 'eo-l2-filter-guard/1'), (FCur @{}), $fGuardId, 'schema is')
+    'schema as a list'                 = @((FState '"schema": "eo-l2-filter-guard/2"' '"schema": ["eo-l2-filter-guard/2"]'), (FCur @{}), $fGuardId, 'schema is not a single string')
     'malformed instance id'            = @((FState 'fedcba9876543210fedcba9876543210' 'fedcba98'), (FCur @{}), $fGuardId, 'instanceId')
     'malformed host guard id'          = @((FState """hostGuardInstanceId"": ""$fGuardId""" '"hostGuardInstanceId": "X"'), (FCur @{}), 'X', 'hostGuardInstanceId')
     'host guard id as a number'        = @((FState """hostGuardInstanceId"": ""$fGuardId""" '"hostGuardInstanceId": 5'), (FCur @{}), $fGuardId, 'hostGuardInstanceId is not a single string')
@@ -446,6 +446,7 @@ $fbad = [ordered]@{
     'another adapter (setting id)'     = @(($fJson | ConvertFrom-Json), (FCur @{ Adapter = @{ InterfaceGuid = $fguid; MacAddress = '00-15-5D-0A-1C-02'; SettingId = '{00000000-0000-4000-8000-000000000002}' } }), $fGuardId, 'adapter SettingId')
     'record without the adapter GUID'  = @((FState """interfaceGuid"": ""$fguid"", " ''), (FCur @{}), $fGuardId, 'adapter has no interfaceGuid')
     'switch present, adapter missing'  = @(($fJson | ConvertFrom-Json), (FCur @{ Adapter = $null }), $fGuardId, 'cannot tell which adapter')
+    'extension name as a list'         = @((FState '"name": "Microsoft NDIS Capture"' '"name": ["Microsoft NDIS Capture"]'), (FCur @{}), $fGuardId, 'is not a single string')
     'no switchExtensions'              = @((FState '"switchExtensions":' '"switchExtensionz":'), (FCur @{}), $fGuardId, "no 'switchExtensions'")
     'another extension recorded'       = @((FState '"name": "Microsoft NDIS Capture"' '"name": "Microsoft Windows Filtering Platform"'), (FCur @{}), $fGuardId, 'switch extensions are')
     'no extension recorded'            = @((FState '"switchExtensions": [ { "name": "Microsoft NDIS Capture", "present": true, "enabledBefore": true } ]' '"switchExtensions": []'), (FCur @{}), $fGuardId, 'switch extensions are')

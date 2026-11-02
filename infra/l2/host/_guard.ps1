@@ -262,7 +262,8 @@ function Get-EoGuardCurrent {
 # switch and computer, built on the same 01b instance. Pure Test-*/Get-*Plan
 # functions take plain facts so tests/selftest.ps1 can drive them.
 
-$EoFilterSchema = 'eo-l2-filter-guard/1'
+# /2 adds switchExtensions. No /1 record was ever written on a host (01c first ran at /2).
+$EoFilterSchema = 'eo-l2-filter-guard/2'
 
 # The filter-guard facts of the host now: the host guard facts (so the same read
 # serves Test-EoGuardState) plus the host vNIC's bindings as @{ <ComponentID> =
@@ -276,7 +277,8 @@ function Get-EoFilterCurrent {
     $b = @{}; $v = @{}; $names = @{}; $ext = @(); $es = @{}
     if ($g.SwitchId) {
         # A read error stops the caller, as for the bindings.
-        $ext = @(@(Get-VMSwitchExtension -VMSwitchName $EO.SwitchName -ErrorAction Stop) | ForEach-Object { @{ Name = "$($_.Name)"; Vendor = "$($_.Vendor)"; Enabled = "$($_.Enabled)" } })
+        try { $raw = @(Get-VMSwitchExtension -VMSwitchName $EO.SwitchName -ErrorAction Stop) } catch { throw "the vSwitch extensions of $($EO.SwitchName) could not be read ($($_.Exception.Message))" }
+        $ext = @($raw | ForEach-Object { @{ Name = "$($_.Name)"; Vendor = "$($_.Vendor)"; Enabled = "$($_.Enabled)" } })
         foreach ($x in $ext) { $es[$x.Name] = ($x.Enabled -eq 'True') }
     }
     if ($g.Adapter) {
@@ -399,6 +401,7 @@ function Test-EoFilterState($State, $Current, $GuardInstanceId) {
         if ($eb -and -not $pr) { $p.Add("filter record entry '$(Get-EoProp $r 'componentId')' is enabledBefore but not present") }
     }
     $xrecs = @($State.switchExtensions)
+    foreach ($r in $xrecs) { if ((Get-EoProp $r 'name') -isnot [string]) { $p.Add("filter record extension name '$(Get-EoProp $r 'name')' is not a single string") } }
     $xn = @($xrecs | ForEach-Object { "$(Get-EoProp $_ 'name')" })
     if ((@($xn | Sort-Object) -join ',') -cne (@($EO.SwitchExtTargets | Sort-Object) -join ',')) { $p.Add("filter record switch extensions are '$($xn -join ',')', want '$($EO.SwitchExtTargets -join ',')'") }
     foreach ($r in $xrecs) {

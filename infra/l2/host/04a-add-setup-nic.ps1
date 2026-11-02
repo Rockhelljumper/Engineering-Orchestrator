@@ -17,7 +17,9 @@ try {
     function Assert-FilterGuard {
         $fs = $null; $gid = $null
         try { $fs = Read-EoFilterState; $gid = Get-EoProp (Read-EoGuardState) 'instanceId' } catch { throw "Refusing 04a; nothing was changed: a guard record cannot be used ($($_.Exception.Message))." }
-        $fp = @(Test-EoFilterInstalled $fs (Get-EoFilterCurrent) $gid)
+        $fc = $null
+        try { $fc = Get-EoFilterCurrent } catch { throw "Refusing 04a; nothing was changed: $($_.Exception.Message)." }
+        $fp = @(Test-EoFilterInstalled $fs $fc $gid)
         if ($fp.Count) { throw "Refusing 04a; nothing was changed: $($fp -join '; '). Run and verify 01c-filter-guard.ps1 first." }
         & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly -RequireFilterGuard
         if ($LASTEXITCODE -ne 0) { throw 'Refusing 04a; nothing was changed: verify-host.ps1 -SwitchOnly -RequireFilterGuard does not pass.' }

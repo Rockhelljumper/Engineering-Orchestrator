@@ -61,7 +61,7 @@ try {
                 }
             })
         "First, record each target's state (bindings and extension), this adapter, the switch id and instance $instance in $($EO.FilterState) (Administrators and SYSTEM only); the undo restores only from that record"
-        $(if ($change.Count) { 'The adapter restarts briefly while a binding changes; no VM exists yet, so no session drops' } elseif (-not $xchange.Count) { 'Nothing to change: the record is still written, so verify-host checks the filter guard from now on' })
+        $(if ($change.Count) { 'The adapter restarts briefly while a binding changes; an SSH session to the guest over eo-l2-int may drop' } elseif (-not $xchange.Count) { 'Nothing to change: the record is still written, so verify-host checks the filter guard from now on' })
         'No other adapter, binding, switch, extension, driver, service, Npcap or VirtualBox setting, firewall rule or NetBIOS value changes'
     )
     # The host may have changed while the plan waited: read and check everything again.
@@ -139,6 +139,7 @@ try {
     if ("$($sb.otherBindings.sha256)" -ne "$($sa.otherBindings.sha256)" -or "$($sb.otherBindings.count)" -ne "$($sa.otherBindings.count)") { throw "Bindings on another adapter changed during 01c (digest $($sb.otherBindings.sha256) -> $($sa.otherBindings.sha256))." }
     $nonTarget = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -notin $EO.FilterTargets }) -join ',' }
     if ((& $nonTarget $sb.eoBindings) -ne (& $nonTarget $sa.eoBindings)) { throw "Bindings on '$($EO.HostIf)' other than the targets changed during 01c." }
+    if (-not @($sb.eoSwitchExtensions).Count -and @($cur.Extensions).Count) { throw "The before snapshot holds no switch extensions though $($EO.SwitchName) has $(@($cur.Extensions).Count); the extension diff cannot be checked." }
     $nonTargetExt = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -notin $EO.SwitchExtTargets }) -join ',' }
     if ((& $nonTargetExt $sb.eoSwitchExtensions) -ne (& $nonTargetExt $sa.eoSwitchExtensions)) { throw "Extensions on $($EO.SwitchName) other than the targets changed during 01c." }
     & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly -RequireFilterGuard
