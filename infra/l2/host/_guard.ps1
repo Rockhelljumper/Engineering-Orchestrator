@@ -597,9 +597,11 @@ function Test-EoFilterVerified($Stamp, $State, [string]$RecordSha256) {
     $p = New-Object System.Collections.Generic.List[string]
     if ($null -eq $Stamp) { $p.Add("01c did not complete: no completion stamp at $($EO.FilterVerified) (01c writes it only after its final verification passed). Review the 01c transcript, then run undo-01c-filter-guard.ps1 and 01c again"); return $p }
     $names = @($Stamp.PSObject.Properties.Name)
+    # verifiedAt only needs to be there: PowerShell 7's ConvertFrom-Json reads an ISO
+    # date string as a DateTime.
     foreach ($k in 'schema', 'instanceId', 'recordSha256', 'verifiedAt') {
         if ($k -notin $names) { $p.Add("completion stamp has no '$k'") }
-        elseif ($Stamp.PSObject.Properties[$k].Value -isnot [string]) { $p.Add("completion stamp $k is not a single string") }
+        elseif ($k -ne 'verifiedAt' -and $Stamp.PSObject.Properties[$k].Value -isnot [string]) { $p.Add("completion stamp $k is not a single string") }
     }
     if ($p.Count) { return $p }
     if ($Stamp.schema -cne $EoFilterVerifiedSchema) { $p.Add("completion stamp schema is '$($Stamp.schema)', want '$EoFilterVerifiedSchema'") }
