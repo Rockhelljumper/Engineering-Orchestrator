@@ -274,9 +274,14 @@ foreach ($k in $bad.Keys) {
     function Get-NetNat { }
     function Get-NetFirewallRule { }
     function Get-Service { }
+    # Real host layout (2026-11-02): each switch has a hidden 'vSwitch (<switch>)'
+    # adapter whose ms_ndiscap binding is its NDIS Capture extension.
+    $vsEo = $true; $vsDefault = $true
     function Get-NetAdapterBinding { [CmdletBinding()] param($Name, [switch]$AllBindings, [switch]$IncludeHidden)
         $all = @([pscustomobject]@{ Name = $EO.HostIf; ComponentID = 'ms_tcpip'; Enabled = $true }, [pscustomobject]@{ Name = $EO.HostIf; ComponentID = 'INSECURE_NPCAP'; Enabled = $false },
-            [pscustomobject]@{ Name = 'Ethernet'; ComponentID = 'INSECURE_NPCAP'; Enabled = $true })
+            [pscustomobject]@{ Name = 'Ethernet'; ComponentID = 'INSECURE_NPCAP'; Enabled = $true },
+            [pscustomobject]@{ Name = 'vSwitch (eo-l2-int)'; ComponentID = 'ms_ndiscap'; Enabled = $vsEo }, [pscustomobject]@{ Name = 'vSwitch (eo-l2-int)'; ComponentID = 'vms_vsf'; Enabled = $true },
+            [pscustomobject]@{ Name = 'vSwitch (Default Switch)'; ComponentID = 'ms_ndiscap'; Enabled = $vsDefault }, [pscustomobject]@{ Name = 'vSwitch (WSL)'; ComponentID = 'ms_winvfp'; Enabled = $true })
         if ($Name) { $all | Where-Object Name -eq $Name } else { $all } }
     function Get-VMSwitchExtension { [CmdletBinding()] param($VMSwitchName) @([pscustomobject]@{ Name = 'Microsoft NDIS Capture'; Enabled = $true }, [pscustomobject]@{ Name = 'Microsoft Windows Filtering Platform'; Enabled = $false }) }
     function Get-VMHost { [pscustomobject]@{ EnableEnhancedSessionMode = $true; VirtualHardDiskPath = 'C:\vhd'; VirtualMachinePath = 'C:\vm' } }
@@ -296,7 +301,15 @@ foreach ($k in $bad.Keys) {
         Expect 'snapshot: eo-l2-int bindings listed in full' ($snap.eoBindings -join ',') 'INSECURE_NPCAP|False,ms_tcpip|True'
         Expect 'snapshot: eo-l2-int switch extensions listed' ($snap.eoSwitchExtensions -join ',') 'Microsoft NDIS Capture|True,Microsoft Windows Filtering Platform|False'
         Expect 'snapshot: other switches extension digest present' "$($snap.otherSwitchExtensions.count)/$($snap.otherSwitchExtensions.sha256.Length)" '0/64'
-        Expect 'snapshot: other adapters digested' "$($snap.otherBindings.count)/$($snap.otherBindings.sha256.Length)" '1/64'
+        Expect 'snapshot: other adapters digested, the Default Switch and WSL switch adapters included' "$($snap.otherBindings.count)/$($snap.otherBindings.sha256.Length)" '3/64'
+        Expect 'snapshot: the eo-l2-int switch adapter listed in full' ($snap.eoSwitchAdapterBindings -join ',') 'ms_ndiscap|True,vms_vsf|True'
+        # 01c's own change (NDIS Capture off on eo-l2-int) must leave the digest as it was;
+        # the same change on the Default Switch must not.
+        $vsEo = $false; $s2 = Get-EoSnapshot
+        Expect 'snapshot: NDIS Capture off on eo-l2-int keeps the other-adapter digest' "$($s2.otherBindings.sha256)" "$($snap.otherBindings.sha256)"
+        Expect 'snapshot: NDIS Capture off on eo-l2-int shows in the switch adapter list' ($s2.eoSwitchAdapterBindings -join ',') 'ms_ndiscap|False,vms_vsf|True'
+        $vsDefault = $false; $s3 = Get-EoSnapshot
+        Expect 'snapshot: NDIS Capture off on the Default Switch changes the other-adapter digest' ("$($s3.otherBindings.sha256)" -ne "$($s2.otherBindings.sha256)") $true
 
     }
 }
@@ -498,6 +511,17 @@ foreach ($c in @(
 Expect 'filter extensions: NDIS Capture off passes' (@(Test-EoFilterExtensions @{ 'Microsoft NDIS Capture' = $false }).Count) 0
 Expect 'filter extensions: NDIS Capture absent passes' (@(Test-EoFilterExtensions @{}).Count) 0
 Expect 'filter extensions: NDIS Capture on fails' (@(Test-EoFilterExtensions @{ 'Microsoft NDIS Capture' = $true }) -join ';') "switch extension 'Microsoft NDIS Capture' is enabled on $($EO.SwitchName)"
+$sabOn = @([pscustomobject]@{ ComponentID = 'ms_ndiscap'; Enabled = $true }, [pscustomobject]@{ ComponentID = 'vms_vsf'; Enabled = $true })
+$sabOff = @([pscustomobject]@{ ComponentID = 'ms_ndiscap'; Enabled = $false }, [pscustomobject]@{ ComponentID = 'vms_vsf'; Enabled = $true })
+Expect 'switch adapter: ms_ndiscap on with NDIS Capture on passes' (@(Test-EoSwitchAdapterBindings $sabOn @{ 'Microsoft NDIS Capture' = $true }).Count) 0
+Expect 'switch adapter: ms_ndiscap off with NDIS Capture off passes' (@(Test-EoSwitchAdapterBindings $sabOff @{ 'Microsoft NDIS Capture' = $false }).Count) 0
+Expect 'switch adapter: ms_ndiscap off with NDIS Capture on fails (wrong adapter)' (@(Test-EoSwitchAdapterBindings $sabOff @{ 'Microsoft NDIS Capture' = $true }).Count) 1
+Expect 'switch adapter: ms_ndiscap on with NDIS Capture off fails' (@(Test-EoSwitchAdapterBindings $sabOn @{ 'Microsoft NDIS Capture' = $false }).Count) 1
+Expect 'switch adapter: no bindings (adapter not found) fails' (@(Test-EoSwitchAdapterBindings @() @{ 'Microsoft NDIS Capture' = $true }) -join ';') "'$($EO.SwitchAdapter)' has 0 ms_ndiscap binding(s), want exactly 1 for the 'Microsoft NDIS Capture' extension"
+Expect 'switch adapter: two ms_ndiscap bindings fail' (@(Test-EoSwitchAdapterBindings @($sabOn + $sabOn) @{ 'Microsoft NDIS Capture' = $true }).Count) 1
+Expect 'switch adapter: a single binding object works under StrictMode' (@(Test-EoSwitchAdapterBindings $sabOn[0] @{ 'Microsoft NDIS Capture' = $true }).Count) 0
+Expect 'switch adapter: extension not listed fails' (@(Test-EoSwitchAdapterBindings $sabOn @{}).Count) 1
+Expect 'switch adapter: component matched case-exactly' (@(Test-EoSwitchAdapterBindings @([pscustomobject]@{ ComponentID = 'MS_NDISCAP'; Enabled = $true }) @{ 'Microsoft NDIS Capture' = $true }).Count) 1
 $both = FState '"present": true, "enabledBefore": false' '"present": true, "enabledBefore": true'
 Expect 'filter undo plan: both recorded enabled, both off now' (PlanText (Get-EoFilterRestorePlan $both @{ $npc = $false; $vbx = $false })) "$npc=enable/True,$vbx=enable/True"
 
@@ -633,7 +657,7 @@ foreach ($k in $finst.Keys) {
 # returns a list sits directly in @(), so 0 or 1 results cannot break .Count under
 # StrictMode (D-2); and 01c verifies with the filter guard required.
 & {
-    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoFilterInstalled', 'Test-EoFilterExtensions', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
+    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoFilterInstalled', 'Test-EoFilterExtensions', 'Test-EoSwitchAdapterBindings', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
     foreach ($f in '01c-filter-guard.ps1', 'undo-01c-filter-guard.ps1', 'verify-host.ps1', '_guard.ps1', '04a-add-setup-nic.ps1') {
         $t = $null; $e = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir $f), [ref]$t, [ref]$e)

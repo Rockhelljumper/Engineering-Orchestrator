@@ -352,7 +352,10 @@ function Test-EoFilterPreconditions($GuardState, $Current, [bool]$RecordPresent,
     else { foreach ($x in @(Test-EoGuardState $GuardState $Current)) { $p.Add("host guard record: $x") } }
     if (-not $Current.SwitchId -or -not $Current.Adapter) { $p.Add("switch $($EO.SwitchName) or its host adapter is missing") }
     $leaf = Split-Path -Leaf $EO.GuardState
-    foreach ($n in @($DirNames)) { if ("$n" -cne $leaf) { $p.Add("$($EO.GuardDir) holds '$n', which no step wrote") } }
+    foreach ($n in @($DirNames)) {
+        if ("$n" -ceq "$(Split-Path -Leaf $EO.FilterState).tmp") { $p.Add("$($EO.GuardDir) holds '$n', left by an interrupted 01c before its record was in place; no binding or extension was changed then. Check its contents and delete it (elevated), then rerun") }
+        elseif ("$n" -cne $leaf) { $p.Add("$($EO.GuardDir) holds '$n', which no step wrote") }
+    }
     foreach ($x in @(Test-EoUnknownBindings $Current.VisibleBindings)) { $p.Add($x) }
     foreach ($x in @(Test-EoSwitchExtensions $Extensions)) { $p.Add($x) }
     return $p
@@ -469,6 +472,23 @@ function Test-EoSwitchExtensions($Extensions) {
 function Test-EoFilterExtensions($States) {
     $p = New-Object System.Collections.Generic.List[string]
     foreach ($n in $EO.SwitchExtTargets) { if ($States.ContainsKey($n) -and $States[$n]) { $p.Add("switch extension '$n' is enabled on $($EO.SwitchName)") } }
+    return $p
+}
+
+# Problems with the hidden adapter that carries eo-l2-int's extensions ($EO.SwitchAdapter):
+# for each extension target, exactly one binding of its component, reading as the
+# extension does. 01c checks this before it changes anything, so the snapshot's
+# exclusion of that adapter from the other-adapter digest hits the right adapter,
+# and again after, so the extension and its binding agree. Pure.
+function Test-EoSwitchAdapterBindings($Bindings, $ExtensionStates) {
+    $p = New-Object System.Collections.Generic.List[string]
+    foreach ($x in $EO.SwitchExtTargets) {
+        $c = "$($EO.SwitchExtComponents[$x])"
+        $b = @(@($Bindings) | Where-Object { "$($_.ComponentID)" -ceq $c })
+        if ($b.Count -ne 1) { $p.Add("'$($EO.SwitchAdapter)' has $($b.Count) $c binding(s), want exactly 1 for the '$x' extension"); continue }
+        if (-not $ExtensionStates.ContainsKey($x)) { $p.Add("'$x' is bound on '$($EO.SwitchAdapter)' but not listed among the extensions of $($EO.SwitchName)"); continue }
+        if ([bool]$b[0].Enabled -ne [bool]$ExtensionStates[$x]) { $p.Add("$c on '$($EO.SwitchAdapter)' reads Enabled=$([bool]$b[0].Enabled) but the '$x' extension on $($EO.SwitchName) reads $([bool]$ExtensionStates[$x]), so that adapter is not the one the extension maps to") }
+    }
     return $p
 }
 

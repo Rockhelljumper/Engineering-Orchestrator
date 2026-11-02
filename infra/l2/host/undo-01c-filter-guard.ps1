@@ -99,12 +99,21 @@ try {
             $is = if ($now.ExtensionStates.ContainsKey($n)) { "$($now.ExtensionStates[$n])" } else { 'absent' }
             if ($was -ne $is) { $bad += "switch extension '$n' on $($EO.SwitchName) changed from $was to $is" }
         }
+        $bad += @(Test-EoSwitchAdapterBindings @(Get-NetAdapterBinding -Name $EO.SwitchAdapter -IncludeHidden -AllBindings -ErrorAction Stop) $now.ExtensionStates)
         if ($bad.Count) { throw "Bindings or extensions do not read back as recorded: $($bad -join '; '). The record is kept; rerun this undo after checking." }
     }
     Move-Item -LiteralPath $EO.FilterState -Destination (Join-Path $EO.Evidence "filter-guard-state.undone-$stamp.json")
     if (-not @(Get-ChildItem -LiteralPath $EO.GuardDir -Force).Count) { Remove-Item -LiteralPath $EO.GuardDir }
     $after = Save-EoSnapshot $stamp 'after'
     Compare-EoSnapshot $before $after
+    # Enforced, as in 01c: nothing outside eo-l2-int changed while the undo ran.
+    $sb = Get-Content -LiteralPath $before -Raw | ConvertFrom-Json; $sa = Get-Content -LiteralPath $after -Raw | ConvertFrom-Json
+    foreach ($k in 'otherBindings', 'otherSwitchExtensions', 'firewall') {
+        if ("$($sb.$k.sha256)" -ne "$($sa.$k.sha256)" -or "$($sb.$k.count)" -ne "$($sa.$k.count)") { throw "$k changed while the undo ran (outside what it restores). The bindings and extension are restored and the record is closed; review the snapshot diff above." }
+    }
+    $xc = @($EO.SwitchExtTargets | ForEach-Object { $EO.SwitchExtComponents[$_] })
+    $nonTargetSa = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -cnotin $xc }) -join ',' }
+    if ((& $nonTargetSa $sb.eoSwitchAdapterBindings) -ne (& $nonTargetSa $sa.eoSwitchAdapterBindings)) { throw "Bindings on '$($EO.SwitchAdapter)' other than $($xc -join ', ') changed while the undo ran. The bindings and extension are restored and the record is closed; review the snapshot diff above." }
     if ($cur.Adapter) {
         & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly
         if ($LASTEXITCODE -ne 0) { throw 'Host-side verification failed after the undo; the bindings are restored and the record is closed. Review the transcript.' }

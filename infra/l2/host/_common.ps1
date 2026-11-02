@@ -62,6 +62,13 @@ $EO = [ordered]@{
     # vSwitch extensions 01c disables on eo-l2-int only (enabled there by Windows
     # default; inventory of 2026-11-02). 01c and its undo change no other extension.
     SwitchExtTargets = @('Microsoft NDIS Capture')
+    # Hyper-V gives each switch a hidden 'vSwitch (<switch>)' adapter, and an extension's
+    # Enabled state is its component's binding on that adapter (inventory of 2026-11-02:
+    # NDIS Capture = ms_ndiscap, on all three switches). So disabling the extension also
+    # turns off that one binding there; snapshots list this adapter in full instead of
+    # in the other-adapter digest, and 01c and its undo accept only that entry changing.
+    SwitchAdapter = 'vSwitch (eo-l2-int)'
+    SwitchExtComponents = @{ 'Microsoft NDIS Capture' = 'ms_ndiscap' }
     FilterState  = Join-Path $env:ProgramData 'eo-l2\filter-guard-state.json'
 }
 
@@ -189,14 +196,18 @@ function Get-EoSnapshot {
     $sha            = [Security.Cryptography.SHA256]::Create()
     $s.firewall     = [ordered]@{ count = $rules.Count; sha256 = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes(($rules -join "`n")))) -replace '-', '').ToLower(); eoRules = @(Get-NetFirewallRule -Group $EO.FwGroup -ErrorAction SilentlyContinue | ForEach-Object { $_.DisplayName }) }
     $s.services     = @(Get-Service -Name vmms, vmcompute, HvHost, LxssManager, WSLService, com.docker.service, VBoxSDS, ssh-agent -ErrorAction SilentlyContinue | Sort-Object Name | ForEach-Object { [ordered]@{ name = $_.Name; status = "$($_.Status)"; start = "$($_.StartType)" } })
-    # The host vNIC's bindings in full, and a digest of every other adapter's, so the
-    # 01c diff shows that only the filter targets on eo-l2-int changed.
+    # The host vNIC's bindings in full, and a digest of every other adapter's (the
+    # Default Switch and WSL switch adapters included), so the 01c diff shows that only
+    # the filter targets on eo-l2-int changed.
     $s.eoBindings   = @(@(Get-NetAdapterBinding -Name $EO.HostIf -AllBindings -ErrorAction SilentlyContinue) | Sort-Object ComponentID | ForEach-Object { "$($_.ComponentID)|$($_.Enabled)" })
     $s.eoSwitchExtensions = @(@(Get-VMSwitchExtension -VMSwitchName $EO.SwitchName -ErrorAction SilentlyContinue) | Sort-Object Name | ForEach-Object { "$($_.Name)|$($_.Enabled)" })
     # Every other switch's extensions, digested, so the 01c diff shows they did not change.
+    # The hidden adapter that carries eo-l2-int's extensions, in full: 01c changes its
+    # ms_ndiscap entry (the NDIS Capture extension) and nothing else there.
+    $s.eoSwitchAdapterBindings = @(@(Get-NetAdapterBinding -Name $EO.SwitchAdapter -IncludeHidden -AllBindings -ErrorAction SilentlyContinue) | Sort-Object ComponentID | ForEach-Object { "$($_.ComponentID)|$($_.Enabled)" })
     $otherExt       = @(@(Get-VMSwitch -ErrorAction SilentlyContinue) | Where-Object { $_.Name -ne $EO.SwitchName } | ForEach-Object { $n = $_.Name; @(Get-VMSwitchExtension -VMSwitch $_ -ErrorAction SilentlyContinue) | ForEach-Object { "$n|$($_.Name)|$($_.Enabled)" } } | Sort-Object)
     $s.otherSwitchExtensions = [ordered]@{ count = $otherExt.Count; sha256 = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes(($otherExt -join "`n")))) -replace '-', '').ToLower() }
-    $other          = @(@(Get-NetAdapterBinding -IncludeHidden -AllBindings -ErrorAction SilentlyContinue) | Where-Object { $_.Name -ne $EO.HostIf } | ForEach-Object { "$($_.Name)|$($_.ComponentID)|$($_.Enabled)" } | Sort-Object)
+    $other          = @(@(Get-NetAdapterBinding -IncludeHidden -AllBindings -ErrorAction SilentlyContinue) | Where-Object { $_.Name -ne $EO.HostIf -and $_.Name -ne $EO.SwitchAdapter } | ForEach-Object { "$($_.Name)|$($_.ComponentID)|$($_.Enabled)" } | Sort-Object)
     $s.otherBindings = [ordered]@{ count = $other.Count; sha256 = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes(($other -join "`n")))) -replace '-', '').ToLower() }
     $s.vmHost       = [ordered]@{ enhancedSession = (Get-VMHost).EnableEnhancedSessionMode; vhdPath = (Get-VMHost).VirtualHardDiskPath; vmPath = (Get-VMHost).VirtualMachinePath }
     return $s
