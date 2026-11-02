@@ -1,5 +1,6 @@
 # Undo step 01c: re-enables, on the host vNIC only, the filter targets that 01c
-# recorded as enabled before it ran, then closes the record.
+# recorded as enabled before it ran, and on the eo-l2-int switch only, the extension
+# targets (NDIS Capture) it recorded as enabled, then closes the record.
 # Fails closed: it changes nothing when the record is missing or malformed, is not
 # protected (Administrators and SYSTEM only, no link), was made on another
 # computer, for another switch or adapter or on another 01b instance, or when a
@@ -26,16 +27,17 @@ try {
         try { $gid = Get-EoProp (Read-EoGuardState) 'instanceId' } catch { throw "Refusing to undo 01c; nothing was changed: $($EO.GuardState) cannot be used ($($_.Exception.Message))." }
         $cur = Get-EoFilterCurrent
         $p = @(Test-EoFilterState $st $cur $gid)
-        $plan = @()
+        $plan = @(); $xplan = @()
         if (-not $p.Count -and $cur.Adapter) {
             $plan = @(Get-EoFilterRestorePlan $st $cur.Bindings)
-            $p += @(Test-EoFilterRestorePlan $plan)
+            $xplan = @(Get-EoFilterRestorePlan $st $cur.ExtensionStates -Extensions)
+            $p += @(Test-EoFilterRestorePlan ($plan + $xplan))
         }
         if ($p.Count) { throw "Refusing to undo 01c; nothing was changed: $($p -join '; ')" }
-        return @{ State = $st; Current = $cur; Plan = $plan }
+        return @{ State = $st; Current = $cur; Plan = $plan; XPlan = $xplan }
     }
     $u = Get-UndoFacts
-    $st = $u.State; $cur = $u.Current; $plan = $u.Plan
+    $st = $u.State; $cur = $u.Current; $plan = $u.Plan; $xplan = $u.XPlan
     Confirm-EoPlan 'undo-filter-guard' @(
         "Instance $($st.instanceId), made $($st.createdAt) on $($st.computer), on host guard instance $($st.hostGuardInstanceId)"
         $(if ($cur.Adapter) {
@@ -47,23 +49,32 @@ try {
                         'leave-off' { "$($e.ComponentId) was not enabled before 01c: stays as it is" }
                     }
                 }
-            } else { 'Switch and adapter are gone; no binding needs a change' })
+                foreach ($e in $xplan) {
+                    switch ($e.Action) {
+                        'enable' { "Enable-VMSwitchExtension -VMSwitchName $($EO.SwitchName) -Name '$($e.ComponentId)' (enabled before 01c, disabled now)" }
+                        'skip' { "Switch extension '$($e.ComponentId)' is already enabled as recorded: no change" }
+                        'leave-off' { "Switch extension '$($e.ComponentId)' was not enabled before 01c: stays as it is" }
+                    }
+                }
+            } else { 'Switch and adapter are gone; no binding or extension needs a change' })
         "Close the record: move $($EO.FilterState) to the evidence folder as filter-guard-state.undone-$stamp.json"
-        'No other adapter, binding, driver, firewall rule or NetBIOS value changes; the host guard (01b) stays'
+        'No other adapter, binding, switch, extension, driver, firewall rule or NetBIOS value changes; the host guard (01b) stays'
     )
     # The host may have changed while the plan waited: read and check everything again.
     $u2 = Get-UndoFacts
     $problems = @()
     if ("$($u2.State.instanceId)" -cne "$($st.instanceId)") { $problems += 'the record changed while the plan waited' }
     if ([bool]$u2.Current.Adapter -ne [bool]$cur.Adapter -or ($cur.Adapter -and "$($u2.Current.Adapter.InterfaceGuid)" -ne "$($cur.Adapter.InterfaceGuid)")) { $problems += 'the host adapter changed while the plan waited' }
-    if ((@($u2.Plan | ForEach-Object { "$($_.ComponentId)=$($_.Action)" }) -join ',') -cne (@($plan | ForEach-Object { "$($_.ComponentId)=$($_.Action)" }) -join ',')) { $problems += 'a target binding changed while the plan waited' }
+    $sig = { param($pl) (@($pl) | ForEach-Object { "$($_.ComponentId)=$($_.Action)" }) -join ',' }
+    if ((& $sig ($u2.Plan + $u2.XPlan)) -cne (& $sig ($plan + $xplan))) { $problems += 'a target binding or extension changed while the plan waited' }
     if ($problems.Count) { throw "Refusing to undo 01c; nothing was changed: $($problems -join '; ')" }
-    $st = $u2.State; $cur = $u2.Current; $plan = $u2.Plan
+    $st = $u2.State; $cur = $u2.Current; $plan = $u2.Plan; $xplan = $u2.XPlan
 
     $before = Save-EoSnapshot $stamp 'before'
     if ($cur.Adapter) {
         # The only binding change: targets the record shows as enabled, on the host vNIC only.
         Set-EoFilterBindings @($plan | Where-Object Action -eq 'enable' | ForEach-Object ComponentId) -Enable
+        Set-EoSwitchExtensions @($xplan | Where-Object Action -eq 'enable' | ForEach-Object ComponentId) -Enable
         $now = Get-EoFilterCurrent
         $bad = @()
         foreach ($r in @($st.bindings)) {
@@ -77,7 +88,18 @@ try {
             $is = if ($now.Bindings.ContainsKey($id)) { "$($now.Bindings[$id])" } else { 'absent' }
             if ($was -ne $is) { $bad += "$id on '$($EO.HostIf)' changed from $was to $is" }
         }
-        if ($bad.Count) { throw "Bindings do not read back as recorded: $($bad -join '; '). The record is kept; rerun this undo after checking." }
+        foreach ($r in @($st.switchExtensions)) {
+            $n = "$($r.name)"
+            $on = $now.ExtensionStates.ContainsKey($n) -and [bool]$now.ExtensionStates[$n]
+            if ($on -ne [bool]$r.enabledBefore) { $bad += "switch extension '$n' reads $(if ($on) { 'enabled' } else { 'not enabled' }), the record has enabledBefore $($r.enabledBefore)" }
+        }
+        foreach ($n in @(@($cur.ExtensionStates.Keys) + @($now.ExtensionStates.Keys) | Sort-Object -Unique)) {
+            if ($n -in $EO.SwitchExtTargets) { continue }
+            $was = if ($cur.ExtensionStates.ContainsKey($n)) { "$($cur.ExtensionStates[$n])" } else { 'absent' }
+            $is = if ($now.ExtensionStates.ContainsKey($n)) { "$($now.ExtensionStates[$n])" } else { 'absent' }
+            if ($was -ne $is) { $bad += "switch extension '$n' on $($EO.SwitchName) changed from $was to $is" }
+        }
+        if ($bad.Count) { throw "Bindings or extensions do not read back as recorded: $($bad -join '; '). The record is kept; rerun this undo after checking." }
     }
     Move-Item -LiteralPath $EO.FilterState -Destination (Join-Path $EO.Evidence "filter-guard-state.undone-$stamp.json")
     if (-not @(Get-ChildItem -LiteralPath $EO.GuardDir -Force).Count) { Remove-Item -LiteralPath $EO.GuardDir }
@@ -87,7 +109,7 @@ try {
         & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly
         if ($LASTEXITCODE -ne 0) { throw 'Host-side verification failed after the undo; the bindings are restored and the record is closed. Review the transcript.' }
     }
-    Write-Host 'UNDO 01c DONE: filter bindings on eo-l2-int restored to their recorded values.'
+    Write-Host 'UNDO 01c DONE: filter bindings and the switch extension on eo-l2-int restored to their recorded values.'
 } finally {
     Stop-EoLog
 }

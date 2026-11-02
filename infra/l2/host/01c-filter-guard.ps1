@@ -3,8 +3,11 @@
 # filters ($EO.FilterTargets: INSECURE_NPCAP, oracle_VBoxNetLwf) from the host vNIC
 # 'vEthernet (eo-l2-int)' only. Both work below the Windows Filtering Platform, so
 # the 01 and 01b firewall rules do not constrain what they capture or send there.
-# No other adapter, binding, driver, service, Npcap or VirtualBox setting, firewall
-# rule or NetBIOS value changes.
+# It also disables the Microsoft NDIS Capture vSwitch extension ($EO.SwitchExtTargets)
+# on the eo-l2-int switch only (Windows enables it on every switch by default), so
+# frames inside the switch cannot be captured through it.
+# No other adapter, binding, switch, extension, driver, service, Npcap or VirtualBox
+# setting, firewall rule or NetBIOS value changes.
 # Before changing anything it records each target's state, the adapter, the switch,
 # the 01b instance it builds on and its own instance id in filter-guard-state.json,
 # next to the 01b record; the undo restores only from that. On any problem it stops
@@ -25,10 +28,8 @@ try {
         $dir = @(Test-EoAclFacts (Get-EoAclFacts $EO.GuardDir) -Container)
         if ($dir.Count) { throw "Refusing 01c; nothing was changed: $($EO.GuardDir) is not protected: $($dir -join '; ')" }
         $cur = Get-EoFilterCurrent
-        # Read only when the switch exists (its absence is reported below); a read error stops 01c.
-        $ext = @(if ($cur.SwitchId) { @(Get-VMSwitchExtension -VMSwitchName $EO.SwitchName) | ForEach-Object { @{ Name = "$($_.Name)"; Vendor = "$($_.Vendor)"; Enabled = "$($_.Enabled)" } } })
         $names = @(@(Get-ChildItem -LiteralPath $EO.GuardDir -Force) | ForEach-Object { $_.Name })
-        $p = @(Test-EoFilterPreconditions $gs $cur (Test-Path -LiteralPath $EO.FilterState) $names $ext)
+        $p = @(Test-EoFilterPreconditions $gs $cur (Test-Path -LiteralPath $EO.FilterState) $names $cur.Extensions)
         if ($p.Count) { throw "Refusing 01c; nothing was changed: $($p -join '; ')" }
         return @{ Guard = $gs; Current = $cur }
     }
@@ -39,6 +40,8 @@ try {
     $cur = $pre.Current
     $plan = @(Get-EoFilterApplyPlan $cur.Bindings)
     $change = @($plan | Where-Object Action -eq 'disable' | ForEach-Object ComponentId)
+    $xplan = @(Get-EoFilterApplyPlan $cur.ExtensionStates $EO.SwitchExtTargets)
+    $xchange = @($xplan | Where-Object Action -eq 'disable' | ForEach-Object ComponentId)
     $instance = [guid]::NewGuid().ToString('N')
     Confirm-EoPlan 'filter-guard' @(
         "Adapter '$($EO.HostIf)' only: InterfaceGuid $($cur.Adapter.InterfaceGuid), MAC $($cur.Adapter.MacAddress), host guard instance $($pre.Guard.instanceId)"
@@ -50,16 +53,25 @@ try {
                     'absent' { "$($e.ComponentId) is not bound to this adapter: no change" }
                 }
             })
-        "First, record each target's state, this adapter, the switch id and instance $instance in $($EO.FilterState) (Administrators and SYSTEM only); the undo restores only from that record"
-        $(if ($change.Count) { 'The adapter restarts briefly while a binding changes; no VM exists yet, so no session drops' } else { 'Nothing to change: the record is still written, so verify-host checks the filter guard from now on' })
-        'No other adapter, binding, driver, service, Npcap or VirtualBox setting, firewall rule or NetBIOS value changes'
+        $(foreach ($e in $xplan) {
+                switch ($e.Action) {
+                    'disable' { "Disable-VMSwitchExtension -VMSwitchName $($EO.SwitchName) -Name '$($e.ComponentId)' (enabled now; this switch only, not the Default Switch or WSL)" }
+                    'already-off' { "Switch extension '$($e.ComponentId)' is already disabled on $($EO.SwitchName): no change" }
+                    'absent' { "Switch extension '$($e.ComponentId)' does not exist on $($EO.SwitchName): no change" }
+                }
+            })
+        "First, record each target's state (bindings and extension), this adapter, the switch id and instance $instance in $($EO.FilterState) (Administrators and SYSTEM only); the undo restores only from that record"
+        $(if ($change.Count) { 'The adapter restarts briefly while a binding changes; no VM exists yet, so no session drops' } elseif (-not $xchange.Count) { 'Nothing to change: the record is still written, so verify-host checks the filter guard from now on' })
+        'No other adapter, binding, switch, extension, driver, service, Npcap or VirtualBox setting, firewall rule or NetBIOS value changes'
     )
     # The host may have changed while the plan waited: read and check everything again.
     $pre2 = Get-Preconditions
     if ("$($pre2.Guard.instanceId)" -cne "$($pre.Guard.instanceId)") { throw 'Refusing 01c; nothing was changed: the host guard record changed while the plan waited.' }
     if ("$($pre2.Current.Adapter.InterfaceGuid)" -ne "$($cur.Adapter.InterfaceGuid)" -or "$($pre2.Current.SwitchId)" -ne "$($cur.SwitchId)") { throw 'Refusing 01c; nothing was changed: the switch or host adapter changed while the plan waited.' }
     $plan2 = @(Get-EoFilterApplyPlan $pre2.Current.Bindings)
-    if ((($plan2 | ForEach-Object { "$($_.ComponentId)=$($_.Action)" }) -join ',') -cne (($plan | ForEach-Object { "$($_.ComponentId)=$($_.Action)" }) -join ',')) { throw 'Refusing 01c; nothing was changed: a target binding changed while the plan waited.' }
+    $xplan2 = @(Get-EoFilterApplyPlan $pre2.Current.ExtensionStates $EO.SwitchExtTargets)
+    $sig = { param($pl) (@($pl) | ForEach-Object { "$($_.ComponentId)=$($_.Action)" }) -join ',' }
+    if ((& $sig ($plan2 + $xplan2)) -cne (& $sig ($plan + $xplan))) { throw 'Refusing 01c; nothing was changed: a target binding or extension changed while the plan waited.' }
     $cur = $pre2.Current
 
     $before = Save-EoSnapshot $stamp 'before'
@@ -74,6 +86,7 @@ try {
         adapter = [ordered]@{ name = $EO.HostIf; interfaceGuid = $cur.Adapter.InterfaceGuid; macAddress = $cur.Adapter.MacAddress; settingId = $cur.Adapter.SettingId }
         hostGuardInstanceId = "$($pre2.Guard.instanceId)"
         bindings = @($plan2 | ForEach-Object { [ordered]@{ componentId = $_.ComponentId; displayName = $(if ($cur.BindingNames.ContainsKey($_.ComponentId)) { $cur.BindingNames[$_.ComponentId] } else { $null }); present = [bool]$_.Present; enabledBefore = [bool]$_.EnabledBefore } })
+        switchExtensions = @($xplan2 | ForEach-Object { [ordered]@{ name = $_.ComponentId; present = [bool]$_.Present; enabledBefore = [bool]$_.EnabledBefore } })
         drivers = $drv
     }
     # Written whole to a temporary file, then moved into place, so a crash leaves no
@@ -90,13 +103,16 @@ try {
     $rec = Read-EoFilterState
     $check = @(Test-EoFilterState $rec (Get-EoFilterCurrent) "$($pre2.Guard.instanceId)")
     $recPlan = @(@($rec.bindings) | ForEach-Object { "$($_.componentId)=$($_.enabledBefore)" }) -join ','
-    $want = @($plan2 | ForEach-Object { "$($_.ComponentId)=$($_.EnabledBefore)" }) -join ','
+    $recPlan += ';' + (@(@($rec.switchExtensions) | ForEach-Object { "$($_.name)=$($_.enabledBefore)" }) -join ',')
+    $want = (@($plan2 | ForEach-Object { "$($_.ComponentId)=$($_.EnabledBefore)" }) -join ',') + ';' + (@($xplan2 | ForEach-Object { "$($_.ComponentId)=$($_.EnabledBefore)" }) -join ',')
     if ($recPlan -cne $want) { $check += "the record holds '$recPlan', want '$want'" }
     if ($check.Count) { throw "The filter guard record does not read back cleanly: $($check -join '; ')" }
 
-    # The only binding change: the targets that are enabled, on the host vNIC only.
+    # The only changes: the enabled binding targets on the host vNIC, then the enabled
+    # extension targets on the eo-l2-int switch.
     $changed = $true
     Set-EoFilterBindings $change
+    Set-EoSwitchExtensions $xchange
 
     $now = Get-EoFilterCurrent
     $bad = @(Test-EoFilterBindings $now.Bindings)
@@ -106,7 +122,14 @@ try {
         $is = if ($now.Bindings.ContainsKey($id)) { "$($now.Bindings[$id])" } else { 'absent' }
         if ($was -ne $is) { $bad += "$id on '$($EO.HostIf)' changed from $was to $is" }
     }
-    if ($bad.Count) { throw "Bindings do not read back as planned: $($bad -join '; ')" }
+    $bad += @(Test-EoFilterExtensions $now.ExtensionStates)
+    foreach ($n in @(@($cur.ExtensionStates.Keys) + @($now.ExtensionStates.Keys) | Sort-Object -Unique)) {
+        if ($n -in $EO.SwitchExtTargets) { continue }
+        $was = if ($cur.ExtensionStates.ContainsKey($n)) { "$($cur.ExtensionStates[$n])" } else { 'absent' }
+        $is = if ($now.ExtensionStates.ContainsKey($n)) { "$($now.ExtensionStates[$n])" } else { 'absent' }
+        if ($was -ne $is) { $bad += "switch extension '$n' on $($EO.SwitchName) changed from $was to $is" }
+    }
+    if ($bad.Count) { throw "Bindings or extensions do not read back as planned: $($bad -join '; ')" }
 
     $after = Save-EoSnapshot $stamp 'after'
     Compare-EoSnapshot $before $after
@@ -116,13 +139,15 @@ try {
     if ("$($sb.otherBindings.sha256)" -ne "$($sa.otherBindings.sha256)" -or "$($sb.otherBindings.count)" -ne "$($sa.otherBindings.count)") { throw "Bindings on another adapter changed during 01c (digest $($sb.otherBindings.sha256) -> $($sa.otherBindings.sha256))." }
     $nonTarget = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -notin $EO.FilterTargets }) -join ',' }
     if ((& $nonTarget $sb.eoBindings) -ne (& $nonTarget $sa.eoBindings)) { throw "Bindings on '$($EO.HostIf)' other than the targets changed during 01c." }
+    $nonTargetExt = { param($l) @(@($l) | Where-Object { ("$_" -split '\|')[0] -notin $EO.SwitchExtTargets }) -join ',' }
+    if ((& $nonTargetExt $sb.eoSwitchExtensions) -ne (& $nonTargetExt $sa.eoSwitchExtensions)) { throw "Extensions on $($EO.SwitchName) other than the targets changed during 01c." }
     & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly -RequireFilterGuard
     if ($LASTEXITCODE -ne 0) { throw 'Host-side verification failed.' }
-    Write-Host 'STEP 01c DONE: Npcap and VirtualBox filters unbound from eo-l2-int and verified.'
+    Write-Host 'STEP 01c DONE: Npcap and VirtualBox filters unbound from eo-l2-int, NDIS Capture disabled on its switch, and verified.'
 } catch {
     Write-Host "STEP 01c STOPPED: $($_.Exception.Message)"
-    if ($changed) { Write-Host 'Bindings may be partly changed; the record keeps every original value. Review the transcript, then run undo-01c-filter-guard.ps1 (elevated, attended) to restore them.' }
-    elseif ($before) { Write-Host "No binding was changed. If $($EO.FilterState) exists, review it, then run undo-01c-filter-guard.ps1 (elevated, attended) to close it." }
+    if ($changed) { Write-Host 'Bindings or the extension may be partly changed; the record keeps every original value. Review the transcript, then run undo-01c-filter-guard.ps1 (elevated, attended) to restore them.' }
+    elseif ($before) { Write-Host "No binding or extension was changed. If $($EO.FilterState) exists, review it, then run undo-01c-filter-guard.ps1 (elevated, attended) to close it." }
     throw
 } finally {
     Stop-EoLog

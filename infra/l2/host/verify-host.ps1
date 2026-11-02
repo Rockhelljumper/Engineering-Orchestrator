@@ -72,7 +72,7 @@ try {
     if ($fmode -eq 'check') {
         $fcur = $null; $fread = $null
         try { $fcur = Get-EoFilterCurrent } catch { $fread = "bindings not read: $($_.Exception.Message)" }
-        if (-not $fcur) { $fcur = @{ Computer = $env:COMPUTERNAME; SwitchId = $null; Adapter = $null; Bindings = @{}; VisibleBindings = @{} } }
+        if (-not $fcur) { $fcur = @{ Computer = $env:COMPUTERNAME; SwitchId = $null; Adapter = $null; Bindings = @{}; VisibleBindings = @{}; Extensions = @(); ExtensionStates = @{} } }
         $fb = @(if ($fread) { $fread } else { Test-EoFilterBindings $fcur.Bindings })
         Row 'Filter guard: Npcap and VirtualBox filters absent or off on eo-l2-int' ($fb.Count -eq 0) ($fb -join '; ')
         $fstate = $null; $ferr = $null
@@ -83,9 +83,10 @@ try {
         Row 'Filter guard: record valid, for this computer, switch, adapter and host guard instance' ($fp.Count -eq 0) ($fp -join '; ')
         $fu = @(if ($fread) { $fread } else { Test-EoUnknownBindings $fcur.VisibleBindings })
         Row 'Filter guard: no other enabled component on eo-l2-int outside the allowed list' ($fu.Count -eq 0) $(if ($fu.Count) { $fu -join '; ' } else { (@($fcur.VisibleBindings.Keys | Where-Object { $fcur.VisibleBindings[$_] } | Sort-Object) -join ', ') })
-        $fe = @(); $fx = @()
-        try { $fx = @(@(Get-VMSwitchExtension -VMSwitchName $EO.SwitchName) | ForEach-Object { @{ Name = "$($_.Name)"; Vendor = "$($_.Vendor)"; Enabled = "$($_.Enabled)" } }); $fe = @(Test-EoSwitchExtensions $fx) } catch { $fe = @("switch extensions not read: $($_.Exception.Message)") }
-        Row 'Filter guard: only allowed vSwitch extensions enabled on eo-l2-int (no NDIS Capture)' ($fe.Count -eq 0) $(if ($fe.Count) { $fe -join '; ' } else { (@($fx | Where-Object { $_.Enabled -eq 'True' } | ForEach-Object { $_.Name }) -join ', ') })
+        $fn = @(if ($fread) { $fread } else { Test-EoFilterExtensions $fcur.ExtensionStates })
+        Row 'Filter guard: NDIS Capture extension absent or off on the eo-l2-int switch' ($fn.Count -eq 0) ($fn -join '; ')
+        $fe = @(if ($fread) { $fread } else { Test-EoSwitchExtensions $fcur.Extensions })
+        Row 'Filter guard: no other vSwitch extension enabled on eo-l2-int outside the allowed list' ($fe.Count -eq 0) $(if ($fe.Count) { $fe -join '; ' } else { (@(@($fcur.Extensions) | Where-Object { $_.Enabled -eq 'True' } | ForEach-Object { $_.Name }) -join ', ') })
     } elseif ($fmode -eq 'skip') {
         Write-Host 'Filter guard (01c) not checked: -SwitchOnly and no 01c record yet. It is checked once 01c has run, and always in the full (B9) verification.'
     }

@@ -278,6 +278,7 @@ foreach ($k in $bad.Keys) {
         $all = @([pscustomobject]@{ Name = $EO.HostIf; ComponentID = 'ms_tcpip'; Enabled = $true }, [pscustomobject]@{ Name = $EO.HostIf; ComponentID = 'INSECURE_NPCAP'; Enabled = $false },
             [pscustomobject]@{ Name = 'Ethernet'; ComponentID = 'INSECURE_NPCAP'; Enabled = $true })
         if ($Name) { $all | Where-Object Name -eq $Name } else { $all } }
+    function Get-VMSwitchExtension { [CmdletBinding()] param($VMSwitchName) @([pscustomobject]@{ Name = 'Microsoft NDIS Capture'; Enabled = $true }, [pscustomobject]@{ Name = 'Microsoft Windows Filtering Platform'; Enabled = $false }) }
     function Get-VMHost { [pscustomobject]@{ EnableEnhancedSessionMode = $true; VirtualHardDiskPath = 'C:\vhd'; VirtualMachinePath = 'C:\vm' } }
 
     $oldThrew = $false
@@ -293,6 +294,7 @@ foreach ($k in $bad.Keys) {
         Expect 'snapshot: VM adapter keeps its VM name' (@($snap.vmAdapters | Where-Object { $_.vm -eq 'other-vm' -and $_.mac -eq '00155D000001' }).Count) 1
         Expect 'snapshot: serializes to JSON' ([bool]($snap | ConvertTo-Json -Depth 6)) $true
         Expect 'snapshot: eo-l2-int bindings listed in full' ($snap.eoBindings -join ',') 'INSECURE_NPCAP|False,ms_tcpip|True'
+        Expect 'snapshot: eo-l2-int switch extensions listed' ($snap.eoSwitchExtensions -join ',') 'Microsoft NDIS Capture|True,Microsoft Windows Filtering Platform|False'
         Expect 'snapshot: other adapters digested' "$($snap.otherBindings.count)/$($snap.otherBindings.sha256.Length)" '1/64'
 
     }
@@ -404,13 +406,16 @@ $fJson = @"
   "adapter": { "name": "vEthernet (eo-l2-int)", "interfaceGuid": "$fguid", "macAddress": "00-15-5D-0A-1C-02", "settingId": "$fguid" },
   "hostGuardInstanceId": "$fGuardId",
   "bindings": [ { "componentId": "INSECURE_NPCAP", "displayName": "Npcap Packet Driver (NPCAP)", "present": true, "enabledBefore": true }, { "componentId": "oracle_VBoxNetLwf", "displayName": "VirtualBox NDIS6 Bridged Networking Driver", "present": true, "enabledBefore": false } ],
+  "switchExtensions": [ { "name": "Microsoft NDIS Capture", "present": true, "enabledBefore": true } ],
   "drivers": { "npcap.sys": "1.75", "VBoxNetLwf.sys": "7.2.4" } }
 "@
 function FCur([hashtable]$Over) {
     $c = @{ Computer = $env:COMPUTERNAME; SwitchId = '11111111-2222-3333-4444-555555555555'
         Adapter = @{ InterfaceGuid = $fguid; MacAddress = '00-15-5D-0A-1C-02'; SettingId = $fguid }
         RuleDescriptions = @{}; Bindings = @{ $npc = $false; $vbx = $false; 'ms_tcpip' = $true }
-        VisibleBindings = @{ $npc = $false; $vbx = $false; 'ms_tcpip' = $true; 'ms_pacer' = $true; 'ms_l2bridge' = $true; 'ms_l1vhlwf' = $true } }
+        VisibleBindings = @{ $npc = $false; $vbx = $false; 'ms_tcpip' = $true; 'ms_pacer' = $true; 'ms_l2bridge' = $true; 'ms_l1vhlwf' = $true }
+        Extensions = @(@{ Name = 'Microsoft Windows Filtering Platform'; Vendor = 'Microsoft'; Enabled = 'False' }, @{ Name = 'Microsoft NDIS Capture'; Vendor = 'Microsoft'; Enabled = 'False' })
+        ExtensionStates = @{ 'Microsoft Windows Filtering Platform' = $false; 'Microsoft NDIS Capture' = $false } }
     foreach ($k in $Over.Keys) { $c[$k] = $Over[$k] }
     return $c
 }
@@ -441,6 +446,10 @@ $fbad = [ordered]@{
     'another adapter (setting id)'     = @(($fJson | ConvertFrom-Json), (FCur @{ Adapter = @{ InterfaceGuid = $fguid; MacAddress = '00-15-5D-0A-1C-02'; SettingId = '{00000000-0000-4000-8000-000000000002}' } }), $fGuardId, 'adapter SettingId')
     'record without the adapter GUID'  = @((FState """interfaceGuid"": ""$fguid"", " ''), (FCur @{}), $fGuardId, 'adapter has no interfaceGuid')
     'switch present, adapter missing'  = @(($fJson | ConvertFrom-Json), (FCur @{ Adapter = $null }), $fGuardId, 'cannot tell which adapter')
+    'no switchExtensions'              = @((FState '"switchExtensions":' '"switchExtensionz":'), (FCur @{}), $fGuardId, "no 'switchExtensions'")
+    'another extension recorded'       = @((FState '"name": "Microsoft NDIS Capture"' '"name": "Microsoft Windows Filtering Platform"'), (FCur @{}), $fGuardId, 'switch extensions are')
+    'no extension recorded'            = @((FState '"switchExtensions": [ { "name": "Microsoft NDIS Capture", "present": true, "enabledBefore": true } ]' '"switchExtensions": []'), (FCur @{}), $fGuardId, 'switch extensions are')
+    'extension enabledBefore a string' = @((FState '"present": true, "enabledBefore": true } ]' '"present": true, "enabledBefore": "yes" } ]'), (FCur @{}), $fGuardId, 'needs boolean present and enabledBefore')
 }
 foreach ($k in $fbad.Keys) {
     $threw = $false; $msgs = @()
@@ -467,6 +476,26 @@ foreach ($c in @(
         Expect "filter undo plan: $($c[1]) gives $($c[2]) refusal(s)" $n $c[2]
     }
 }
+foreach ($c in @(
+        @(@{ 'Microsoft NDIS Capture' = $false }, 'Microsoft NDIS Capture=enable/True', 0),
+        @(@{ 'Microsoft NDIS Capture' = $true }, 'Microsoft NDIS Capture=skip/True', 0),
+        @(@{}, 'Microsoft NDIS Capture=missing/True', 1))) {
+    $got = ''; $n = -1
+    try { $plan = @(Get-EoFilterRestorePlan $fRec $c[0] -Extensions); $got = PlanText $plan; $n = @(Test-EoFilterRestorePlan $plan).Count } catch { $got = "threw: $($_.Exception.Message)" }
+    Expect "filter undo plan (extension): $($c[1])" $got $c[1]
+    Expect "filter undo plan (extension): $($c[1]) gives $($c[2]) refusal(s)" $n $c[2]
+}
+$xoff = FState '"present": true, "enabledBefore": true } ]' '"present": true, "enabledBefore": false } ]'
+Expect 'filter undo plan (extension): recorded off, enabled now is drift' (PlanText (Get-EoFilterRestorePlan $xoff @{ 'Microsoft NDIS Capture' = $true } -Extensions)) 'Microsoft NDIS Capture=drifted/False'
+foreach ($c in @(
+        @(@{ 'Microsoft NDIS Capture' = $true; 'Microsoft Windows Filtering Platform' = $false }, 'Microsoft NDIS Capture=disable/True'),
+        @(@{ 'Microsoft NDIS Capture' = $false }, 'Microsoft NDIS Capture=already-off/False'),
+        @(@{}, 'Microsoft NDIS Capture=absent/False'))) {
+    Expect "filter plan (extension): $($c[1])" (PlanText (Get-EoFilterApplyPlan $c[0] $EO.SwitchExtTargets)) $c[1]
+}
+Expect 'filter extensions: NDIS Capture off passes' (@(Test-EoFilterExtensions @{ 'Microsoft NDIS Capture' = $false }).Count) 0
+Expect 'filter extensions: NDIS Capture absent passes' (@(Test-EoFilterExtensions @{}).Count) 0
+Expect 'filter extensions: NDIS Capture on fails' (@(Test-EoFilterExtensions @{ 'Microsoft NDIS Capture' = $true }) -join ';') "switch extension 'Microsoft NDIS Capture' is enabled on $($EO.SwitchName)"
 $both = FState '"present": true, "enabledBefore": false' '"present": true, "enabledBefore": true'
 Expect 'filter undo plan: both recorded enabled, both off now' (PlanText (Get-EoFilterRestorePlan $both @{ $npc = $false; $vbx = $false })) "$npc=enable/True,$vbx=enable/True"
 
@@ -489,7 +518,9 @@ $ext = @(@{ Name = 'Microsoft Windows Filtering Platform'; Vendor = 'Microsoft';
 Expect 'switch extensions: WFP on, NDIS Capture off passes' (@(Test-EoSwitchExtensions $ext).Count) 0
 Expect 'switch extensions: none passes' (@(Test-EoSwitchExtensions @()).Count) 0
 $e2 = @($ext[0], @{ Name = 'Microsoft NDIS Capture'; Vendor = 'Microsoft'; Enabled = 'True' })
-Expect 'switch extensions: NDIS Capture on fails' (@(Test-EoSwitchExtensions $e2) -join ';') "switch extension 'Microsoft NDIS Capture' (Microsoft) is enabled on $($EO.SwitchName)"
+Expect 'switch extensions: NDIS Capture on is left to the 01c target check' (@(Test-EoSwitchExtensions $e2).Count) 0
+$e2 = @(@{ Name = 'Microsoft Azure VFP Switch Filter Extension'; Vendor = 'Microsoft'; Enabled = 'True' })
+Expect 'switch extensions: Azure VFP enabled fails' (@(Test-EoSwitchExtensions $e2).Count) 1
 $e2 = @($ext[0], @{ Name = 'Contoso Mirror'; Vendor = 'Contoso'; Enabled = 'True' })
 Expect 'switch extensions: a third-party extension on fails' (@(Test-EoSwitchExtensions $e2).Count) 1
 
@@ -506,6 +537,8 @@ $gRec = $goodJson | ConvertFrom-Json
 $gCur = FCur @{ Adapter = @{ InterfaceGuid = $guid; MacAddress = '00-15-5D-AA-BB-CC'; SettingId = $guid }; RuleDescriptions = (Cur @{}).RuleDescriptions }
 $leaf = Split-Path -Leaf $EO.GuardState
 Expect 'filter preconditions: 01b recorded and verified, clean inventory passes' (@(Test-EoFilterPreconditions $gRec $gCur $false @($leaf) $ext).Count) 0
+$hostExt = @(@{ Name = 'Microsoft Windows Filtering Platform'; Vendor = 'Microsoft'; Enabled = 'False' }, @{ Name = 'Microsoft Azure VFP Switch Filter Extension'; Vendor = 'Microsoft'; Enabled = 'False' }, @{ Name = 'Microsoft NDIS Capture'; Vendor = 'Microsoft'; Enabled = 'True' })
+Expect 'filter preconditions: the RH-DT-M3 extensions of 2026-11-02 (NDIS Capture on, a 01c target) pass' (@(Test-EoFilterPreconditions $gRec $gCur $false @($leaf) $hostExt).Count) 0
 $fpre = [ordered]@{
     '01c record already exists'      = @($gRec, $gCur, $true, @($leaf), $ext, 'an earlier 01c was not undone')
     'no 01b record'                  = @($null, $gCur, $false, @(), $ext, 'no host guard (01b) record')
@@ -514,7 +547,7 @@ $fpre = [ordered]@{
     'adapter missing'                = @($gRec, (FCur @{ Adapter = $null; RuleDescriptions = (Cur @{}).RuleDescriptions }), $false, @($leaf), $ext, 'or its host adapter is missing')
     'a stray file in the folder'     = @($gRec, $gCur, $false, @($leaf, 'filter-guard-state.json.tmp'), $ext, "holds 'filter-guard-state.json.tmp'")
     'an unknown filter enabled'      = @($gRec, (FCur @{ Adapter = $gCur.Adapter; RuleDescriptions = (Cur @{}).RuleDescriptions; VisibleBindings = @{ 'ms_tcpip' = $true; 'WINPCAP' = $true } }), $false, @($leaf), $ext, 'WINPCAP is enabled')
-    'NDIS Capture on the switch'     = @($gRec, $gCur, $false, @($leaf), @(@{ Name = 'Microsoft NDIS Capture'; Vendor = 'Microsoft'; Enabled = 'True' }), 'NDIS Capture')
+    'a third-party switch extension' = @($gRec, $gCur, $false, @($leaf), @(@{ Name = 'Contoso Mirror'; Vendor = 'Contoso'; Enabled = 'True' }), "switch extension 'Contoso Mirror'")
 }
 foreach ($k in $fpre.Keys) {
     $a = $fpre[$k]; $threw = $false; $msgs = @()
@@ -530,6 +563,7 @@ Expect 'filter installed: matching record, targets off passes' (@(Test-EoFilterI
 $finst = [ordered]@{
     'no 01c record'               = @($null, (FCur @{}), $fGuardId, 'is not installed')
     'a target enabled again'      = @($fRecOk, (FCur @{ Bindings = @{ $npc = $true; $vbx = $false; 'ms_tcpip' = $true } }), $fGuardId, "$npc is enabled")
+    'NDIS Capture enabled again'  = @($fRecOk, (FCur @{ ExtensionStates = @{ 'Microsoft NDIS Capture' = $true } }), $fGuardId, "'Microsoft NDIS Capture' is enabled")
     'adapter gone'                = @($fRecOk, (FCur @{ SwitchId = $null; Adapter = $null }), $fGuardId, 'not found')
     'record for another adapter'  = @($fRecOk, (FCur @{ Adapter = @{ InterfaceGuid = '{00000000-0000-4000-8000-000000000001}'; MacAddress = '00-15-5D-0A-1C-02'; SettingId = $fguid } }), $fGuardId, 'adapter InterfaceGuid')
     'another 01b instance'        = @($fRecOk, (FCur @{}), 'ffffffffffffffffffffffffffffffff', 'builds on host guard instance')
@@ -566,13 +600,27 @@ foreach ($k in $finst.Keys) {
         try { Set-EoFilterBindings $c[0] -Enable:$c[1]; $got = $script:calls -join ';' } catch { $got = "refused:$($script:calls -join ';')" }
         Expect "filter set: '$($c[0] -join ',')' enable=$($c[1])" $got $c[2]
     }
+    function Enable-VMSwitchExtension { [CmdletBinding()] param($VMSwitchName, $Name) $script:calls.Add("enable-ext $VMSwitchName $Name") }
+    function Disable-VMSwitchExtension { [CmdletBinding()] param($VMSwitchName, $Name) $script:calls.Add("disable-ext $VMSwitchName $Name") }
+    $ndc = 'Microsoft NDIS Capture'
+    foreach ($c in @(
+            @(@($ndc), $false, "disable-ext $($EO.SwitchName) $ndc"),
+            @(@($ndc), $true, "enable-ext $($EO.SwitchName) $ndc"),
+            @(@(), $true, ''),
+            @(@('Microsoft Windows Filtering Platform'), $false, 'refused:'),
+            @(@($ndc, 'Microsoft Azure VFP Switch Filter Extension'), $true, 'refused:'),
+            @(@('microsoft ndis capture'), $false, 'refused:'))) {
+        $script:calls.Clear(); $got = ''
+        try { Set-EoSwitchExtensions $c[0] -Enable:$c[1]; $got = $script:calls -join ';' } catch { $got = "refused:$($script:calls -join ';')" }
+        Expect "filter set extension: '$($c[0] -join ',')' enable=$($c[1])" $got $c[2]
+    }
 }
 
 # Structure: in the 01c scripts and the verifier, every call to a function that
 # returns a list sits directly in @(), so 0 or 1 results cannot break .Count under
 # StrictMode (D-2); and 01c verifies with the filter guard required.
 & {
-    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoFilterInstalled', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
+    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoFilterInstalled', 'Test-EoFilterExtensions', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
     foreach ($f in '01c-filter-guard.ps1', 'undo-01c-filter-guard.ps1', 'verify-host.ps1', '_guard.ps1', '04a-add-setup-nic.ps1') {
         $t = $null; $e = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir $f), [ref]$t, [ref]$e)
@@ -590,11 +638,11 @@ foreach ($k in $finst.Keys) {
     $c01 = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir '01c-filter-guard.ps1'), [ref]$t, [ref]$e)
     $v = @($c01.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and "$($n.CommandElements[0])" -match 'verify-host' }, $true) | ForEach-Object { "$($_.Extent.Text)" })
     Expect 'filter structure: 01c verifies before (SwitchOnly) and after (RequireFilterGuard)' (@($v | Where-Object { $_ -match '-SwitchOnly$' }).Count -eq 1 -and @($v | Where-Object { $_ -match '-SwitchOnly -RequireFilterGuard$' }).Count -eq 1) $true
-    $bindingCalls = @($c01.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -match 'NetAdapterBinding$' -and $n.GetCommandName() -ne 'Get-NetAdapterBinding' }, $true))
-    Expect 'filter structure: 01c changes bindings only through Set-EoFilterBindings' $bindingCalls.Count 0
+    $bindingCalls = @($c01.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -match '^(Enable|Disable)-(NetAdapterBinding|VMSwitchExtension)$' }, $true))
+    Expect 'filter structure: 01c changes bindings and extensions only through Set-EoFilterBindings and Set-EoSwitchExtensions' $bindingCalls.Count 0
     $u01 = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir 'undo-01c-filter-guard.ps1'), [ref]$t, [ref]$e)
-    $bindingCalls = @($u01.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -match 'NetAdapterBinding$' -and $n.GetCommandName() -ne 'Get-NetAdapterBinding' }, $true))
-    Expect 'filter structure: undo-01c changes bindings only through Set-EoFilterBindings' $bindingCalls.Count 0
+    $bindingCalls = @($u01.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -match '^(Enable|Disable)-(NetAdapterBinding|VMSwitchExtension)$' }, $true))
+    Expect 'filter structure: undo-01c changes bindings and extensions only through Set-EoFilterBindings and Set-EoSwitchExtensions' $bindingCalls.Count 0
 
     # Order in the scripts: preconditions read before and again after the typed
     # confirmation, the record moved into place before any binding changes, and the
@@ -603,9 +651,13 @@ foreach ($k in $finst.Keys) {
     $conf = @(Offsets $c01 'Confirm-EoPlan'); $pre = @(Offsets $c01 'Get-Preconditions'); $mv = @(Offsets $c01 'Move-Item' 'FilterState'); $set = @(Offsets $c01 'Set-EoFilterBindings')
     Expect 'filter order: 01c reads preconditions once before and once after its confirmation' ($conf.Count -eq 1 -and $pre.Count -eq 2 -and $pre[0] -lt $conf[0] -and $pre[1] -gt $conf[0]) $true
     Expect 'filter order: 01c moves the record into place before it changes a binding' ($mv.Count -eq 1 -and $set.Count -eq 1 -and $mv[0] -gt $pre[1] -and $mv[0] -lt $set[0]) $true
+    $xset = @(Offsets $c01 'Set-EoSwitchExtensions')
+    Expect 'filter order: 01c changes the extension after the record, once' ($xset.Count -eq 1 -and $xset[0] -gt $mv[0]) $true
     $conf = @(Offsets $u01 'Confirm-EoPlan'); $pre = @(Offsets $u01 'Get-UndoFacts'); $set = @(Offsets $u01 'Set-EoFilterBindings'); $mv = @(Offsets $u01 'Move-Item' 'FilterState')
     Expect 'filter order: undo-01c reads its facts once before and once after its confirmation' ($conf.Count -eq 1 -and $pre.Count -eq 2 -and $pre[0] -lt $conf[0] -and $pre[1] -gt $conf[0]) $true
     Expect 'filter order: undo-01c changes bindings after the second read and closes the record after that' ($set.Count -eq 1 -and $mv.Count -eq 1 -and $set[0] -gt $pre[1] -and $mv[0] -gt $set[0]) $true
+    $xset = @(Offsets $u01 'Set-EoSwitchExtensions')
+    Expect 'filter order: undo-01c restores the extension after the second read and before closing the record' ($xset.Count -eq 1 -and $xset[0] -gt $pre[1] -and $mv[0] -gt $xset[0]) $true
 
     # verify-host's filter record line, run as shipped for 0, 1 and 3 problems and an unreadable record.
     $vast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir 'verify-host.ps1'), [ref]$t, [ref]$e)

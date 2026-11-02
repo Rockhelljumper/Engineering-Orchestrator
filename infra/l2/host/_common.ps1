@@ -59,6 +59,9 @@ $EO = [ordered]@{
     FilterAllowed = @('ms_tcpip', 'ms_pacer', 'ms_l2bridge', 'ms_l1vhlwf')
     # The only vSwitch extension that may be enabled on eo-l2-int.
     SwitchExtAllowed = @('Microsoft Windows Filtering Platform')
+    # vSwitch extensions 01c disables on eo-l2-int only (enabled there by Windows
+    # default; inventory of 2026-11-02). 01c and its undo change no other extension.
+    SwitchExtTargets = @('Microsoft NDIS Capture')
     FilterState  = Join-Path $env:ProgramData 'eo-l2\filter-guard-state.json'
 }
 
@@ -189,6 +192,7 @@ function Get-EoSnapshot {
     # The host vNIC's bindings in full, and a digest of every other adapter's, so the
     # 01c diff shows that only the filter targets on eo-l2-int changed.
     $s.eoBindings   = @(@(Get-NetAdapterBinding -Name $EO.HostIf -AllBindings -ErrorAction SilentlyContinue) | Sort-Object ComponentID | ForEach-Object { "$($_.ComponentID)|$($_.Enabled)" })
+    $s.eoSwitchExtensions = @(@(Get-VMSwitchExtension -VMSwitchName $EO.SwitchName -ErrorAction SilentlyContinue) | Sort-Object Name | ForEach-Object { "$($_.Name)|$($_.Enabled)" })
     $other          = @(@(Get-NetAdapterBinding -IncludeHidden -AllBindings -ErrorAction SilentlyContinue) | Where-Object { $_.Name -ne $EO.HostIf } | ForEach-Object { "$($_.Name)|$($_.ComponentID)|$($_.Enabled)" } | Sort-Object)
     $s.otherBindings = [ordered]@{ count = $other.Count; sha256 = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes(($other -join "`n")))) -replace '-', '').ToLower() }
     $s.vmHost       = [ordered]@{ enhancedSession = (Get-VMHost).EnableEnhancedSessionMode; vhdPath = (Get-VMHost).VirtualHardDiskPath; vmPath = (Get-VMHost).VirtualMachinePath }
