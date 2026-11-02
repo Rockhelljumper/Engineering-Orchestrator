@@ -355,11 +355,18 @@ function Test-EoFilterPreconditions($GuardState, $Current, [bool]$RecordPresent,
     if (-not $Current.SwitchId -or -not $Current.Adapter) { $p.Add("switch $($EO.SwitchName) or its host adapter is missing") }
     $leaf = Split-Path -Leaf $EO.GuardState
     foreach ($n in @($DirNames)) {
-        if ("$n" -ceq "$(Split-Path -Leaf $EO.FilterState).tmp") { $p.Add("$($EO.GuardDir) holds '$n', left by an interrupted 01c before its record was in place; no binding or extension was changed then. Check its contents and delete it (elevated), then rerun") }
+        if ("$n" -ceq (Split-Path -Leaf $EO.FilterVerified)) { $p.Add("$($EO.GuardDir) holds '$n', the completion stamp of an earlier 01c that was not undone. Run undo-01c-filter-guard.ps1 first") }
+        elseif ("$n" -ceq "$(Split-Path -Leaf $EO.FilterVerified).tmp") { $p.Add("$($EO.GuardDir) holds '$n', left by an interrupted 01c after its changes but before its completion stamp was in place. Review that 01c transcript; delete the file (elevated) only after undo-01c-filter-guard.ps1 has closed the record") }
+        elseif ("$n" -ceq "$(Split-Path -Leaf $EO.FilterState).tmp") { $p.Add("$($EO.GuardDir) holds '$n', left by an interrupted 01c before its record was in place; no binding or extension was changed then. Check its contents and delete it (elevated), then rerun") }
         elseif ("$n" -cne $leaf) { $p.Add("$($EO.GuardDir) holds '$n', which no step wrote") }
     }
     foreach ($x in @(Test-EoUnknownBindings $Current.VisibleBindings)) { $p.Add($x) }
     foreach ($x in @(Test-EoSwitchExtensions $Extensions)) { $p.Add($x) }
+    # The plan matches targets case-insensitively (hashtable keys) but every later
+    # check case-exactly, so a target reported in another case would be changed and
+    # then read as collateral: refuse it here, before any change.
+    foreach ($k in @(@($Current.Bindings.Keys) | Where-Object { "$_" -in $EO.FilterTargets -and "$_" -cnotin $EO.FilterTargets })) { $p.Add("binding '$k' on '$($EO.HostIf)' differs in case from its filter target; review before running 01c") }
+    foreach ($k in @(@($Current.ExtensionStates.Keys) | Where-Object { "$_" -in $EO.SwitchExtTargets -and "$_" -cnotin $EO.SwitchExtTargets })) { $p.Add("switch extension '$k' on $($EO.SwitchName) differs in case from its filter target; review before running 01c") }
     return $p
 }
 
@@ -497,14 +504,23 @@ function Test-EoSwitchAdapterBindings($Bindings, $ExtensionStates) {
     return $p
 }
 
-# Waits (read-only, up to $Seconds) until the host vNIC holds its IPv4 address in
-# the Preferred state again: a binding change restarts the adapter, and the after
-# snapshot must not catch it mid-restart. True when it is back.
-function Wait-EoHostIfAddress([int]$Seconds = 30) {
+# One read of whether the host vNIC is settled: up, its IPv4 address Preferred and
+# its on-link route present. Read-only.
+function Test-EoHostIfSettled {
+    $nic = @(Get-NetAdapter -Name $EO.HostIf -ErrorAction SilentlyContinue | Where-Object { "$($_.Status)" -eq 'Up' })
+    $ip = @(Get-NetIPAddress -InterfaceAlias $EO.HostIf -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { "$($_.IPAddress)" -eq $EO.HostIp -and "$($_.AddressState)" -eq 'Preferred' })
+    $rt = @(Get-NetRoute -InterfaceAlias $EO.HostIf -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { "$($_.DestinationPrefix)" -eq "$($EO.SubnetLow)/29" })
+    return ($nic.Count -eq 1 -and $ip.Count -ge 1 -and $rt.Count -ge 1)
+}
+
+# Waits (read-only, up to $Seconds) until the host vNIC has read as settled on
+# $Stable consecutive polls a second apart: a binding change restarts the adapter, and
+# the after snapshot must not catch it before or during the restart. True when settled.
+function Wait-EoHostIfAddress([int]$Seconds = 30, [int]$Stable = 3) {
+    $run = 0
     for ($i = 0; $i -lt $Seconds; $i++) {
-        $ip = @(Get-NetIPAddress -InterfaceAlias $EO.HostIf -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { "$($_.IPAddress)" -eq $EO.HostIp -and "$($_.AddressState)" -eq 'Preferred' })
-        if ($ip.Count) { return $true }
         Start-Sleep -Seconds 1
+        if (Test-EoHostIfSettled) { $run++; if ($run -ge $Stable) { return $true } } else { $run = 0 }
     }
     return $false
 }
@@ -553,7 +569,8 @@ function Test-EoSnapshotCollateral($Before, $After, [switch]$RequireSwitch) {
         if ("$(Get-EoProp $b 'sha256')" -ne "$(Get-EoProp $a 'sha256')" -or "$(Get-EoProp $b 'count')" -ne "$(Get-EoProp $a 'count')" -or -not "$(Get-EoProp $b 'sha256')") { $p.Add("$k changed (digest $(Get-EoProp $b 'sha256') -> $(Get-EoProp $a 'sha256'))") }
     }
     $j = { param($o, [string]$k) @(Get-EoProp $o $k) | ConvertTo-Json -Depth 4 -Compress }
-    if ((@(Get-EoProp (Get-EoProp $Before 'firewall') 'eoRules') -join ',') -cne (@(Get-EoProp (Get-EoProp $After 'firewall') 'eoRules') -join ',')) { $p.Add('the eo-l2 firewall rules changed') }
+    $rb = (@(Get-EoProp (Get-EoProp $Before 'firewall') 'eoRules') | Sort-Object) -join ','; $ra = (@(Get-EoProp (Get-EoProp $After 'firewall') 'eoRules') | Sort-Object) -join ','
+    if ($rb -cne $ra) { $p.Add('the eo-l2 firewall rules changed') }
     if ((& $j $Before 'vmSwitches') -cne (& $j $After 'vmSwitches')) { $p.Add('the Hyper-V switches changed') }
     $eoIp = { param($o) (@(Get-EoProp $o 'ipAddresses') | Where-Object { "$(Get-EoProp $_ 'if')" -eq $EO.HostIf } | ForEach-Object { "$(Get-EoProp $_ 'ip')/$(Get-EoProp $_ 'prefix')" } | Sort-Object) -join ',' }
     if ((& $eoIp $Before) -cne (& $eoIp $After)) { $p.Add("the IPv4 addresses on '$($EO.HostIf)' changed from '$(& $eoIp $Before)' to '$(& $eoIp $After)'") }
@@ -571,12 +588,45 @@ function Test-EoSnapshotCollateral($Before, $After, [switch]$RequireSwitch) {
     return $p
 }
 
-# Problems that stop a later step (04a) unless 01c is installed: a valid record for
-# this computer, switch, adapter and 01b instance, the adapter present, and every
-# binding and extension target absent or off. Pure; the caller also runs verify-host -RequireFilterGuard.
-function Test-EoFilterInstalled($State, $Current, $GuardInstanceId) {
+$EoFilterVerifiedSchema = 'eo-l2-filter-guard-verified/1'
+
+# Problems with 01c's completion stamp (as read from JSON) for the record $State whose
+# file hashes to $RecordSha256: it must exist, carry this schema, name the record's
+# instance and its hash (so a stamp cannot vouch for another or a changed record).
+function Test-EoFilterVerified($Stamp, $State, [string]$RecordSha256) {
+    $p = New-Object System.Collections.Generic.List[string]
+    if ($null -eq $Stamp) { $p.Add("01c did not complete: no completion stamp at $($EO.FilterVerified) (01c writes it only after its final verification passed). Review the 01c transcript, then run undo-01c-filter-guard.ps1 and 01c again"); return $p }
+    $names = @($Stamp.PSObject.Properties.Name)
+    foreach ($k in 'schema', 'instanceId', 'recordSha256', 'verifiedAt') {
+        if ($k -notin $names) { $p.Add("completion stamp has no '$k'") }
+        elseif ($Stamp.PSObject.Properties[$k].Value -isnot [string]) { $p.Add("completion stamp $k is not a single string") }
+    }
+    if ($p.Count) { return $p }
+    if ($Stamp.schema -cne $EoFilterVerifiedSchema) { $p.Add("completion stamp schema is '$($Stamp.schema)', want '$EoFilterVerifiedSchema'") }
+    if ("$($Stamp.instanceId)" -cne "$(Get-EoProp $State 'instanceId')") { $p.Add("completion stamp is for 01c instance '$($Stamp.instanceId)', the record is '$(Get-EoProp $State 'instanceId')'") }
+    if (-not $RecordSha256 -or "$($Stamp.recordSha256)" -ne $RecordSha256) { $p.Add("completion stamp vouches for record SHA256 '$($Stamp.recordSha256)', the record now hashes to '$RecordSha256'") }
+    return $p
+}
+
+# 01c's completion stamp, or $null when there is none. Throws when the folder or file
+# is not protected (Administrators and SYSTEM only, no link).
+function Read-EoFilterVerified {
+    if (-not (Test-Path -LiteralPath $EO.FilterVerified)) { return $null }
+    $p = @(Test-EoAclFacts (Get-EoAclFacts $EO.GuardDir) -Container) + @(Test-EoAclFacts (Get-EoAclFacts $EO.FilterVerified))
+    if ($p.Count) { throw "the 01c completion stamp is not protected: $($p -join '; ')" }
+    return (Get-Content -LiteralPath $EO.FilterVerified -Raw | ConvertFrom-Json)
+}
+
+# Problems that stop a later step (04a) unless 01c is installed and completed: a valid
+# record for this computer, switch, adapter and 01b instance, 01c's completion stamp
+# for that record (written only after its final verification passed), the adapter
+# present, and every binding and extension target absent or off. $Verified is the
+# stamp as read (or $null), $RecordSha256 the record file's SHA256 now. Pure; the
+# caller also runs verify-host -RequireFilterGuard.
+function Test-EoFilterInstalled($State, $Current, $GuardInstanceId, $Verified, [string]$RecordSha256) {
     $p = New-Object System.Collections.Generic.List[string]
     if ($null -eq $State) { $p.Add("the filter guard (01c) is not installed: no record at $($EO.FilterState)"); return $p }
+    foreach ($x in @(Test-EoFilterVerified $Verified $State $RecordSha256)) { $p.Add($x) }
     if (-not $Current.Adapter) { $p.Add("host adapter '$($EO.HostIf)' not found") }
     foreach ($x in @(Test-EoFilterState $State $Current $GuardInstanceId)) { $p.Add($x) }
     foreach ($x in @(Test-EoFilterBindings $Current.Bindings)) { $p.Add($x) }

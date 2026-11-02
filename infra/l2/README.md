@@ -118,6 +118,8 @@ Hyper-V gives each switch a hidden `vSwitch (<switch>)` adapter, and a switch ex
 - The undo refuses before any change when the record is missing, malformed, unprotected or for another computer, switch, adapter or 01b instance; when a target that was enabled is no longer bound (it cannot be restored); or when a target that was off before 01c is enabled now (something else changed it).
 - It closes the record (moves it to the evidence folder) only when every target reads back as recorded and nothing else on the adapter or switch changed (identity, NetBIOS, other bindings and extensions). Otherwise the record stays.
 - Both 01c and its undo then enforce, from their before and after snapshots, that no other adapter's bindings, no other switch's extensions, no switch, no firewall rule (so the 01b guard) and no IPv4 address or route on the host vNIC changed (`Test-EoSnapshotCollateral`).
+- Only after its final `verify-host -SwitchOnly -RequireFilterGuard` passes does 01c write its completion stamp `%ProgramData%\eo-l2\filter-guard-verified.json` (same protection; it names the record's instance and SHA256). 04a refuses without a stamp that matches the record, so a 01c that stopped after its change never counts as installed. The undo closes the stamp before the record.
+- After a binding or extension change, 01c and its undo wait (up to 30 s) until the host vNIC reads as settled (up, `192.168.250.1` Preferred, on-link route) on three polls in a row before reading back.
 - Declining at its `undo-filter-guard` prompt changes nothing, so its plan can be reviewed ahead of time.
 - If the switch is already gone, it only closes the record.
 

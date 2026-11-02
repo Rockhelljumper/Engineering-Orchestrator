@@ -57,7 +57,7 @@ try {
                     }
                 }
             } else { 'Switch and adapter are gone; no binding or extension needs a change' })
-        "Close the record: move $($EO.FilterState) to the evidence folder as filter-guard-state.undone-$stamp.json"
+        "Close the record: move $($EO.FilterVerified) (if present) and $($EO.FilterState) to the evidence folder as filter-guard-verified.undone-$stamp.json and filter-guard-state.undone-$stamp.json"
         'No other adapter, binding, switch, extension, driver, firewall rule or NetBIOS value changes; the host guard (01b) stays'
     )
     # The host may have changed while the plan waited: read and check everything again.
@@ -75,7 +75,7 @@ try {
         # The only binding change: targets the record shows as enabled, on the host vNIC only.
         Set-EoFilterBindings @($plan | Where-Object Action -eq 'enable' | ForEach-Object ComponentId) -Enable
         Set-EoSwitchExtensions @($xplan | Where-Object Action -eq 'enable' | ForEach-Object ComponentId) $cur.SwitchId -Enable
-        if (@($plan | Where-Object Action -eq 'enable').Count -and -not (Wait-EoHostIfAddress)) { Write-Host "note: $($EO.HostIp) on '$($EO.HostIf)' is not back in the Preferred state after 30 s; the checks below will show it" }
+        if ((@($plan | Where-Object Action -eq 'enable').Count -or @($xplan | Where-Object Action -eq 'enable').Count) -and -not (Wait-EoHostIfAddress)) { Write-Host "note: '$($EO.HostIf)' did not read as settled (up, $($EO.HostIp) Preferred, on-link route) on 3 polls in a row within 30 s; the checks below will show what differs" }
         $now = Get-EoFilterCurrent
         $bad = @()
         foreach ($r in @($st.bindings)) {
@@ -92,6 +92,9 @@ try {
         $bad += @(Test-EoSwitchAdapterBindings @(Get-NetAdapterBinding -Name $EO.SwitchAdapter -IncludeHidden -AllBindings -ErrorAction Stop) $now.ExtensionStates)
         if ($bad.Count) { throw "Bindings or extensions do not read back as recorded: $($bad -join '; '). The record is kept; rerun this undo after checking." }
     }
+    # The completion stamp first, so an interruption leaves a record without a stamp
+    # (04a refuses, this undo can run again), never a stamp without its record.
+    if (Test-Path -LiteralPath $EO.FilterVerified) { Move-Item -LiteralPath $EO.FilterVerified -Destination (Join-Path $EO.Evidence "filter-guard-verified.undone-$stamp.json") }
     Move-Item -LiteralPath $EO.FilterState -Destination (Join-Path $EO.Evidence "filter-guard-state.undone-$stamp.json")
     if (-not @(Get-ChildItem -LiteralPath $EO.GuardDir -Force).Count) { Remove-Item -LiteralPath $EO.GuardDir }
     $after = Save-EoSnapshot $stamp 'after'

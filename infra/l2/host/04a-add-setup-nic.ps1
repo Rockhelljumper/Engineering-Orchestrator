@@ -15,11 +15,14 @@ try {
     if (Get-VMNetworkAdapter -VMName $EO.VmName -Name $EO.SetupNic -ErrorAction SilentlyContinue) { throw 'Setup NIC already attached.' }
     if (-not (Get-VMSwitch -Name $EO.SetupSwitch -ErrorAction SilentlyContinue)) { throw "Switch '$($EO.SetupSwitch)' missing." }
     function Assert-FilterGuard {
-        $fs = $null; $gid = $null
-        try { $fs = Read-EoFilterState; $gid = Get-EoProp (Read-EoGuardState) 'instanceId' } catch { throw "Refusing 04a; nothing was changed: a guard record cannot be used ($($_.Exception.Message))." }
+        $fs = $null; $gid = $null; $fv = $null; $fh = ''
+        try {
+            $fs = Read-EoFilterState; $gid = Get-EoProp (Read-EoGuardState) 'instanceId'; $fv = Read-EoFilterVerified
+            if ($fs) { $fh = (Get-FileHash -Algorithm SHA256 -LiteralPath $EO.FilterState).Hash }
+        } catch { throw "Refusing 04a; nothing was changed: a guard record cannot be used ($($_.Exception.Message))." }
         $fc = $null
         try { $fc = Get-EoFilterCurrent } catch { throw "Refusing 04a; nothing was changed: $($_.Exception.Message)." }
-        $fp = @(Test-EoFilterInstalled $fs $fc $gid)
+        $fp = @(Test-EoFilterInstalled $fs $fc $gid $fv $fh)
         if ($fp.Count) { throw "Refusing 04a; nothing was changed: $($fp -join '; '). Run and verify 01c-filter-guard.ps1 first." }
         & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly -RequireFilterGuard
         if ($LASTEXITCODE -ne 0) { throw 'Refusing 04a; nothing was changed: verify-host.ps1 -SwitchOnly -RequireFilterGuard does not pass.' }

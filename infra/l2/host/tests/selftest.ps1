@@ -607,6 +607,9 @@ $fpre = [ordered]@{
     'a stray file in the folder'     = @($gRec, $gCur, $false, @($leaf, 'filter-guard-state.json.tmp'), $ext, "holds 'filter-guard-state.json.tmp'")
     'an unknown filter enabled'      = @($gRec, (FCur @{ Adapter = $gCur.Adapter; RuleDescriptions = (Cur @{}).RuleDescriptions; VisibleBindings = @{ 'ms_tcpip' = $true; 'WINPCAP' = $true } }), $false, @($leaf), $ext, 'WINPCAP is enabled')
     'a third-party switch extension' = @($gRec, $gCur, $false, @($leaf), @(@{ Name = 'Contoso Mirror'; Vendor = 'Contoso'; Enabled = 'True' }), "switch extension 'Contoso Mirror'")
+    'a leftover completion stamp'    = @($gRec, $gCur, $false, @($leaf, 'filter-guard-verified.json'), $ext, 'completion stamp of an earlier 01c')
+    'a leftover stamp temp file'     = @($gRec, $gCur, $false, @($leaf, 'filter-guard-verified.json.tmp'), $ext, 'before its completion stamp was in place')
+    'a target reported in another case' = @($gRec, (FCur @{ Adapter = $gCur.Adapter; RuleDescriptions = (Cur @{}).RuleDescriptions; Bindings = @{ 'MS_PPPOE' = $true; 'ms_tcpip' = $true } }), $false, @($leaf), $ext, "binding 'MS_PPPOE'")
 }
 foreach ($k in $fpre.Keys) {
     $a = $fpre[$k]; $threw = $false; $msgs = @()
@@ -618,7 +621,30 @@ foreach ($k in $fpre.Keys) {
 
 # 04a's gate: it refuses unless 01c is installed and matches this host.
 $fRecOk = $fJson | ConvertFrom-Json
-Expect 'filter installed: matching record, targets off passes' (@(Test-EoFilterInstalled $fRecOk (FCur @{}) $fGuardId).Count) 0
+$fSha = 'A1B2C3D4E5F60718293A4B5C6D7E8F90A1B2C3D4E5F60718293A4B5C6D7E8F90'
+$fStampJson = '{ "schema": "eo-l2-filter-guard-verified/1", "instanceId": "fedcba9876543210fedcba9876543210", "recordSha256": "' + $fSha + '", "verifiedAt": "2026-11-02T07:00:00Z" }'
+$fStamp = $fStampJson | ConvertFrom-Json
+Expect 'filter installed: matching record and completion stamp, targets off passes' (@(Test-EoFilterInstalled $fRecOk (FCur @{}) $fGuardId $fStamp $fSha).Count) 0
+& {
+    Set-StrictMode -Version 3.0
+    Expect 'completion stamp: matching stamp passes under StrictMode' (@(Test-EoFilterVerified $fStamp $fRecOk $fSha).Count) 0
+    $vbad = [ordered]@{
+        'no stamp (01c stopped before the end)' = @($null, $fSha, '01c did not complete')
+        'stamp for another 01c instance'        = @(($fStampJson.Replace('fedcba9876543210fedcba9876543210', '00000000000000000000000000000000') | ConvertFrom-Json), $fSha, 'is for 01c instance')
+        'record changed since the stamp'        = @($fStamp, ('0' * 64), 'record now hashes to')
+        'record hash not read'                  = @($fStamp, '', 'record now hashes to')
+        'another stamp schema'                  = @(($fStampJson.Replace('verified/1', 'verified/0') | ConvertFrom-Json), $fSha, 'stamp schema is')
+        'instance id as a list'                 = @(($fStampJson.Replace('"instanceId": "fedcba9876543210fedcba9876543210"', '"instanceId": ["fedcba9876543210fedcba9876543210"]') | ConvertFrom-Json), $fSha, 'instanceId is not a single string')
+        'no recordSha256'                       = @(($fStampJson.Replace('"recordSha256"', '"recordShaX"') | ConvertFrom-Json), $fSha, "has no 'recordSha256'")
+    }
+    foreach ($k in $vbad.Keys) {
+        $a = $vbad[$k]; $msgs = @()
+        try { $msgs = @(Test-EoFilterVerified $a[0] $fRecOk $a[1]) } catch { $msgs = @("threw: $($_.Exception.Message)") }
+        Expect "completion stamp: $k refused for its own reason" (@($msgs | Where-Object { $_.Contains($a[2]) }).Count -gt 0) $true
+        if (-not @($msgs | Where-Object { $_.Contains($a[2]) }).Count) { $msgs | ForEach-Object { Write-Host "     $_" } }
+    }
+    Expect '04a gate: a record without a completion stamp is refused' (@(Test-EoFilterInstalled $fRecOk (FCur @{}) $fGuardId $null $fSha) -join ';').Contains('01c did not complete') $true
+}
 $finst = [ordered]@{
     'no 01c record'               = @($null, (FCur @{}), $fGuardId, 'is not installed')
     'a target enabled again'      = @($fRecOk, (FCur @{ Bindings = @{ $npc = $true; $vbx = $false; 'ms_tcpip' = $true } }), $fGuardId, "$npc is enabled")
@@ -632,7 +658,7 @@ $finst = [ordered]@{
 }
 foreach ($k in $finst.Keys) {
     $a = $finst[$k]; $msgs = @()
-    try { $msgs = @(Test-EoFilterInstalled $a[0] $a[1] $a[2]) } catch { $msgs = @("threw: $($_.Exception.Message)") }
+    try { $msgs = @(Test-EoFilterInstalled $a[0] $a[1] $a[2] $fStamp $fSha) } catch { $msgs = @("threw: $($_.Exception.Message)") }
     Expect "filter installed: $k refused for its own reason" (@($msgs | Where-Object { $_.Contains($a[3]) }).Count -gt 0) $true
 }
 # What must not change while 01c or its undo runs (Test-EoFilterUnchanged), from
@@ -673,6 +699,26 @@ foreach ($k in $finst.Keys) {
     Expect 'unchanged: another switch id is caught' (@(Test-EoFilterUnchanged $b0 $n2) -join ';') "switch id changed from '11111111-2222-3333-4444-555555555555' to '99999999-2222-3333-4444-555555555555'"
     $n3 = & $mk $offAll $extOff $null; $n3.Adapter = $null
     Expect 'unchanged: the adapter disappearing is caught' (@(Test-EoFilterUnchanged $b0 $n3).Count -ge 1) $true
+}
+
+# The settle wait after a binding change: the adapter up, its address Preferred and its
+# on-link route present, on 3 polls in a row; a settled read before the restart begins
+# does not count alone. Start-Sleep and the cmdlets are stubbed.
+& {
+    function Start-Sleep { param($Seconds) }
+    $up = 'Up'; $state = 'Preferred'; $route = $true
+    function Get-NetAdapter { [CmdletBinding()] param($Name) [pscustomobject]@{ Name = $Name; Status = $up } }
+    function Get-NetIPAddress { [CmdletBinding()] param($InterfaceAlias, $AddressFamily) [pscustomobject]@{ IPAddress = $EO.HostIp; AddressState = $state } }
+    function Get-NetRoute { [CmdletBinding()] param($InterfaceAlias, $AddressFamily) if ($route) { [pscustomobject]@{ DestinationPrefix = "$($EO.SubnetLow)/29" } } }
+    Expect 'settle: up, Preferred and on-link route reads as settled' (Test-EoHostIfSettled) $true
+    $up = 'Disconnected'; Expect 'settle: adapter down is not settled' (Test-EoHostIfSettled) $false; $up = 'Up'
+    $state = 'Tentative'; Expect 'settle: a Tentative address is not settled' (Test-EoHostIfSettled) $false; $state = 'Preferred'
+    $route = $false; Expect 'settle: no on-link route is not settled' (Test-EoHostIfSettled) $false; $route = $true
+    $script:seq = @($true, $false, $true, $true, $true); $script:i = 0
+    function Test-EoHostIfSettled { $v = $script:seq[[Math]::Min($script:i, $script:seq.Count - 1)]; $script:i++; $v }
+    Expect 'settle: a settled read, a restart, then 3 settled reads passes' "$(Wait-EoHostIfAddress -Seconds 10)/$script:i" 'True/5'
+    $script:seq = @($true, $false); $script:i = 0
+    Expect 'settle: never 3 settled reads in a row gives false within the limit' "$(Wait-EoHostIfAddress -Seconds 6)/$script:i" 'False/6'
 }
 
 # Collateral changes between the before and after snapshots (Test-EoSnapshotCollateral),
@@ -744,11 +790,11 @@ foreach ($k in $finst.Keys) {
     $hidden = @('ms_pppoe', 'ms_ndisuio')
     function Enable-NetAdapterBinding { [CmdletBinding()] param($Name, $ComponentID, [switch]$AllBindings)
         if ($ComponentID -in $hidden -and -not $AllBindings) { return }
-        if ($ErrorActionPreference -ne 'Stop' -and $PSBoundParameters['ErrorAction'] -ne 'Stop') { $script:calls.Add('no-stop') }
+        if ("$($PSBoundParameters['ErrorAction'])" -ne 'Stop') { $script:calls.Add('no-stop') }
         $script:calls.Add("enable $Name $ComponentID") }
     function Disable-NetAdapterBinding { [CmdletBinding()] param($Name, $ComponentID, [switch]$AllBindings)
         if ($ComponentID -in $hidden -and -not $AllBindings) { return }
-        if ($ErrorActionPreference -ne 'Stop' -and $PSBoundParameters['ErrorAction'] -ne 'Stop') { $script:calls.Add('no-stop') }
+        if ("$($PSBoundParameters['ErrorAction'])" -ne 'Stop') { $script:calls.Add('no-stop') }
         $script:calls.Add("disable $Name $ComponentID") }
     foreach ($c in @(
             @(@($npc, $vbx), $false, "disable $($EO.HostIf) $npc;disable $($EO.HostIf) $vbx"),
@@ -796,7 +842,7 @@ foreach ($k in $finst.Keys) {
 # returns a list sits directly in @(), so 0 or 1 results cannot break .Count under
 # StrictMode (D-2); and 01c verifies with the filter guard required.
 & {
-    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoFilterInstalled', 'Test-EoFilterExtensions', 'Test-EoSwitchAdapterBindings', 'Test-EoFilterUnchanged', 'Test-EoSnapshotCollateral', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
+    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoFilterInstalled', 'Test-EoFilterExtensions', 'Test-EoSwitchAdapterBindings', 'Test-EoFilterUnchanged', 'Test-EoSnapshotCollateral', 'Test-EoFilterVerified', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
     foreach ($f in '01c-filter-guard.ps1', 'undo-01c-filter-guard.ps1', 'verify-host.ps1', '_guard.ps1', '04a-add-setup-nic.ps1') {
         $t = $null; $e = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir $f), [ref]$t, [ref]$e)
@@ -828,11 +874,15 @@ foreach ($k in $finst.Keys) {
     Expect 'filter order: 01c reads preconditions once before and once after its confirmation' ($conf.Count -eq 1 -and $pre.Count -eq 2 -and $pre[0] -lt $conf[0] -and $pre[1] -gt $conf[0]) $true
     Expect 'filter order: 01c moves the record into place before it changes a binding' ($mv.Count -eq 1 -and $set.Count -eq 1 -and $mv[0] -gt $pre[1] -and $mv[0] -lt $set[0]) $true
     $xset = @(Offsets $c01 'Set-EoSwitchExtensions')
+    $vmv = @(Offsets $c01 'Move-Item' 'FilterVerified')
+    Expect 'filter order: 01c writes its completion stamp once, after its final verification' ($vmv.Count -eq 1 -and $xset.Count -eq 1 -and $vmv[0] -gt $xset[0]) $true
     Expect 'filter order: 01c changes the extension after the record, once' ($xset.Count -eq 1 -and $xset[0] -gt $mv[0]) $true
     $conf = @(Offsets $u01 'Confirm-EoPlan'); $pre = @(Offsets $u01 'Get-UndoFacts'); $set = @(Offsets $u01 'Set-EoFilterBindings'); $mv = @(Offsets $u01 'Move-Item' 'FilterState')
     Expect 'filter order: undo-01c reads its facts once before and once after its confirmation' ($conf.Count -eq 1 -and $pre.Count -eq 2 -and $pre[0] -lt $conf[0] -and $pre[1] -gt $conf[0]) $true
     Expect 'filter order: undo-01c changes bindings after the second read and closes the record after that' ($set.Count -eq 1 -and $mv.Count -eq 1 -and $set[0] -gt $pre[1] -and $mv[0] -gt $set[0]) $true
     $xset = @(Offsets $u01 'Set-EoSwitchExtensions')
+    $vmv = @(Offsets $u01 'Move-Item' 'FilterVerified')
+    Expect 'filter order: undo-01c closes the completion stamp before the record' ($vmv.Count -eq 1 -and $mv.Count -eq 1 -and $vmv[0] -lt $mv[0] -and $vmv[0] -gt $xset[0]) $true
     Expect 'filter order: undo-01c restores the extension after the second read and before closing the record' ($xset.Count -eq 1 -and $xset[0] -gt $pre[1] -and $mv[0] -gt $xset[0]) $true
 
     # verify-host's filter record line, run as shipped for 0, 1 and 3 problems and an unreadable record.

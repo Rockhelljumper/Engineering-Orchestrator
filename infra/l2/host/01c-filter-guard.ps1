@@ -117,7 +117,7 @@ try {
     Set-EoFilterBindings $change
     Set-EoSwitchExtensions $xchange $cur.SwitchId
 
-    if ($change.Count -and -not (Wait-EoHostIfAddress)) { Write-Host "note: $($EO.HostIp) on '$($EO.HostIf)' is not back in the Preferred state after 30 s; the checks below will show it" }
+    if (($change.Count -or $xchange.Count) -and -not (Wait-EoHostIfAddress)) { Write-Host "note: '$($EO.HostIf)' did not read as settled (up, $($EO.HostIp) Preferred, on-link route) on 3 polls in a row within 30 s; the checks below will show what differs" }
     $now = Get-EoFilterCurrent
     $bad = @(Test-EoFilterBindings $now.Bindings)
     $bad += @(Test-EoFilterExtensions $now.ExtensionStates)
@@ -135,6 +135,16 @@ try {
     if ($col.Count) { throw "Changes outside the 01c targets: $($col -join '; ')" }
     & (Join-Path $PSScriptRoot 'verify-host.ps1') -NoLog -SwitchOnly -RequireFilterGuard
     if ($LASTEXITCODE -ne 0) { throw 'Host-side verification failed.' }
+    # Only now: the completion stamp 04a requires, for this record and its exact hash.
+    $hrec = (Get-FileHash -Algorithm SHA256 -LiteralPath $EO.FilterState).Hash
+    $vt = "$($EO.FilterVerified).tmp"
+    [ordered]@{ schema = $EoFilterVerifiedSchema; instanceId = $instance; recordSha256 = $hrec; verifiedAt = (Get-Date).ToUniversalTime().ToString('o') } | ConvertTo-Json | Set-Content -Encoding UTF8 -LiteralPath $vt
+    Move-Item -LiteralPath $vt -Destination $EO.FilterVerified
+    Invoke-EoNative icacls.exe @($EO.FilterVerified, '/setowner', '*S-1-5-32-544') | Write-Host
+    Copy-Item -LiteralPath $EO.FilterVerified (Join-Path $EO.Evidence "$stamp-filter-guard-verified.json")
+    $vcheck = @(Test-EoFilterVerified (Read-EoFilterVerified) (Read-EoFilterState) $hrec)
+    if ($vcheck.Count) { throw "The completion stamp does not read back cleanly: $($vcheck -join '; ')" }
+    Write-Host "completion stamp $($EO.FilterVerified) for record SHA256 $hrec"
     Write-Host 'STEP 01c DONE: Npcap, VirtualBox, PPPoE and NDIS user-mode I/O unbound from eo-l2-int, NDIS Capture disabled on its switch, and verified.'
 } catch {
     Write-Host "STEP 01c STOPPED: $($_.Exception.Message)"

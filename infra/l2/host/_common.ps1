@@ -75,6 +75,9 @@ $EO = [ordered]@{
     SwitchAdapter = 'vSwitch (eo-l2-int)'
     SwitchExtComponents = @{ 'Microsoft NDIS Capture' = 'ms_ndiscap' }
     FilterState  = Join-Path $env:ProgramData 'eo-l2\filter-guard-state.json'
+    # Written by 01c only after its final verification passed, next to the record; 04a
+    # requires it, so a 01c that stopped after its change does not count as installed.
+    FilterVerified = Join-Path $env:ProgramData 'eo-l2\filter-guard-verified.json'
 }
 
 . (Join-Path $PSScriptRoot '_guard.ps1')
