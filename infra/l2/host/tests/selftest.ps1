@@ -524,6 +524,31 @@ foreach ($k in $fpre.Keys) {
     if (-not $hit.Count) { $msgs | ForEach-Object { Write-Host "     $_" } }
 }
 
+# 04a's gate: it refuses unless 01c is installed and matches this host.
+$fRecOk = $fJson | ConvertFrom-Json
+Expect 'filter installed: matching record, targets off passes' (@(Test-EoFilterInstalled $fRecOk (FCur @{}) $fGuardId).Count) 0
+$finst = [ordered]@{
+    'no 01c record'               = @($null, (FCur @{}), $fGuardId, 'is not installed')
+    'a target enabled again'      = @($fRecOk, (FCur @{ Bindings = @{ $npc = $true; $vbx = $false; 'ms_tcpip' = $true } }), $fGuardId, "$npc is enabled")
+    'adapter gone'                = @($fRecOk, (FCur @{ SwitchId = $null; Adapter = $null }), $fGuardId, 'not found')
+    'record for another adapter'  = @($fRecOk, (FCur @{ Adapter = @{ InterfaceGuid = '{00000000-0000-4000-8000-000000000001}'; MacAddress = '00-15-5D-0A-1C-02'; SettingId = $fguid } }), $fGuardId, 'adapter InterfaceGuid')
+    'another 01b instance'        = @($fRecOk, (FCur @{}), 'ffffffffffffffffffffffffffffffff', 'builds on host guard instance')
+}
+foreach ($k in $finst.Keys) {
+    $a = $finst[$k]; $msgs = @()
+    try { $msgs = @(Test-EoFilterInstalled $a[0] $a[1] $a[2]) } catch { $msgs = @("threw: $($_.Exception.Message)") }
+    Expect "filter installed: $k refused for its own reason" (@($msgs | Where-Object { $_.Contains($a[3]) }).Count -gt 0) $true
+}
+& {
+    $t = $null; $e = $null
+    $a4 = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir '04a-add-setup-nic.ps1'), [ref]$t, [ref]$e)
+    $off = { param($Cmd) @($a4.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -eq $Cmd }, $true) | ForEach-Object { $_.Extent.StartOffset } | Sort-Object) }
+    $g = @(& $off 'Assert-FilterGuard'); $c = @(& $off 'Confirm-EoPlan'); $add = @(& $off 'Add-VMNetworkAdapter')
+    Expect '04a gate: checks the filter guard before and after its confirmation, before adding the NIC' ($g.Count -eq 2 -and $c.Count -eq 1 -and $add.Count -eq 1 -and $g[0] -lt $c[0] -and $g[1] -gt $c[0] -and $g[1] -lt $add[0]) $true
+    $v = @($a4.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and "$($n.CommandElements[0])" -match 'verify-host' }, $true) | ForEach-Object { "$($_.Extent.Text)" })
+    Expect '04a gate: verifies with the filter guard required' (@($v | Where-Object { $_ -match '-SwitchOnly -RequireFilterGuard$' }).Count) 1
+}
+
 # The only place a binding changes: targets only, on the host vNIC only, nothing
 # changed when any id is not a target.
 & {
@@ -547,8 +572,8 @@ foreach ($k in $fpre.Keys) {
 # returns a list sits directly in @(), so 0 or 1 results cannot break .Count under
 # StrictMode (D-2); and 01c verifies with the filter guard required.
 & {
-    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
-    foreach ($f in '01c-filter-guard.ps1', 'undo-01c-filter-guard.ps1', 'verify-host.ps1', '_guard.ps1') {
+    $listFns = @('Get-EoFilterApplyPlan', 'Get-EoFilterRestorePlan', 'Test-EoFilterRestorePlan', 'Test-EoFilterState', 'Test-EoFilterBindings', 'Test-EoUnknownBindings', 'Test-EoSwitchExtensions', 'Test-EoFilterPreconditions', 'Test-EoFilterInstalled', 'Test-EoGuardState', 'Test-EoAclFacts', 'Get-NetAdapterBinding', 'Get-VMSwitchExtension', 'Get-ChildItem')
+    foreach ($f in '01c-filter-guard.ps1', 'undo-01c-filter-guard.ps1', 'verify-host.ps1', '_guard.ps1', '04a-add-setup-nic.ps1') {
         $t = $null; $e = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir $f), [ref]$t, [ref]$e)
         # verify-host reads one known binding (ms_tcpip6) as a single object, never counted.

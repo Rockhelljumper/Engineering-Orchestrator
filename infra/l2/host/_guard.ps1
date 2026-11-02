@@ -420,6 +420,18 @@ function Test-EoSwitchExtensions($Extensions) {
     return $p
 }
 
+# Problems that stop a later step (04a) unless 01c is installed: a valid record for
+# this computer, switch, adapter and 01b instance, the adapter present, and both
+# targets absent or off. Pure; the caller also runs verify-host -RequireFilterGuard.
+function Test-EoFilterInstalled($State, $Current, $GuardInstanceId) {
+    $p = New-Object System.Collections.Generic.List[string]
+    if ($null -eq $State) { $p.Add("the filter guard (01c) is not installed: no record at $($EO.FilterState)"); return $p }
+    if (-not $Current.Adapter) { $p.Add("host adapter '$($EO.HostIf)' not found") }
+    foreach ($x in @(Test-EoFilterState $State $Current $GuardInstanceId)) { $p.Add($x) }
+    foreach ($x in @(Test-EoFilterBindings $Current.Bindings)) { $p.Add($x) }
+    return $p
+}
+
 # How verify-host treats the filter guard: 'absent' (before 01b: the record must
 # not exist), 'check' (rows are mandatory) or 'skip' (-SwitchOnly before 01c, with
 # no record yet). Full verification (the VM exists, B9) always checks.
