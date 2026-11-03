@@ -14,7 +14,7 @@ Updated 2026-11-03 after owner decisions F-1 to F-6.
 | PX-K3 | **M8-K3** | Infra repo skeleton, Flux Kustomizations, Proxmox IaC for four VMs, rendered and linted only | Code + static tests | PR review; creating the infra repo needs approval |
 | PX-K4 | **M8-K4** | Create `eo-control`, `eo-worker`, `eo-edge`, `eo-anchor`; install K3s, Headlamp, Flux | Infrastructure | Owner approval (existing M8 gate) |
 | PX-K5 | **M8-K5** | Isolation negative tests (G-2..G-6, G-8), escape probes | Live, destructive in sandbox | Owner approval |
-| PX-K6 | **M8-K6** | First staging run through K8s Jobs (M8-5 scenario) | Live, spends money | Owner budget approval (M8 cap $25) |
+| PX-K6 | **M8-K6** | First staging run through K8s Jobs: the M8-5 scenario (which is the M7 scenario), M8-6 ref restrictions and M8-7 blocker reporting | Live, spends money | Owner budget approval (M8 cap $25); needs M4–M7 |
 
 ## Dependency graph
 
@@ -33,7 +33,10 @@ Phase B: 02 VM → 04a →          M2-1 arg builder, role profiles          │
            Phase C: first live Claude call in Podman (≤ $2, owner gate)           │
                  │                                                                ▼
                  ▼                                                    K4 VMs (gate) → K5 → K6
-           M3 real verifier/reviewer behind the V interfaces                  (needs Phase C + M3)
+           M3 real verifier/reviewer behind the V interfaces                  (K4, K5: Phase C + M3;
+                 │                                                             K6: also M4–M7)
+                 ▼
+           M4 → M5 → M6 → M7 (end-to-end demo)
 ```
 
 ## Ordered next steps
@@ -44,7 +47,7 @@ Phase B: 02 VM → 04a →          M2-1 arg builder, role profiles          │
 4. **Provisioning log** in PR #4 (docs only) so the repo carries the audit trail.
 5. **Phase B steps 02..verify**, each with its own approval, interleaved with M2-1..M2-8 code work (no dependency between them until M2-9/M2-10).
 6. **K1, K2, K3** in parallel with step 5, once V has merged (K2 and K1 depend on its interfaces).
-7. **Phase C**, then **M3**, then **K4..K6**.
+7. **Phase C**, then **M3**, then **M4–M7** (planning, parallel execution, chat plugin, the end-to-end demo). **K4** and **K5** can follow Phase C and M3; **K6** also needs M7, because it runs the M7 scenario.
 
 ## Phase C entry criteria
 

@@ -44,6 +44,6 @@ EO's own controller, anchor and gateway are systemd services (ADR-005). They are
 ## Consequences
 
 - **Registry (owner decision F-6):** an external or separately administered OCI registry. Images are immutable and pulled only by digest. No EO VM holds registry push credentials. Which registry is chosen, and its credentials, are not provisioned yet.
-- **Builds (owner decision F-6):** images are built in an isolated CI environment, not routinely on `eo-control`. The build produces provenance, an SBOM and the two-build reproducibility check; the digest that passes is the only one promoted. `eo-control` and `eo-worker` only pull.
+- **Builds (owner decision F-6):** images are built in an isolated CI environment, never on `eo-control` or any EO VM. The build produces provenance, an SBOM and the two-build reproducibility check; the digest that passes is the only one promoted. `eo-control` and `eo-worker` only pull.
 - The CI build environment, its trust boundary and its credentials are specified in M8-K1 before anything is created.
 - Platform images (Headlamp, Flux) are pinned by digest and scanned, but not rebuilt.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | **Accepted in direction, conditionally (owner, 2026-11-03 19:13Z, F-2, F-3). Not final: pending independent review.** Amends the two-VM proposal (`roadmap/proxmox-staging-proposal.md`, eo-run plus eo-edge). No Proxmox resource is authorized |
+| Status | **Accepted in direction, conditionally (owner, 2026-11-03 19:13Z, F-2, F-3). Not final: pending independent review.** Amends the earlier two-VM proposal discussed in the project (eo-run plus eo-edge; not a file in the repository). No Proxmox resource is authorized |
 | Milestone | M8-K0 (decision), M8-K3 (IaC, not applied), M8-K4 (provisioning, separately approved) |
 | Relates to | ADR-005, ADR-006, ADR-009, ADR-010; threat model T6, T7, T8, T10, T13; `03-threat-model-delta.md` findings G-1 to G-12 |
 | Owner decisions | F-3: the staging design target is four VMs, with an independent `eo-anchor`. Four VMs are not automatically sufficient for production; separating K3s administration from the controller is reassessed for non-staging. F-5: anchor on its own VM for staging; an external witness outside the Proxmox administrative trust domain before non-staging |
@@ -44,23 +44,26 @@
 These rules hold even if a guest's root disables its own firewall.
 - **eo-worker, outbound:**
   - `eo-edge:3128`;
-  - `eo-control:6443` (API server);
-  - the overlay port to `eo-control`.
+  - `eo-control:6443` (API server, for the kubelet and node components only; pods are denied by NetworkPolicy);
+  - `eo-control:7444` (artifact receiver);
+  - the overlay port to `eo-control` (`51820/udp`, WireGuard backend).
   
   Nothing else: no default route to the uplink and no DNS except through the proxy.
 - **eo-worker, inbound:** only `10250` (kubelet) from `eo-control`, and the overlay port.
 - **eo-control, outbound:** `eo-edge:3128`, with its own minimal allowlist (GitHub staging, package mirror, time). It has no uplink route of its own.
-- **eo-control, inbound:** SSH from the operator jump host; `6443` and the overlay port from `eo-worker`.
+- **eo-control, inbound:** SSH from the operator jump host; `6443`, `7444` and `51820/udp` from `eo-worker`.
 - **eo-control, outbound to eo-anchor:** `7443` only (the anchor channel).
-- **eo-anchor:** inbound `7443` from `eo-control` only, and SSH from the management jump host. Outbound: only the log shipping path to the external evidence store. No uplink route, no DNS. `eo-worker` and `eo-edge` cannot reach it.
-- **eo-edge:** accepts `3128` only from `eo-worker` and `eo-control`, and SSH from management. It routes and forwards nothing for either guest. NAT happens only on its own uplink interface.
-- **All VMs:** IPv6 disabled at the VM NIC. `macfilter=1` and `ipfilter=1` on every NIC. The management VLAN cannot be reached from any EO VM.
+- **eo-anchor:** inbound `7443` from `eo-control` only, and SSH from the management jump host. Outbound: `eo-edge:3128` only, with an allowlist of exactly the external evidence store and one NTP-over-proxy-capable time source (or a dedicated NTP relay on `eo-edge`, decided in M8-K3). No uplink route, no general DNS. `eo-worker` cannot reach it. `eo-edge` accepts `3128` from `eo-anchor` for these two destinations only.
+- **eo-edge:** accepts `3128` only from `eo-worker`, `eo-control` and `eo-anchor` (per-source allowlists), and SSH from management. It routes and forwards nothing for either guest. NAT happens only on its own uplink interface.
+- **All VMs:** no IPv6: a Proxmox firewall IPv6 drop on every NIC, `net.ipv6.conf.all.disable_ipv6=1` in every guest, and no dual-stack in K3s. `macfilter=1` and `ipfilter=1` on every NIC. The management VLAN cannot be reached from any EO VM.
 
 ### Kubernetes-side controls, so the cluster cannot route around eo-edge
 
-- **NetworkPolicy:** default-deny ingress and egress in `eo-exec`. Worker pods may reach only the `eo-edge` proxy address (on the node network) and the artifact receiver on `eo-control` (ADR-009). They have no access to the API server, CoreDNS, the kubelet or other pods.
+- **NetworkPolicy:** default-deny ingress and egress in `eo-exec`. Worker pods may reach only the `eo-edge` proxy address (on the node network) and the artifact receiver on `eo-control` (ADR-009). They have no access to the API server, CoreDNS, the kubelet (including their own node's `10250`) or other pods.
+- **K3s components:** disabled cluster-wide: traefik, servicelb, local-storage (it uses hostPath) and metrics-server. `eo-worker` joins with the agent token, not the server token, and the token is not in cloud-init.
+- **Admission in `eo-exec`** also denies `nodeName`, control-plane tolerations, `hostPort`, ephemeral containers and any volume type other than emptyDir and the projected per-attempt Secret.
 - **DNS:** worker pods get `dnsPolicy: None`, with no resolver. All names are resolved by the proxy. CoreDNS forwards only cluster names, so it is not an external DNS channel (finding G-4).
-- **Overlay and services:** no NodePort, LoadBalancer or hostNetwork in `eo-exec`, and no ServiceLB for EO namespaces. The overlay between the two VMs is encrypted (for example WireGuard) or carried only on the dedicated VLAN pair; M8-K0 decides which.
+- **Overlay and services:** no NodePort, LoadBalancer or hostNetwork in `eo-exec`. The overlay between the two VMs uses the WireGuard backend (`51820/udp`).
 - **Enforcement:** M8-K0 confirms that the pinned K3s version enforces NetworkPolicy. M8-K5 proves it with negative tests, never by configuration review alone.
 
 ### What the proxy does and does not do
@@ -100,6 +103,11 @@ This is not repository-level authorisation or content inspection. The controls t
 | `eo-anchor` | Nothing restorable. Its high-water-mark changes are logged to the external evidence store | Loss is handled by the attended re-initialisation in ADR-010, never by restore |
 | `eo-worker` | Nothing (stateless) | Rebuild from template |
 | `eo-edge` | Configuration, as code | Rebuild |
+
+## Mapping to M8 acceptance criteria
+
+- M8-4's "snapshot taken before each run and restorable" applies to `eo-worker` only. A snapshot restore of `eo-control` is a rollback (anchor refuses, spend reconciliation needed, ADR-010), and `eo-anchor` is never snapshotted.
+- M8-3's "refuses to start outside L2/PX": the K tier counts as PX only when the controller's `doctor` confirms it runs on `eo-control` with an anchor channel to `eo-anchor` and the cluster's admission policy is present. Defined in M8-K2.
 
 ## Consequences
 

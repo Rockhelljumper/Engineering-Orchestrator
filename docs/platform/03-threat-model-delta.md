@@ -15,6 +15,7 @@ Base: `docs/04-threat-model.md` T1–T25 (on `claude/m2-phase-b`). New threats s
 | T32 | **Per-attempt credential outlives the attempt** (Secret left in `eo-exec`, or readable by sibling pods) | Owner-referenced Secret, deleted on finish, reconciler sweep; or proxy-side injection (ADR-010 §4) | Real model calls in K8s |
 | T33 | **Image substitution.** A tag or registry change runs an unreviewed image | Digest-only references; admission policy rejects non-digest; provenance/SBOM checks; external registry, builds in isolated CI, no push credential on EO VMs (ADR-007, F-6) | M8-K2 |
 | T34 | **Anchor channel attack.** Spoofed anchor, replayed reply, stolen client key on `eo-control`, or a channel outage used to make the controller run unanchored | mTLS with pinned keys from an offline CA; MACed replies bound to request; CAS + idempotent `requestId`; fail closed on outage (ADR-010 §1a). A stolen client key can only advance the head, which the journal must then match | Implementation of the channel (M8-K2) |
+| T36 | **Accepted rollback loses recorded spend.** Every `eo-control` restore is older than the anchor, so accepting it drops ledger entries and the budget governor under-counts (T9) | Dispatch refused after an accepted rollback until spend reconciliation against provider usage and the external log is journaled (ADR-010 §1a) | M8-K2 |
 | T35 | **Build environment compromise.** The CI that builds images injects code | Isolated CI; two-build reproducibility; provenance verified at admission (ADR-007) | M8-K1 |
 
 ## Gap analysis for the four-VM staging target (G-1..G-12, referenced by ADR-005 and ADR-008)
@@ -26,7 +27,7 @@ Base: `docs/04-threat-model.md` T1–T25 (on `claude/m2-phase-b`). New threats s
 | G-3 | Flannel does not enforce NetworkPolicy; K3s embedded netpol controller must actually be enforcing | M8-K5 | Negative tests: pod-to-pod, pod-to-control, pod-to-internet all denied except proxy |
 | G-4 | CoreDNS could be an external DNS channel | M8-K5 | `dnsPolicy: None` for worker pods; CoreDNS forwards cluster names only; DNS exfil negative test |
 | G-5 | IPv6 left on in any guest or on the bridge bypasses IPv4 rules | M8-K4 | IPv6 off in guests and Proxmox firewall; test |
-| G-6 | Overlay traffic unencrypted between VMs | M8-K4 | Encrypted overlay (WireGuard backend) or accept on an isolated bridge |
+| G-6 | Overlay traffic unencrypted between VMs | M8-K4 | WireGuard backend (`51820/udp`, ADR-008) |
 | G-7 | CONNECT/SNI allowlist gives host-level control only; no path, repo or content control | Accepted limit | Documented; ref restrictions enforced by GitHub (M8-6) |
 | G-8 | hostNetwork, hostPath, NodePort, LoadBalancer could bypass policy | M8-K2 | Admission policy denies them in `eo-exec` |
 | G-9 | API audit logs and proxy logs live inside the compromise boundary | M8-K4 | External, tamper-evident store (F-6, ADR-010 §3) |
@@ -41,8 +42,8 @@ Base: `docs/04-threat-model.md` T1–T25 (on `claude/m2-phase-b`). New threats s
 | Stage | Blockers |
 |---|---|
 | 01c execution (now) | None open in code; residual run risks are fail-safe (host churn, settle timeout) |
-| Phase C (first live call, Podman) | Verdict separation merged (T5, T30); M2-1, M2-4, M2-5, M2-8, M2-9, M2-10 |
-| M8-K4 (create VMs) | Anchor channel design reviewed (T34); external evidence store chosen (G-9); registry and CI build environment chosen (T33, T35); `journal.key` moved (G-10) |
+| Phase C (first live call, Podman) | Verdict separation merged (T5, T30); M2-1, M2-4, M2-5, M2-6, M2-8, M2-9, M2-10 |
+| M8-K4 (create VMs) | Anchor channel design re-reviewed (T34, F-5); infra-repo controls in place (T28); K3s secrets encryption and audit policy (T32); external evidence store chosen (G-9); registry and CI build environment chosen (T33, T35); `journal.key` moved (G-10) |
 | M8-K6 (first staging run) | G-2..G-6, G-8 negative tests passing (M8-K5); per-attempt credential decision (T32) |
 | Non-staging | External witness (G-11); K3s administration separation reassessed (G-1) |
 

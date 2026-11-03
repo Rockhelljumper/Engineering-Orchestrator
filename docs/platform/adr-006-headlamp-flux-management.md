@@ -29,6 +29,7 @@ The Command Center never treats a completed pod as a completed task. It shows th
    - Administrative actions use `kubectl` at the `eo-control` console under a separate admin kubeconfig. They are recorded by the API server audit log (ADR-010).
    - If web admin is wanted later, it needs per-user OIDC or a short-lived impersonation flow. That is a separate owner decision and security review, consistent with ADR-003's "web-based administration needs a new owner decision".
 3. **Authentication in front of Headlamp:** besides the SSH tunnel, Headlamp's own token or OIDC login. M8-K0 confirms what the pinned Headlamp version supports.
+4. **Headlamp and Flux run on the trusted VM, so they are contained.** Headlamp renders untrusted pod logs and Flux source-controller fetches from the network. Headlamp plugins are disabled; a NetworkPolicy denies all traffic from `eo-exec` to the platform namespace; Headlamp is unreachable from pods and from the LAN.
 
 ### Flux
 
@@ -37,15 +38,17 @@ The Command Center never treats a completed pod as a completed task. It shows th
    - branch protection with required review by the owner;
    - no AI or controller credentials have write access;
    - no deploy-key bypass;
-   - signed commits if the pinned Flux version verifies them on `GitRepository`, to be confirmed in M8-K0.
+   - branch protection applies to administrators too, and CODEOWNERS names the owner for every path;
+   - no AI GitHub identity has write, admin or bypass rights on the infrastructure repository;
+   - every commit Flux reconciles must carry a verified signature from an owner key; the `GitRepository` verification is configured to fail closed, so an unsigned commit is never applied (M8-K0 confirms the pinned Flux version supports this; if not, Flux is not adopted until it does).
    
    An AI agent may open a PR proposing a manifest change. Committing YAML never grants deployment authority.
-3. **Least-privilege reconciliation.** Each Flux `Kustomization` impersonates a dedicated service account scoped to its own namespaces:
+3. **Least-privilege reconciliation.** Flux runs with `--default-service-account` (no Kustomization runs as Flux itself), `--no-cross-namespace-refs` and `--no-remote-bases`. No image-automation controllers and no notification receivers (webhooks) are installed. Each `Kustomization` impersonates a dedicated service account scoped to its own namespace:
    - **platform:** Headlamp and monitoring;
-   - **eo-exec:** the worker Job templates and NetworkPolicies, but not the Jobs themselves, which the controller creates.
+   - **eo-exec:** quotas and LimitRanges only. There are no worker Job templates in the cluster: the controller renders Job specs only from its own policy (ADR-009 principle 4).
    
-   Cluster-scoped objects (CRDs, ClusterRoles, admission policy, namespaces) go in a separate `Kustomization`. It is applied only after explicit promotion by the owner, by moving a pinned tag or commit.
-4. **Changes that always need explicit owner approval**, as a reviewed PR to the infrastructure repository plus a recorded approval:
+   **Promotion-gated:** cluster-scoped objects (CRDs, ClusterRoles, admission policy, namespaces) **and** every NetworkPolicy, Role and RoleBinding go in a separate `Kustomization` that reconciles only a pinned tag. Moving that tag is the owner's recorded approval: a signed tag by the owner key, which the `GitRepository` verifies. A merge alone therefore deploys nothing that changes isolation or permissions.
+4. **Changes that always need explicit owner approval**, as a reviewed PR to the infrastructure repository plus a recorded approval (the owner-signed promotion tag above):
    - new infrastructure resources;
    - RBAC expansion;
    - secret access changes;
@@ -63,9 +66,9 @@ The Command Center never treats a completed pod as a completed task. It shows th
 ```
 clusters/staging/            # Flux entry point for staging (Kustomizations, sources)
 infrastructure/              # cluster-scoped: namespaces, CRDs, admission policies (promotion-gated)
-policies/                    # NetworkPolicies, RBAC per namespace
+policies/                    # NetworkPolicies, RBAC per namespace (promotion-gated)
 platform/                    # Headlamp, monitoring (version-pinned HelmRelease or manifests)
-eo/                          # EO-side templates: worker Job template ConfigMap, quotas, LimitRanges
+eo/                          # quotas, LimitRanges for eo-exec (no Job templates: the controller renders specs from its own policy)
 overlays/dev | staging       # environment overlays; production/ only when a production milestone exists
 secrets/                     # references only (names, key ids); never values
 versions.yaml                # every pinned image digest and chart version, one place to review
@@ -76,6 +79,7 @@ runbooks/                    # promotion, rollback, break-glass, restore
 
 - One more repository and review path. Deployment authority stays with a human merge plus an explicit promotion, matching T13's "AI pushes only `eo/**` to staging".
 - Headlamp is useful for troubleshooting without becoming an approval surface. Admin actions are console-only, consistent with OD-2.
+- No AI agent holds root console access on `eo-control` or `eo-anchor`, or the owner's signing key.
 - Rollback is a revert of the infrastructure repository followed by reconciliation. Cluster-scoped changes roll back through the same promotion step.
 
 ## Rejected

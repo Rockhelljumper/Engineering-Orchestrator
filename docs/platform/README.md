@@ -8,14 +8,15 @@ Prepared 2026-11-03 for the Engineering Orchestrator continuation directive. The
 |---|---|
 | `01-current-state.md` | Task A: verified repo, PR, CI, host and milestone state |
 | `02-k8s-compatibility-and-placement.md` | Task B: every component in one of six classes, with attributes; OCI requirements |
-| `03-threat-model-delta.md` | Task C: T26–T35, gaps G-1..G-12, remaining blockers by stage |
+| `03-threat-model-delta.md` | Task C: T26–T36, gaps G-1..G-12, remaining blockers by stage |
 | `04-milestone-integration.md` | Task E: PX-K0..K6 → M8-K0..K6, dependency graph, ordered next steps, Phase C criteria |
-| `05-test-matrix.md` | Task F: 33 tests, each typed |
+| `05-test-matrix.md` | Task F: 43 tests, each typed |
 | `adr-005-k3s-execution-architecture.md` | K3s for worker Jobs only; controller, anchor, store and gateway stay systemd |
 | `adr-006-headlamp-flux-management.md` | Headlamp read-only over SSH -L; Flux on a human-merge-only infra repo |
 | `adr-007-oci-image-standard.md` | Image standard shared by Podman and K3s |
 | `adr-008-proxmox-staging-topology.md` | Four VMs: eo-control / eo-worker / eo-edge / eo-anchor; firewall, storage, backup |
 | `adr-009-k8s-execution-adapter-contract.md` | `k8s-job` Runner contract, idempotency, reconciliation, RBAC, negative tests |
+| `06-independent-review.md` | Independent review findings and how each was resolved |
 | `adr-010-security-boundary-and-anchor-placement.md` | Anchor on its own VM, anchor channel design and failure semantics, journal key, external evidence, credentials, admin access |
 
 ADR numbers continue from ADR-004 (PR #5). Threat IDs continue from T25.
