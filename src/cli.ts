@@ -6,7 +6,8 @@ import { parseArgs } from 'node:util';
 import { Controller } from './controller.ts';
 import { doctor } from './doctor.ts';
 import { defaultStateRoot, initStateRoot, statePaths } from './stateRoot.ts';
-import { FakeRunner } from './runner/fake.ts';
+import { FakeRunner, type FakeScript } from './runner/fake.ts';
+import { fakeJudgesFor } from './verify/fake.ts';
 import { openStore } from './store/open.ts';
 import { verifyBdBinary } from './store/beads.ts';
 import { BudgetLedger, reservationAmount } from './budget.ts';
@@ -126,11 +127,15 @@ async function main(argv: string[]): Promise<number> {
     case 'run': {
       if (!values.repo) throw new UsageError('--repo is required');
       if (values.runner !== 'fake' || !values.script) throw new UsageError('M1 supports only --runner fake --script <file>');
-      const runner = FakeRunner.fromFile(values.script);
+      // One scenario script drives the fake runner (what the worker reports) and, separately,
+      // the controller's fake verifier and reviewer (what the controller decides about it).
+      const script = JSON.parse(fs.readFileSync(values.script, 'utf8')) as FakeScript;
+      const runner = new FakeRunner(script);
+      const judges = fakeJudgesFor(script);
       const c = Controller.open(root);
       try {
         const maxSteps = values['max-steps'] ? Number(values['max-steps']) : undefined;
-        const s = await c.run(runner, { repoPath: values.repo, ...(maxSteps !== undefined ? { maxSteps } : {}) });
+        const s = await c.run(runner, { repoPath: values.repo, ...judges, ...(maxSteps !== undefined ? { maxSteps } : {}) });
         out(JSON.stringify(s, null, 2));
         return 0;
       } finally {

@@ -1,0 +1,35 @@
+{
+ "version": 1,
+ "tasks": {
+  "A": {
+   "id": "A",
+   "epicId": "L1",
+   "title": "a",
+   "deps": [],
+   "state": "done",
+   "claim": null,
+   "notes": [],
+   "attempt": 2,
+   "correctionFailures": 1,
+   "infraFailures": 0,
+   "lastFailureSignature": "legacy:A1",
+   "repeatCount": 1,
+   "journalSeq": 27
+  },
+  "B": {
+   "id": "B",
+   "epicId": "L1",
+   "title": "b",
+   "deps": [],
+   "state": "done",
+   "claim": null,
+   "notes": [],
+   "attempt": 2,
+   "correctionFailures": 1,
+   "infraFailures": 0,
+   "lastFailureSignature": "review:changes-requested",
+   "repeatCount": 1,
+   "journalSeq": 45
+  }
+ }
+}

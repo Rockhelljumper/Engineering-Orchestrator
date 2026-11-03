@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Controller } from '../../src/controller.ts';
 import { FakeRunner } from '../../src/runner/fake.ts';
+import { fakeJudgesFor } from '../../src/verify/fake.ts';
 import { BeadsStore, bdEnv, pinnedBdSha256 } from '../../src/store/beads.ts';
 import { initStateRoot, readJournalKey, statePaths } from '../../src/stateRoot.ts';
 import { rootIdOf } from '../../src/anchor.ts';
@@ -68,7 +69,7 @@ test('M1-7: every bd spawn of a full controller run gets the metrics opt-out and
     try {
       c.importPlan(samplePlan(), sb.repo, 'h');
       const script = { default: { behaviour: 'pass' as const }, tasks: { T2: [{ behaviour: 'verify-fail' as const, signature: 's' }], T3: [{ behaviour: 'crash' as const }] } };
-      const s = await c.run(new FakeRunner(script), { repoPath: sb.repo });
+      const s = await c.run(new FakeRunner(script), { ...fakeJudgesFor(script), repoPath: sb.repo });
       assert.deepEqual(Object.values(s.states), ['done', 'done', 'done', 'done', 'done']);
     } finally {
       c.close();
@@ -409,7 +410,7 @@ test('M2-0b: an older copy of a whole beads state root is refused, and the real 
   const snap = path.join(sb.dir, 'snap');
   fs.cpSync(sb.root, snap, { recursive: true });
   c = Controller.open(sb.root, { store: sb.store });
-  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
+  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { ...fakeJudgesFor({ default: { behaviour: 'pass' } }), repoPath: sb.repo });
   c.close();
   const latest = path.join(sb.dir, 'latest');
   fs.cpSync(sb.root, latest, { recursive: true });

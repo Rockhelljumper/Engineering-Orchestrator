@@ -1,0 +1,15 @@
+{
+  "kind": "completed",
+  "cost": {
+    "usd": 0.01,
+    "tokens": 1000
+  },
+  "verification": {
+    "verdict": "pass",
+    "signature": null
+  },
+  "review": {
+    "verdict": "changes"
+  },
+  "summary": "scripted review rejection"
+}

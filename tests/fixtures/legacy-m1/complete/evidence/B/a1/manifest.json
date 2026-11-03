@@ -1,0 +1,23 @@
+{
+  "taskId": "B",
+  "attempt": 1,
+  "createdAt": "2026-11-03T19:28:12.868Z",
+  "entries": [
+    {
+      "name": "runner-result.json",
+      "sha256": "57b0ecf2a7b62daf4a817cea4c8ad11e3e464d664de79eec78e478b18bfe76ee",
+      "bytes": 234
+    },
+    {
+      "name": "verification.json",
+      "sha256": "c2f1d33b2342969a5ae8a135f2a3341d896d1f7ffa35ccd81059471aede8869b",
+      "bytes": 105
+    }
+  ],
+  "facts": {
+    "verification": "pass",
+    "review": "changes",
+    "placeholder": "M1"
+  },
+  "mac": "cad5c9f9bc7e18e0820054ace4169fecdb5f6e87a91752756b4b48f8da89c8f0"
+}

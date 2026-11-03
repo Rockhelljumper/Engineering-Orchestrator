@@ -10,6 +10,7 @@ import { Controller, RecoveryRefusedError } from '../../src/controller.ts';
 import { doctor } from '../../src/doctor.ts';
 import { Journal, JournalTamperError, verifyJournalFile } from '../../src/journal.ts';
 import { FakeRunner } from '../../src/runner/fake.ts';
+import { fakeJudgesFor } from '../../src/verify/fake.ts';
 import { initStateRoot, readJournalKey, statePaths } from '../../src/stateRoot.ts';
 import { openStore } from '../../src/store/open.ts';
 import { BudgetLedger } from '../../src/budget.ts';
@@ -109,7 +110,7 @@ test('M2-0b: an older copy of the whole state root is refused at every point; no
   const snaps = [snapshot(sb, '0')];
   for (let step = 1; ; step++) {
     c = Controller.open(sb.root);
-    const s = await c.run(new FakeRunner(script), { repoPath: sb.repo, maxSteps: 1 });
+    const s = await c.run(new FakeRunner(script), { ...fakeJudgesFor(script), repoPath: sb.repo, maxSteps: 1 });
     c.close();
     if (Object.values(s.states).every((x) => x === 'done')) break;
     snaps.push(snapshot(sb, String(step)));
@@ -231,7 +232,7 @@ test('M2-0b: a different journal history of the same or greater length is refuse
   c.close();
   const snap = snapshot(sb, 'old');
   c = Controller.open(sb.root);
-  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
+  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { ...fakeJudgesFor({ default: { behaviour: 'pass' } }), repoPath: sb.repo });
   c.close();
   const n = journalLength(sb.root);
   for (const extra of [0, 1]) {
@@ -278,7 +279,7 @@ test('M2-0b: an older copy re-signed with a new journal key is refused, with or 
   c.close();
   const snap = snapshot(sb, 'old');
   c = Controller.open(sb.root);
-  await c.run(new FakeRunner(script), { repoPath: sb.repo });
+  await c.run(new FakeRunner(script), { ...fakeJudgesFor(script), repoPath: sb.repo });
   c.close();
   const executions = readExecLog(log).length;
   assert.equal(executions, 2);
@@ -310,7 +311,7 @@ test('M2-0b: a copy at another path is not adopted without an operator, and its 
   const old = path.join(sb.dir, 'old-copy');
   fs.cpSync(sb.root, old, { recursive: true });
   c = Controller.open(sb.root);
-  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
+  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { ...fakeJudgesFor({ default: { behaviour: 'pass' } }), repoPath: sb.repo });
   c.close();
   // Moved (or copied) elsewhere: the anchor has never seen that path.
   const moved = path.join(sb.dir, 'moved');
@@ -346,7 +347,7 @@ test('M2-0b: an operator can accept a restored backup explicitly; the replaced h
   c.close();
   const snap = snapshot(sb, 'backup');
   c = Controller.open(sb.root);
-  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
+  await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { ...fakeJudgesFor({ default: { behaviour: 'pass' } }), repoPath: sb.repo });
   c.close();
   const headBefore = fs.readFileSync(headFile(sb.root));
   restore(sb, snap);

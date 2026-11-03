@@ -10,6 +10,7 @@ import { CLI, disposeSandbox, readExecLog, runCli, samplePlan, sandbox, writeJso
 import type { Progress } from './progress.ts';
 import type { Policy } from '../../src/policy.ts';
 import type { Plan } from '../../src/plan.ts';
+import { readVerdictLog } from '../../src/verify/fake.ts';
 
 // Crash-recovery scenarios (M1-4), shared by tests/behavioral/crash-recovery.test.ts and the
 // durable runner's suites (M2-0), which run each boundary or seed as its own checkpointed
@@ -30,8 +31,12 @@ export const roomy = (p: Policy): Policy => ({
   budget: { ...p.budget, epic: { usd: 1000, tokens: 1_000_000_000 }, task: { usd: 100, tokens: 100_000_000 } },
 });
 
+/** The fake verifier's and reviewer's call log, next to the runner's execution log. */
+export const verdictLogOf = (log: string): string => path.join(path.dirname(log), 'verdicts.log');
+
 export const script = (log: string, delayMs = 0): object => ({
   execLog: log,
+  verdictLog: verdictLogOf(log),
   default: { behaviour: 'pass', costUsd: 0.05, tokens: 2000, ...(delayMs ? { delayMs } : {}) },
   tasks: {
     T2: [{ behaviour: 'verify-fail', signature: 'test:T2', costUsd: 0.05 }],
@@ -57,6 +62,7 @@ export const escalationPlan: Plan = {
 };
 export const escalationScript = (log: string): object => ({
   execLog: log,
+  verdictLog: verdictLogOf(log),
   default: { behaviour: 'pass' },
   tasks: { A: Array.from({ length: 12 }, (_, i) => ({ behaviour: 'verify-fail', signature: `sig-${i + 1}` })) },
 });
@@ -110,10 +116,26 @@ export function checkRecovered(s: Scenario, baseline: Record<string, string>, la
   const execs = readExecLog(s.log).map((e) => `${e.taskId}#${e.attempt}`);
   assert.equal(new Set(execs).size, execs.length, `${label}: a (task, attempt) executed twice: ${execs.join(' ')}`);
   for (const e of execs) assert.ok(starts.has(e), `${label}: ${e} executed without a journaled attempt start`);
+  // The controller journals at most one verdict per stage for each attempt.end it judges.
+  const verdicts = v.records
+    .filter((r) => r.type === 'verify.verdict' || r.type === 'review.verdict')
+    .map((r) => `${r.type}:${(r.data as { taskId: string }).taskId}#${(r.data as { attempt: number }).attempt}@${(r.data as { endSeq: number }).endSeq}`);
+  assert.equal(new Set(verdicts).size, verdicts.length, `${label}: a verdict journaled twice: ${verdicts.join(' ')}`);
   const d = runCli(['doctor', '--state-root', s.sb.root]);
   assert.equal(d.status, 0, `${label}: doctor\n${d.stdout}`);
   const rep = JSON.parse(d.stdout) as { warnings: string[] };
   assert.deepEqual(rep.warnings.filter((w) => w.includes('reservation')), [], `${label}: open reservations`);
+}
+
+/**
+ * After a crash injected at a journal append boundary, each verdict was asked for exactly once:
+ * a verdict journaled before the crash is never asked for again, and the judge is called only
+ * right before its verdict is journaled. (A SIGKILL can land between the two, so the random-kill
+ * runs do not check this.)
+ */
+export function checkVerdictsAskedOnce(s: Scenario, label: string): void {
+  const asked = readVerdictLog(verdictLogOf(s.log)).map((e) => `${e.stage}:${e.taskId}#${e.attempt}`);
+  assert.equal(new Set(asked).size, asked.length, `${label}: a verdict was asked for twice: ${asked.join(' ')}`);
 }
 
 /** Resumes retried because a kill left the controller lock unusable for a few seconds (for the evidence report). */
@@ -215,6 +237,7 @@ export function sampleBoundary(k: number, baseline: Record<string, string>, phas
     const second = secondCrash(k);
     recover(s, `boundary ${k}`, second, progress, phase);
     checkRecovered(s, baseline, `boundary ${k}`);
+    checkVerdictsAskedOnce(s, `boundary ${k}`);
     return `${k}${second ? `+${second}` : ''}`;
   } finally {
     disposeSandbox(s.sb);
@@ -229,6 +252,7 @@ export function escalationBoundary(k: number, baseline: Record<string, string>, 
     progress?.step(`crashed after journal append ${k} (${phase})`);
     recover(s, `escalation boundary ${k}`, undefined, progress);
     checkRecovered(s, baseline, `escalation boundary ${k}`);
+    checkVerdictsAskedOnce(s, `escalation boundary ${k}`);
     assert.deepEqual(escalationsOf(s), baseEsc, `escalation boundary ${k}: escalations`);
     const esc = fs.readdirSync(path.join(s.sb.root, 'escalations'));
     assert.equal(esc.length, 1, `escalation boundary ${k}: one escalation file`);
@@ -248,6 +272,7 @@ export function baselineRun(variant: 'sample' | 'escalation', delayMs = 0): { ba
     assert.equal(r.status, 0, r.stderr);
     const baseline = finalStates(base);
     checkRecovered(base, baseline, 'baseline');
+    checkVerdictsAskedOnce(base, 'baseline');
     return { baseline, boundaries: journalCount(base) - before, escalations: escalationsOf(base), durationMs };
   } finally {
     disposeSandbox(base.sb);
