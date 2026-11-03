@@ -89,12 +89,14 @@ function check(schema: Schema, value: unknown, path: string, errors: ValidationE
   }
   if (typeOf(value) === 'object') {
     const obj = value as Record<string, unknown>;
+    // Own properties only: a key such as "__proto__" or "constructor" must never match
+    // something inherited from Object.prototype.
     for (const key of schema.required ?? []) {
-      if (!(key in obj)) errors.push({ path, message: `missing required property "${key}"` });
+      if (!Object.hasOwn(obj, key)) errors.push({ path, message: `missing required property "${key}"` });
     }
     const props = schema.properties ?? {};
     for (const [key, v] of Object.entries(obj)) {
-      const sub = props[key];
+      const sub = Object.hasOwn(props, key) ? props[key] : undefined;
       if (sub !== undefined) {
         check(sub, v, `${path}.${key}`, errors);
       } else if (schema.additionalProperties === false) {
