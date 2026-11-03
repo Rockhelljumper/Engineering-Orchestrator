@@ -912,6 +912,8 @@ foreach ($k in $finst.Keys) {
 $vA = 'S-1-5-32-544'; $vS = 'S-1-5-18'; $vU = 'S-1-5-32-545'; $vAU = 'S-1-5-11'; $vEv = 'S-1-1-0'
 $vTI = 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464'; $vCO = 'S-1-3-0'
 $vVm = 'S-1-5-83-1-1234567890-1122334455-987654321-123456789'; $vAtk = 'S-1-5-21-1-2-3-1001'
+# Another VM's account (a second VM on the host), and the Virtual Machines group.
+$vVm2 = 'S-1-5-83-1-1025309446-1114473360-2042460549-2755313590'; $vVmGroup = 'S-1-5-83-0'
 $vCap = 'S-1-15-3-65536-1888954469-739942743-1668119174-2468466756-4239452838-1296943325-355587736-700089176'
 # FullControl, ReadAndExecute, Modify, (S,RD,X,RA) as the C:\ capability entries on RH-DT-M3, GENERIC_ALL.
 $vF = 2032127; $vRX = 1179817; $vM = 1245631; $vCapR = 1048737; $vGA = 268435456
@@ -988,14 +990,39 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
         $msgs = @(Test-EoPathFacts (VFacts $EO.IsoDir $true $rootBad[$k][0]) 'root' -Container)
         Expect "vm folders: iso folder $k refused for its own reason" (VHit $msgs $rootBad[$k][1]) $true
     }
+    # This VM's own account may read and list eo-l2 and iso (Hyper-V may add it), nothing more.
+    $rAdm = @((VAce $vA $vF), (VAce $vS $vF))
+    Expect 'vm folders: eo-l2 with this VM''s account read and list passes' (@(Test-EoPathFacts (VFacts $root $true @{ Aces = $rAdm + @((VAce $vVm $vRX)) }) 'root' -Container -VmSid $vVm) -join ';') ''
+    Expect 'vm folders: iso with this VM''s account read (inherited, inherit-only) passes' (@(Test-EoPathFacts (VFacts $EO.IsoDir $true @{ Aces = $rAdm + @((VAce $vVm $vRX -Inherited -InheritOnly)) }) 'root' -Container -VmSid $vVm) -join ';') ''
+    $rootVmBad = [ordered]@{
+        'this VM''s account read while no VM exists (no VM SID)' = @(@{ Aces = $rAdm + @((VAce $vVm $vRX)) }, '', "grants access to $vVm")
+        'this VM''s account with full control'                  = @(@{ Aces = $rAdm + @((VAce $vVm $vF)) }, $vVm, "grants access to $vVm")
+        'this VM''s account with add-file (0x2)'                = @(@{ Aces = $rAdm + @((VAce $vVm ($vRX -bor 2))) }, $vVm, "grants access to $vVm")
+        'this VM''s account GENERIC_WRITE (inherit-only)'       = @(@{ Aces = $rAdm + @((VAce $vVm 0x40000000 -InheritOnly)) }, $vVm, "grants access to $vVm")
+        'another VM''s account read'                            = @(@{ Aces = $rAdm + @((VAce $vVm2 $vRX)) }, $vVm, "grants access to $vVm2")
+        'the Virtual Machines group read'                       = @(@{ Aces = $rAdm + @((VAce $vVmGroup $vRX)) }, $vVm, "grants access to $vVmGroup")
+        'owned by this VM''s account'                           = @(@{ Owner = $vVm }, $vVm, "is owned by $vVm")
+    }
+    foreach ($k in $rootVmBad.Keys) {
+        foreach ($d in @($root, $EO.IsoDir)) {
+            $msgs = @(Test-EoPathFacts (VFacts $d $true $rootVmBad[$k][0]) 'root' -Container -VmSid $rootVmBad[$k][1])
+            Expect "vm folders: $d with $k refused for its own reason" (VHit $msgs $rootVmBad[$k][2]) $true
+        }
+    }
+    Expect 'vm folders: a new eo-l2 (02 just made it) with this VM''s account read refused' (VHit @(Test-EoPathFacts (VFacts $root $true @{ Aces = $rAdm + @((VAce $vVm $vRX)) }) 'root' -Container -New -VmSid $vVm) "grants access to $vVm") $true
 
     $disk = @((VAce $vA $vF -Inherited), (VAce $vS $vF -Inherited), (VAce $vVm $vF))
-    Expect 'vm folders: a VHDX with the VM account allowed (attached disk) passes' (@(Test-EoPathFacts (VFacts $EO.SystemVhd $false @{ Protected = $false; Aces = $disk }) 'vm').Count) 0
-    Expect 'vm folders: the ISO with the VM account allowed passes' (@(Test-EoPathFacts (VFacts (Join-Path $EO.IsoDir 'debian.iso') $false @{ Protected = $false; Owner = $vS; Aces = $disk }) 'vm').Count) 0
-    Expect 'vm folders: a runtime file owned by the VM account passes' (@(Test-EoPathFacts (VFacts "$root\eo-l2\Virtual Machines\x.VMRS" $false @{ Protected = $false; Owner = $vVm; Aces = $disk }) 'vm').Count) 0
-    Expect 'vm folders: the VM configuration folder with the VM account passes' (@(Test-EoPathFacts (VFacts "$root\eo-l2\Virtual Machines" $true @{ Protected = $false; Aces = $disk }) 'vm' -Container).Count) 0
+    Expect 'vm folders: a VHDX with this VM''s account allowed (attached disk) passes' (@(Test-EoPathFacts (VFacts $EO.SystemVhd $false @{ Protected = $false; Aces = $disk }) 'vm' -VmSid $vVm).Count) 0
+    Expect 'vm folders: the ISO with this VM''s account allowed passes' (@(Test-EoPathFacts (VFacts (Join-Path $EO.IsoDir 'debian.iso') $false @{ Protected = $false; Owner = $vS; Aces = $disk }) 'vm' -VmSid $vVm).Count) 0
+    Expect 'vm folders: a runtime file owned by this VM''s account passes' (@(Test-EoPathFacts (VFacts "$root\eo-l2\Virtual Machines\x.VMRS" $false @{ Protected = $false; Owner = $vVm; Aces = $disk }) 'vm' -VmSid $vVm).Count) 0
+    Expect 'vm folders: the VM configuration folder with this VM''s account passes' (@(Test-EoPathFacts (VFacts "$root\eo-l2\Virtual Machines" $true @{ Protected = $false; Aces = $disk }) 'vm' -Container -VmSid $vVm).Count) 0
+    Expect 'vm folders: a disk with a VM account while no VM exists (no VM SID) refused' (VHit @(Test-EoPathFacts (VFacts $EO.SystemVhd $false @{ Protected = $false; Aces = $disk }) 'vm') "grants access to $vVm") $true
+    Expect 'vm folders: a runtime file owned by a VM account while no VM exists refused' (VHit @(Test-EoPathFacts (VFacts "$root\eo-l2\Virtual Machines\x.VMRS" $false @{ Protected = $false; Owner = $vVm; Aces = @((VAce $vA $vF)) }) 'vm') "is owned by $vVm") $true
+    Expect 'vm folders: a runtime file owned by another VM''s account refused' (VHit @(Test-EoPathFacts (VFacts "$root\eo-l2\Virtual Machines\x.VMRS" $false @{ Protected = $false; Owner = $vVm2; Aces = $disk }) 'vm' -VmSid $vVm) "is owned by $vVm2") $true
     $vmBad = [ordered]@{
         'the Virtual Machines group (S-1-5-83-0)' = @(@{ Aces = $disk + @((VAce 'S-1-5-83-0' $vF)) }, 'grants access to S-1-5-83-0')
+        'another VM''s account'               = @(@{ Aces = $disk + @((VAce $vVm2 $vF)) }, "grants access to $vVm2")
+        'another VM''s account, read only'    = @(@{ Aces = $disk + @((VAce $vVm2 $vRX)) }, "grants access to $vVm2")
         'a malformed VM account SID'          = @(@{ Aces = $disk + @((VAce 'S-1-5-83-1-5' $vF)) }, 'grants access to S-1-5-83-1-5')
         'Users read'                          = @(@{ Aces = $disk + @((VAce $vU $vRX -Inherited)) }, "grants access to $vU")
         'Authenticated Users Modify'          = @(@{ Aces = $disk + @((VAce $vAU $vM -Inherited)) }, "grants access to $vAU")
@@ -1004,9 +1031,84 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
         'a folder where the disk should be'   = @(@{ Aces = $disk; Container = $true }, 'is a folder, want a file')
     }
     foreach ($k in $vmBad.Keys) {
-        $msgs = @(Test-EoPathFacts (VFacts $EO.AnchorVhd $false $vmBad[$k][0]) 'vm')
+        $msgs = @(Test-EoPathFacts (VFacts $EO.AnchorVhd $false $vmBad[$k][0]) 'vm' -VmSid $vVm)
         Expect "vm folders: a disk with $k refused for its own reason" (VHit $msgs $vmBad[$k][1]) $true
     }
+
+    # The VM's account SID from its id (ConvertTo-EoVmSid): the 16 bytes of
+    # Guid.ToByteArray read as four little-endian UInt32. Pairs computed independently.
+    $sidPairs = [ordered]@{
+        '3d1cfb06-8390-426d-8579-bd79b6bf3aa4'   = 'S-1-5-83-1-1025309446-1114473360-2042460549-2755313590'
+        '{3D1CFB06-8390-426D-8579-BD79B6BF3AA4}' = 'S-1-5-83-1-1025309446-1114473360-2042460549-2755313590'
+        '00000000-0000-0000-0000-000000000001'   = 'S-1-5-83-1-0-0-0-16777216'
+        'ffffffff-ffff-ffff-ffff-ffffffffffff'   = 'S-1-5-83-1-4294967295-4294967295-4294967295-4294967295'
+        ''                                       = ''
+    }
+    foreach ($k in $sidPairs.Keys) { Expect "vm sid: VM id '$k'" (ConvertTo-EoVmSid $k) $sidPairs[$k] }
+    $threw = $false; try { $null = ConvertTo-EoVmSid 'not-a-guid' } catch { $threw = $true }
+    Expect 'vm sid: a VM id that is not a GUID throws' $threw $true
+
+    # A real DirectorySecurity read back (ConvertTo-EoSecurityFacts): Users GENERIC_WRITE
+    # (0x40000000) and Everyone GENERIC_READ (0x80000000, a negative Int32).
+    $null = New-EoDirSecurity
+    $ds = New-Object System.Security.AccessControl.DirectorySecurity
+    $ds.SetSecurityDescriptorSddlForm('O:BAD:P(A;;GW;;;BU)(A;;GR;;;WD)(A;OICI;FA;;;BA)')
+    $sf = ConvertTo-EoSecurityFacts $ds
+    $byS = @{}; foreach ($a in @($sf.Aces)) { $byS["$($a.Sid)"] = $a.Rights }
+    Expect 'vm acl facts: a real GENERIC_WRITE entry reads as 0x40000000' "$($byS[$vU])" '1073741824'
+    Expect 'vm acl facts: a real GENERIC_READ entry reads as a negative mask' "$($byS[$vEv])" '-2147483648'
+    Expect 'vm acl facts: owner and protection read back' "$($sf.Owner)/$($sf.Protected)" "$vA/True"
+    $f = @{ Path = 'sddl'; Exists = $true; Reparse = $false; Container = $true; Owner = $sf.Owner; Protected = $sf.Protected; Aces = $sf.Aces }
+    $msgs = @(Test-EoPathFacts $f 'parent' -Container)
+    Expect 'vm acl facts: GENERIC_WRITE is a write-class right, GENERIC_READ is not (parent check)' "$($msgs.Count)/$(VHit $msgs "write-class right to $vU")" '1/True'
+    $msgs = @(Test-EoPathFacts $f 'root' -Container)
+    Expect 'vm acl facts: both refused on eo-l2' "$(VHit $msgs "grants access to $vU")/$(VHit $msgs "grants access to $vEv")" 'True/True'
+    $f.Aces = @(@($sf.Aces) | Where-Object { $_.Sid -ne $vU })
+    Expect 'vm acl facts: the negative GENERIC_READ mask alone passes the parent check' (@(Test-EoPathFacts $f 'parent' -Container) -join ';') ''
+    Expect 'vm acl facts: this VM''s account with GENERIC_READ passes the eo-l2 check (read only)' (@(Test-EoPathFacts @{ Path = 'g'; Exists = $true; Reparse = $false; Container = $true; Owner = $vA; Protected = $true; Aces = @((VAce $vA $vF), (VAce $vVm -2147483648)) } 'root' -Container -VmSid $vVm) -join ';') ''
+
+    # The ISO record from verified.json (Test-EoIsoRecord).
+    $h64 = 'a' * 64
+    $isoGood = '{"iso":"debian-13.1.0-amd64-netinst.iso","sha256":"' + $h64 + '"}' | ConvertFrom-Json
+    Expect 'iso record: the 03 record passes' (@(Test-EoIsoRecord $isoGood) -join ';') ''
+    $isoBad = [ordered]@{
+        'a parent folder (..\)'        = '..\..\Windows\x.iso'
+        'a folder part'                = 'sub\x.iso'
+        'a forward slash'              = 'sub/x.iso'
+        'a drive path'                 = 'C:\x.iso'
+        'a UNC path'                   = '\\server\share\x.iso'
+        'an alternate data stream'     = 'x.iso:evil'
+        'two dots inside'              = 'debian..iso'
+        'only the extension'           = '.iso'
+        'another extension'            = 'x.iso.exe'
+        'upper-case extension'         = 'x.ISO'
+        'a space'                      = 'debian 13.iso'
+        'a trailing newline'           = "x.iso`n"
+        'empty'                        = ''
+    }
+    foreach ($k in $isoBad.Keys) {
+        $r = [pscustomobject]@{ iso = $isoBad[$k]; sha256 = $h64 }
+        Expect "iso record: an ISO name with $k refused" (VHit @(Test-EoIsoRecord $r) 'names the ISO') $true
+    }
+    Expect 'iso record: no iso field refused' (VHit @(Test-EoIsoRecord ([pscustomobject]@{ sha256 = $h64 })) 'names the ISO') $true
+    Expect 'iso record: a number for iso refused' (VHit @(Test-EoIsoRecord ([pscustomobject]@{ iso = 5; sha256 = $h64 })) 'names the ISO') $true
+    Expect 'iso record: an upper-case hash refused' (VHit @(Test-EoIsoRecord ([pscustomobject]@{ iso = 'x.iso'; sha256 = ('A' * 64) })) 'gives sha256') $true
+    Expect 'iso record: a short hash refused' (VHit @(Test-EoIsoRecord ([pscustomobject]@{ iso = 'x.iso'; sha256 = ('a' * 63) })) 'gives sha256') $true
+    Expect 'iso record: no record refused' (@(Test-EoIsoRecord $null).Count) 2
+
+    # The undo's plan against what is there after the confirmation (Test-EoUndoPlanStill).
+    $pl = @{ VmPresent = $true; RootPresent = $true; VmId = '3d1cfb06-8390-426d-8579-bd79b6bf3aa4' }
+    Expect 'undo plan: unchanged passes' (@(Test-EoUndoPlanStill $pl $pl.Clone()) -join ';') ''
+    $n = @{ VmPresent = $false; RootPresent = $false; VmId = '' }
+    $n2 = $n.Clone(); $n2.RootPresent = $true
+    $msgs = @(Test-EoUndoPlanStill $n $n2)
+    Expect 'undo plan: the plan said the folder was not present, it is there now: refused' "$($msgs.Count)/$(VHit $msgs "RootPresent was 'False' in the plan and is 'True' now")" '1/True'
+    $n3 = $n.Clone(); $n3.VmPresent = $true
+    Expect 'undo plan: the plan said no VM, a VM is there now: refused' (VHit @(Test-EoUndoPlanStill $n $n3) 'VmPresent was') $true
+    $p2 = $pl.Clone(); $p2.VmId = '00000000-0000-0000-0000-000000000001'
+    Expect 'undo plan: another VM id now: refused' (VHit @(Test-EoUndoPlanStill $pl $p2) 'VmId was') $true
+    $p3 = $pl.Clone(); $p3.RootPresent = $false
+    Expect 'undo plan: the folder vanished after the plan: refused' (VHit @(Test-EoUndoPlanStill $pl $p3) 'RootPresent was') $true
     $threw = $false; try { $null = @(Test-EoPathFacts (VFacts $root $true @{}) 'other' -Container) } catch { $threw = $true }
     Expect 'vm folders: an unknown kind throws' $threw $true
 
@@ -1037,12 +1139,23 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
     Expect 'vm chain: a file where C:\Hyper-V should be is caught' (VHit @(Test-EoChainFacts @(VChain -FileAt 1)) 'C:\Hyper-V is a file') $true
 
     # What eo-l2 may hold (Test-EoVmTree).
-    function VE([string]$Rel, [bool]$Dir, [bool]$Link = $false) { [pscustomobject]@{ Rel = $Rel; Full = "$($EO.Root)\$Rel"; Container = $Dir; Reparse = $Link } }
+    function VE([string]$Rel, [bool]$Dir, [bool]$Link = $false, [bool]$Unreadable = $false) { [pscustomobject]@{ Rel = $Rel; Full = "$($EO.Root)\$Rel"; Container = $Dir; Reparse = $Link; Unreadable = $Unreadable } }
     $g = '0F2E2C1A-5B9D-4C3E-8A7B-123456789ABC'
     $tree = @((VE 'eo-l2-system.vhdx' $false), (VE 'eo-l2-anchor.vhdx' $false), (VE 'iso' $true), (VE 'iso\debian-13.1.0-amd64-netinst.iso' $false),
         (VE 'eo-l2' $true), (VE 'eo-l2\Virtual Machines' $true), (VE "eo-l2\Virtual Machines\$g.vmcx" $false), (VE "eo-l2\Virtual Machines\$g.vmgs" $false),
         (VE "eo-l2\Virtual Machines\$g.VMRS" $false), (VE "eo-l2\Virtual Machines\$g" $true), (VE "eo-l2\Virtual Machines\$g\$g.vsv" $false), (VE 'eo-l2\Snapshots' $true))
     Expect 'vm tree: the expected layout passes' (@(Test-EoVmTree $tree) -join ';') ''
+    Expect 'vm tree: the VM id record 02 writes passes' (@(Test-EoVmTree @($tree + @((VE 'eo-l2.vmid' $false)))) -join ';') ''
+    Expect 'vm tree: a VM id record that is a folder refused' (VHit @(Test-EoVmTree @($tree + @((VE 'eo-l2.vmid' $true)))) 'eo-l2.vmid (folder) is not something') $true
+    # A folder that could not be listed: only a running VM's runtime folder, only with -AllowUnreadable.
+    $rt = VE "eo-l2\Virtual Machines\$g" $true $false $true
+    $treeU = @($tree | Where-Object { $_.Rel -ne "eo-l2\Virtual Machines\$g" -and $_.Rel -notlike "eo-l2\Virtual Machines\$g\*" }) + @($rt)
+    Expect 'vm tree: an unreadable runtime folder passes with -AllowUnreadable (undo plan, verify-host)' (@(Test-EoVmTree $treeU -AllowUnreadable) -join ';') ''
+    Expect 'vm tree: an unreadable runtime folder refused without it (undo after Remove-VM)' (VHit @(Test-EoVmTree $treeU) "eo-l2\Virtual Machines\$g could not be listed") $true
+    foreach ($u in @('eo-l2\Virtual Machines', 'eo-l2', 'iso', 'eo-l2\Snapshots')) {
+        $tu = @($tree | Where-Object { $_.Rel -ne $u }) + @((VE $u $true $false $true))
+        Expect "vm tree: an unreadable $u refused even with -AllowUnreadable" (VHit @(Test-EoVmTree $tu -AllowUnreadable) "$u could not be listed") $true
+    }
     Expect 'vm tree: part of it (02 stopped early) passes' (@(Test-EoVmTree @($tree[0], $tree[2])).Count) 0
     Expect 'vm tree: an empty eo-l2 passes' (@(Test-EoVmTree @()).Count) 0
     $treeBad = [ordered]@{
@@ -1080,6 +1193,22 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
         'a relative path'                      = @('Hyper-V\eo-l2', 'not a full path')
         'a network path'                       = @('\\server\share\Hyper-V\eo-l2', 'not a full path')
         'an empty path'                        = @('', 'not a full path')
+        'a folder in the user profile (TEMP)'  = @((Join-Path $env:USERPROFILE 'AppData\Local\Temp\eo-l2-selftest-0123456789abcdef0123456789abcdef'), 'is inside')
+        'C:\ProgramData\eo-l2 (the records)'   = @((Join-Path $env:ProgramData 'eo-l2'), 'is or holds')
+        'a folder in C:\ProgramData\eo-l2'     = @((Join-Path $env:ProgramData 'eo-l2\eo-l2-selftest-0123456789abcdef0123456789abcdef'), 'is inside')
+        'another ProgramData folder'           = @((Join-Path $env:ProgramData 'Microsoft\Windows'), 'is inside')
+        'a scratch name, upper-case hex'       = @((Join-Path $env:ProgramData 'eo-l2-gpg-0123456789ABCDEF0123456789ABCDEF'), 'is inside')
+        'a scratch name, 31 hex digits'        = @((Join-Path $env:ProgramData 'eo-l2-gpg-0123456789abcdef0123456789abcde'), 'is inside')
+        'a scratch name of another kind'       = @((Join-Path $env:ProgramData 'eo-l2-other-0123456789abcdef0123456789abcdef'), 'is inside')
+        'a scratch name one level down'        = @((Join-Path $env:ProgramData 'Microsoft\eo-l2-gpg-0123456789abcdef0123456789abcdef'), 'is inside')
+    }
+    Expect 'delete guard: a folder inside a scratch folder may be deleted' (@(Test-EoDeletableRoot (Join-Path $env:ProgramData 'eo-l2-selftest-0123456789abcdef0123456789abcdef\tree')) -join ';') ''
+    # A short 8.3 name: refused as '~', or, where GetFullPath expands it (.NET Framework
+    # may), as not in normal form.
+    $msgs = @(Test-EoDeletableRoot 'C:\PROGRA~3\eo-l2')
+    Expect 'delete guard: a short 8.3 name refused' ((VHit $msgs "contains '~'") -or (VHit $msgs 'not in normal form')) $true
+    foreach ($kind in @('gpg', 'sums', 'selftest')) {
+        Expect "delete guard: the $kind scratch folder directly under ProgramData may be deleted" (@(Test-EoDeletableRoot (Join-Path $env:ProgramData "eo-l2-$kind-0123456789abcdef0123456789abcdef")) -join ';') ''
     }
     foreach ($k in $delBad.Keys) {
         $msgs = @(); try { $msgs = @(Test-EoDeletableRoot $delBad[$k][0]) } catch { $msgs = @("threw: $($_.Exception.Message)") }
@@ -1088,17 +1217,21 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
     }
 }
 
-# The same checks on real folders in a temporary folder: junctions (no elevation
-# needed) as parent, as child, dangling, inside the tree, and on the path of a delete
-# (the RH-DT-M3 measurement: Remove-Item through a junction deletes the target). Only
-# the temporary folder is touched; the protected-create part runs only elevated (the
-# CI runner is).
+# The same checks on real folders: junctions (no elevation needed) as parent, as
+# child, dangling, inside the tree, on the path of a write, and on the path of a delete
+# (the RH-DT-M3 measurement: Remove-Item through a junction deletes the target).
+# Reads, junctions and new-file writes run in a temporary folder. Every delete test
+# runs elevated only (the CI runner is), inside an admin-only scratch folder
+# $env:ProgramData\eo-l2-selftest-<random> made with New-EoScratchDir: Remove-EoVerifiedTree
+# refuses anything in the user profile, TEMP included, and C:\ProgramData\eo-l2 is never
+# touched. Only these two folders are touched.
 & {
     $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ('eo-l2-selftest-' + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $tmp | Out-Null
     # Whatever form GetFullPath gives (8.3 names on some runners), use it throughout.
     $base = [System.IO.Path]::GetFullPath($tmp).TrimEnd('\')
     $mk = { param([string]$Link, [string]$Target) Invoke-EoNative cmd.exe @('/c', 'mklink', '/J', $Link, $Target) | Out-Null }
+    $savedEvidence = $EO.Evidence
     try {
         $victim = Join-Path $base 'victim'
         New-Item -ItemType Directory -Path (Join-Path $victim 'eo-l2') | Out-Null
@@ -1130,7 +1263,28 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
         & $mk $dang (Join-Path $base 'nothing-here')
         Expect 'vm live: a dangling junction is reported as present and a link' "$($null -ne (Get-EoEntryAttributes $dang))/$((Get-EoPathFacts $dang -NoAcl).Reparse)" 'True/True'
 
-        # A tree with a junction inside: listed, not entered, refused, nothing deleted.
+        # The glue that 02, undo-02 and verify-host call, on real folders with a junction
+        # at each level: C:\Hyper-V, eo-l2 and iso stand in as <base>\...; the link is
+        # reported and no ACL or listing is read through it.
+        $real = Join-Path $base 'real'
+        New-Item -ItemType Directory -Path (Join-Path $real 'eo-l2') | Out-Null
+        $isoJ = Join-Path $real 'eo-l2\iso'
+        & $mk $isoJ $victim
+        $glue = [ordered]@{
+            'C:\Hyper-V is a junction' = @($hv, (Join-Path $hv 'eo-l2'), (Join-Path $hv 'eo-l2\iso'), "$hv is a link")
+            'eo-l2 is a junction'      = @($p2, $child, (Join-Path $child 'iso'), "$child is a link")
+            'iso is a junction'        = @($real, (Join-Path $real 'eo-l2'), $isoJ, "$isoJ is a link")
+        }
+        foreach ($k in $glue.Keys) {
+            $gp = $glue[$k]
+            $m1 = @(); try { $m1 = @(Get-EoVmChainProblems '' $gp[0] $gp[1] $gp[2]) } catch { $m1 = @("threw: $($_.Exception.Message)") }
+            Expect "vm glue: Get-EoVmChainProblems, $k, reports only the link" "$($m1.Count)/$(VHit $m1 $gp[3])" '1/True'
+            $m2 = @(); try { $m2 = @(Get-EoVmTreeProblems '' -AllowUnreadable -Parent $gp[0] -Root $gp[1] -IsoDir $gp[2]) } catch { $m2 = @("threw: $($_.Exception.Message)") }
+            Expect "vm glue: Get-EoVmTreeProblems, $k, reports only the link" "$($m2.Count)/$(VHit $m2 $gp[3])" '1/True'
+            if ($m2.Count -ne 1) { $m2 | ForEach-Object { Write-Host "     $_" } }
+        }
+
+        # A tree with a junction inside: listed, not entered.
         $tree = Join-Path $base 'tree'
         New-Item -ItemType Directory -Path (Join-Path $tree 'eo-l2\Virtual Machines') | Out-Null
         Set-Content -LiteralPath (Join-Path $tree 'eo-l2-system.vhdx') -Value 'x'
@@ -1140,122 +1294,394 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
         Expect 'vm live: the tree listing does not enter the junction' (@($entries | Where-Object { "$($_.Rel)" -like '*keep.txt' }).Count) 0
         Expect 'vm live: the tree listing marks the junction' ((@($entries | Where-Object { $_.Reparse } | ForEach-Object { $_.Rel })) -join ',') 'eo-l2\Virtual Machines\j'
         Expect 'vm live: Test-EoVmTree refuses the nested junction' (VHit @(Test-EoVmTree $entries) 'eo-l2\Virtual Machines\j is a link') $true
+        # Nothing in the user profile may be deleted at all (TEMP included).
         $msg = ''; try { Remove-EoVerifiedTree $tree } catch { $msg = $_.Exception.Message }
-        Expect 'vm live: Remove-EoVerifiedTree refuses a tree that holds a junction' ($msg.Contains('holds links')) $true
-        Expect 'vm live: ... and deletes nothing, in the tree or the target' "$(Test-Path -LiteralPath (Join-Path $tree 'eo-l2-system.vhdx'))/$(Test-Path -LiteralPath (Join-Path $victim 'keep.txt'))" 'True/True'
+        Expect 'vm live: Remove-EoVerifiedTree refuses a folder in TEMP (the user profile)' ($msg.StartsWith("Refusing to delete '$tree'")) $true
+        Expect 'vm live: ... and deletes nothing there' "$(Test-Path -LiteralPath (Join-Path $tree 'eo-l2-system.vhdx'))/$(Test-Path -LiteralPath (Join-Path $victim 'keep.txt'))" 'True/True'
 
-        # A delete through a junction above the folder (the measured RH-DT-M3 case).
-        $msg = ''; try { Remove-EoVerifiedTree (Join-Path $hv 'eo-l2') } catch { $msg = $_.Exception.Message }
-        Expect 'vm live: Remove-EoVerifiedTree refuses a path through a junction' ($msg.Contains("$hv is a link")) $true
-        Expect 'vm live: ... and the redirected target survives' (Test-Path -LiteralPath (Join-Path $victim 'eo-l2\keep.txt')) $true
-        # A delete of the junction itself.
-        $msg = ''; try { Remove-EoVerifiedTree $child } catch { $msg = $_.Exception.Message }
-        Expect 'vm live: Remove-EoVerifiedTree refuses a folder that is a junction' ($msg.Contains("$child is a link")) $true
-        Expect 'vm live: ... and its target survives' (Test-Path -LiteralPath (Join-Path $victim 'keep.txt')) $true
+        # New files (Write-EoNewFile): never through a link, never over anything.
+        $wd = Join-Path $base 'write'
+        New-Item -ItemType Directory -Path $wd | Out-Null
+        $wf = Join-Path $wd 'a.json'
+        Write-EoNewFile $wf "{}`r`n" $wd
+        Expect 'vm write: a new file is written, UTF-8 without BOM by default' (([System.IO.File]::ReadAllBytes($wf) | ForEach-Object { '{0:X2}' -f $_ }) -join '') '7B7D0D0A'
+        $msg = ''; try { Write-EoNewFile $wf 'other' $wd } catch { $msg = $_.Exception.Message }
+        Expect 'vm write: an existing target is refused' "$($msg.Contains('already exists'))/$([System.IO.File]::ReadAllText($wf))" "True/{}`r`n"
+        $wb = Join-Path $wd 'b.json'
+        Write-EoNewFile $wb 'x' $wd -Bom
+        Expect 'vm write: -Bom writes the UTF-8 byte order mark' (([System.IO.File]::ReadAllBytes($wb) | ForEach-Object { '{0:X2}' -f $_ }) -join '') 'EFBBBF78'
+        $msg = ''; try { Write-EoNewFile (Join-Path $child 'x.json') 'x' $child } catch { $msg = $_.Exception.Message }
+        Expect 'vm write: a folder that is a junction is refused' "$($msg.Contains("$child is a link"))/$(Test-Path -LiteralPath (Join-Path $victim 'x.json'))" 'True/False'
+        $msg = ''; try { Write-EoNewFile (Join-Path $hv 'eo-l2\x.json') 'x' (Join-Path $hv 'eo-l2') } catch { $msg = $_.Exception.Message }
+        Expect 'vm write: a folder below a junction is refused' "$($msg.Contains("$hv is a link"))/$(Test-Path -LiteralPath (Join-Path $victim 'eo-l2\x.json'))" 'True/False'
+        $msg = ''; try { Write-EoNewFile (Join-Path $wd 'sub\x.json') 'x' $wd } catch { $msg = $_.Exception.Message }
+        Expect 'vm write: a target not directly in the folder is refused' ($msg.Contains('not directly in')) $true
+        $lf = Join-Path $wd 'linked.json'
+        & $mk $lf $victim
+        $msg = ''; try { Write-EoNewFile $lf 'x' $wd } catch { $msg = $_.Exception.Message }
+        Expect 'vm write: a link where the file would go is refused' ($msg.Contains('already exists')) $true
 
-        # Without the junction the same tree goes, read-only file included.
-        [System.IO.Directory]::Delete($inner, $false)
-        Set-Content -LiteralPath (Join-Path $tree 'eo-l2\Virtual Machines\a.vmcx') -Value 'x'
-        [System.IO.File]::SetAttributes((Join-Path $tree 'eo-l2\Virtual Machines\a.vmcx'), [System.IO.FileAttributes]::ReadOnly)
-        $msg = ''; try { Remove-EoVerifiedTree $tree } catch { $msg = $_.Exception.Message }
-        Expect 'vm live: Remove-EoVerifiedTree deletes a tree without links' "$msg|$($null -eq (Get-EoEntryAttributes $tree))" '|True'
-        Expect 'vm live: ... and the former junction target survives' (Test-Path -LiteralPath (Join-Path $victim 'keep.txt')) $true
-        $msg = ''; try { Remove-EoVerifiedTree $tree } catch { $msg = $_.Exception.Message }
-        Expect 'vm live: Remove-EoVerifiedTree of an absent folder does nothing' $msg ''
+        # The evidence folder (Start-EoLog, Save-EoSnapshot) with $EO.Evidence pointed at
+        # temporary folders; restored in finally.
+        $ev = Join-Path $base 'evidence'
+        $EO.Evidence = $ev
+        $msg = ''; $stamp = ''
+        try { $stamp = Start-EoLog 'selftest' } catch { $msg = $_.Exception.Message }
+        Stop-EoLog
+        Expect 'evidence: Start-EoLog creates the folder and a new transcript' "$msg|$(@(Get-ChildItem -LiteralPath $ev -Filter '*-selftest.transcript.txt').Count)" '|1'
+        $snapMsg = ''
+        $snapPath = ''
+        try {
+            $snapPath = & {
+                # Stands in for the Hyper-V read; Save-EoSnapshot finds this one first.
+                function Get-EoSnapshot { [ordered]@{ a = 1; b = @('x', 'y') } }
+                Save-EoSnapshot 'S' 'selftest'
+            }
+        } catch { $snapMsg = $_.Exception.Message }
+        $ref = Join-Path $base 'ref.json'
+        ([ordered]@{ a = 1; b = @('x', 'y') } | ConvertTo-Json -Depth 6) | Set-Content -Encoding UTF8 -Path $ref
+        $same = $snapPath -and (Test-Path -LiteralPath $snapPath) -and ((([System.IO.File]::ReadAllBytes($snapPath)) -join ',') -eq (([System.IO.File]::ReadAllBytes($ref)) -join ','))
+        Expect 'evidence: Save-EoSnapshot writes the same bytes Set-Content -Encoding UTF8 wrote before' "$snapMsg|$same" '|True'
+        $snapMsg = ''
+        try { $null = & { function Get-EoSnapshot { [ordered]@{ a = 2 } }; Save-EoSnapshot 'S' 'selftest' } } catch { $snapMsg = $_.Exception.Message }
+        $kept = $snapPath -and ((([System.IO.File]::ReadAllBytes($snapPath)) -join ',') -eq (([System.IO.File]::ReadAllBytes($ref)) -join ','))
+        Expect 'evidence: Save-EoSnapshot refuses an existing snapshot file and leaves it' "$($snapMsg.Contains('already exists'))/$kept" 'True/True'
+        # A transcript file that is already there (every stamp of the next 20 seconds).
+        $now = (Get-Date).ToUniversalTime()
+        foreach ($s in 0..20) { Set-Content -LiteralPath (Join-Path $ev ("{0}-taken.transcript.txt" -f $now.AddSeconds($s).ToString('yyyyMMddTHHmmssZ'))) -Value 'earlier' }
+        $msg = ''; try { $null = Start-EoLog 'taken' } catch { $msg = $_.Exception.Message }
+        Stop-EoLog
+        Expect 'evidence: Start-EoLog refuses an existing transcript file and leaves it' "$($msg.Contains('already exists'))/$(@(Get-ChildItem -LiteralPath $ev -Filter '*-taken.transcript.txt' | Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Trim() -ne 'earlier' }).Count)" 'True/0'
+        # The evidence folder as a junction, and below a junction.
+        $evTarget = Join-Path $base 'evidence-target'
+        New-Item -ItemType Directory -Path $evTarget | Out-Null
+        $evJ = Join-Path $base 'evidence-link'
+        & $mk $evJ $evTarget
+        foreach ($c in @(@('the evidence folder is a junction', $evJ, $evJ), @('a folder above the evidence folder is a junction', (Join-Path $hv 'evidence'), $hv))) {
+            $EO.Evidence = $c[1]
+            $msg = ''; try { $null = Start-EoLog 'selftest' } catch { $msg = $_.Exception.Message }
+            Stop-EoLog
+            Expect "evidence: Start-EoLog refuses when $($c[0])" ($msg.Contains("$($c[2]) is a link")) $true
+            $msg = ''; try { $null = & { function Get-EoSnapshot { [ordered]@{ a = 1 } }; Save-EoSnapshot 'S' 'selftest' } } catch { $msg = $_.Exception.Message }
+            Expect "evidence: Save-EoSnapshot refuses when $($c[0])" ($msg.Contains("$($c[2]) is a link")) $true
+        }
+        Expect 'evidence: nothing was written through the junctions' "$(@(Get-ChildItem -LiteralPath $evTarget).Count)/$(Test-Path -LiteralPath (Join-Path $victim 'evidence'))" '0/False'
+        $EO.Evidence = $savedEvidence
+
+        # A folder that cannot be listed (access denied): -Tolerant marks it, otherwise it throws.
+        $ud = Join-Path $base 'unlisted'
+        New-Item -ItemType Directory -Path (Join-Path $ud 'eo-l2\Virtual Machines\locked') | Out-Null
+        $locked = Join-Path $ud 'eo-l2\Virtual Machines\locked'
+        Invoke-EoNative icacls.exe @($locked, '/inheritance:r') | Out-Null
+        try {
+            $te = @(Get-EoTreeEntries $ud -Tolerant)
+            Expect 'vm live: an unlistable folder is marked Unreadable with -Tolerant' ((@($te | Where-Object { $_.Unreadable } | ForEach-Object { $_.Rel })) -join ',') 'eo-l2\Virtual Machines\locked'
+            Expect 'vm live: ... and passes Test-EoVmTree -AllowUnreadable only there' "$(@(Test-EoVmTree $te -AllowUnreadable -Root $ud).Count)/$(VHit @(Test-EoVmTree $te -Root $ud) 'could not be listed')" '0/True'
+            $threw = $false; try { $null = @(Get-EoTreeEntries $ud) } catch { $threw = $true }
+            Expect 'vm live: without -Tolerant an unlistable folder throws' $threw $true
+        } finally {
+            Invoke-EoNative icacls.exe @($locked, '/grant', "*$([Security.Principal.WindowsIdentity]::GetCurrent().User.Value):(OI)(CI)F") -AllowFail | Out-Null
+        }
+
+        # The fail-closed create: an edition with no one-step secure create gets a throw
+        # and no folder (Get-EoSecureCreateMethod stubbed to report none).
+        $nf = Join-Path $base 'no-atomic'
+        $msg = ''; try { & { function Get-EoSecureCreateMethod { '' }; New-EoSecureDir $nf } } catch { $msg = $_.Exception.Message }
+        Expect 'vm live: New-EoSecureDir throws when no one-step secure create exists, and creates nothing' "$($msg.Contains('in one step. Nothing was created'))/$($null -eq (Get-EoEntryAttributes $nf))" 'True/True'
 
         if (Test-EoAdmin) {
-            $sp = Join-Path $base 'HV-new'
-            New-EoSecureDir $sp -Parent
-            Expect 'vm live (elevated): New-EoSecureDir -Parent gives owner Administrators and the planned protected ACL' (@(Test-EoPathFacts (Get-EoPathFacts $sp) 'parent' -Container -New) -join ';') ''
-            $threw = ''; try { Assert-EoNewDir $sp -Parent } catch { $threw = $_.Exception.Message }
-            Expect 'vm live (elevated): Assert-EoNewDir accepts it' $threw ''
-            $sr = Join-Path $sp 'eo-l2'
-            New-EoSecureDir $sr
-            Expect 'vm live (elevated): New-EoSecureDir gives eo-l2 Administrators and SYSTEM only, protected' (@(Test-EoPathFacts (Get-EoPathFacts $sr) 'root' -Container -New) -join ';') ''
-            Set-Content -LiteralPath (Join-Path $sr 'planted.vhdx') -Value 'x'
-            $threw = ''; try { Assert-EoNewDir $sr } catch { $threw = $_.Exception.Message }
-            Expect 'vm live (elevated): Assert-EoNewDir refuses a folder that is not empty' ($threw.Contains('is not empty')) $true
-            $threw = ''; try { New-EoSecureDir $sr } catch { $threw = $_.Exception.Message }
-            Expect 'vm live (elevated): New-EoSecureDir refuses an existing folder' ($threw.Contains('already exists')) $true
-            $threw = ''; try { New-EoSecureDir (Join-Path $base 'missing\eo-l2') } catch { $threw = $_.Exception.Message }
-            Expect 'vm live (elevated): New-EoSecureDir refuses a missing parent' ($threw.Contains('is missing')) $true
-            $threw = ''; try { New-EoSecureDir (Join-Path $hv 'new') } catch { $threw = $_.Exception.Message }
-            Expect 'vm live (elevated): New-EoSecureDir refuses a parent that is a junction' ($threw.Contains('a link')) $true
-            Expect 'vm live (elevated): ... and made nothing in the junction target' (Test-Path -LiteralPath (Join-Path $victim 'new')) $false
-            $plain = Join-Path $base 'plain'
-            New-Item -ItemType Directory -Path $plain | Out-Null
-            Expect 'vm live (elevated): an ordinary New-Item folder fails the new-folder check (it inherits)' (VHit @(Test-EoPathFacts (Get-EoPathFacts $plain) 'root' -Container -New) 'inherits permissions') $true
-            $msg = ''; try { Remove-EoVerifiedTree $sp } catch { $msg = $_.Exception.Message }
-            Expect 'vm live (elevated): Remove-EoVerifiedTree deletes the protected folders' "$msg|$($null -eq (Get-EoEntryAttributes $sp))" '|True'
+            # Every delete test, in an admin-only scratch folder under ProgramData.
+            $sb = New-EoScratchDir 'selftest'
+            Expect 'scratch: New-EoScratchDir names it eo-l2-selftest-<32 hex> directly under ProgramData' "$([System.IO.Path]::GetDirectoryName($sb) -ieq "$env:ProgramData".TrimEnd('\'))/$([System.IO.Path]::GetFileName($sb) -cmatch $EoScratchPattern)" 'True/True'
+            Expect 'scratch: it is admin-only, protected, owned by Administrators' (@(Test-EoPathFacts (Get-EoPathFacts $sb) 'root' -Container -New) -join ';') ''
+            try {
+                $sv = Join-Path $sb 'victim'
+                New-Item -ItemType Directory -Path (Join-Path $sv 'eo-l2') | Out-Null
+                Set-Content -LiteralPath (Join-Path $sv 'keep.txt') -Value 'keep'
+                Set-Content -LiteralPath (Join-Path $sv 'eo-l2\keep.txt') -Value 'keep'
+                $shv = Join-Path $sb 'HV'
+                & $mk $shv $sv
+                $sp2 = Join-Path $sb 'P'
+                New-Item -ItemType Directory -Path $sp2 | Out-Null
+                $schild = Join-Path $sp2 'eo-l2'
+                & $mk $schild $sv
+                $st = Join-Path $sb 'tree'
+                New-Item -ItemType Directory -Path (Join-Path $st 'eo-l2\Virtual Machines') | Out-Null
+                Set-Content -LiteralPath (Join-Path $st 'eo-l2-system.vhdx') -Value 'x'
+                $sinner = Join-Path $st 'eo-l2\Virtual Machines\j'
+                & $mk $sinner $sv
+
+                $msg = ''; try { Remove-EoVerifiedTree $st } catch { $msg = $_.Exception.Message }
+                Expect 'vm delete (elevated): Remove-EoVerifiedTree refuses a tree that holds a junction' ($msg.Contains('holds links')) $true
+                Expect 'vm delete (elevated): ... and deletes nothing, in the tree or the target' "$(Test-Path -LiteralPath (Join-Path $st 'eo-l2-system.vhdx'))/$(Test-Path -LiteralPath (Join-Path $sv 'keep.txt'))" 'True/True'
+                # A delete through a junction above the folder (the measured RH-DT-M3 case).
+                $msg = ''; try { Remove-EoVerifiedTree (Join-Path $shv 'eo-l2') } catch { $msg = $_.Exception.Message }
+                Expect 'vm delete (elevated): Remove-EoVerifiedTree refuses a path through a junction' ($msg.Contains("$shv is a link")) $true
+                Expect 'vm delete (elevated): ... and the redirected target survives' (Test-Path -LiteralPath (Join-Path $sv 'eo-l2\keep.txt')) $true
+                # A delete of the junction itself.
+                $msg = ''; try { Remove-EoVerifiedTree $schild } catch { $msg = $_.Exception.Message }
+                Expect 'vm delete (elevated): Remove-EoVerifiedTree refuses a folder that is a junction' ($msg.Contains("$schild is a link")) $true
+                Expect 'vm delete (elevated): ... and its target survives' (Test-Path -LiteralPath (Join-Path $sv 'keep.txt')) $true
+                # A folder it cannot list.
+                $sl = Join-Path $sb 'unlisted'
+                New-Item -ItemType Directory -Path (Join-Path $sl 'eo-l2\locked') | Out-Null
+                Set-Content -LiteralPath (Join-Path $sl 'eo-l2\locked\inside.txt') -Value 'x'
+                Invoke-EoNative icacls.exe @((Join-Path $sl 'eo-l2\locked'), '/inheritance:r') | Out-Null
+                $msg = ''; try { Remove-EoVerifiedTree $sl } catch { $msg = $_.Exception.Message }
+                Invoke-EoNative icacls.exe @((Join-Path $sl 'eo-l2\locked'), '/grant', '*S-1-5-32-544:(OI)(CI)F') -AllowFail | Out-Null
+                Expect 'vm delete (elevated): Remove-EoVerifiedTree refuses a tree it cannot list, deleting nothing' "$($msg -ne '')/$(Test-Path -LiteralPath (Join-Path $sl 'eo-l2\locked\inside.txt'))" 'True/True'
+
+                # Without the junction the same tree goes, read-only file included.
+                [System.IO.Directory]::Delete($sinner, $false)
+                Set-Content -LiteralPath (Join-Path $st 'eo-l2\Virtual Machines\a.vmcx') -Value 'x'
+                [System.IO.File]::SetAttributes((Join-Path $st 'eo-l2\Virtual Machines\a.vmcx'), [System.IO.FileAttributes]::ReadOnly)
+                $msg = ''; try { Remove-EoVerifiedTree $st } catch { $msg = $_.Exception.Message }
+                Expect 'vm delete (elevated): Remove-EoVerifiedTree deletes a tree without links' "$msg|$($null -eq (Get-EoEntryAttributes $st))" '|True'
+                Expect 'vm delete (elevated): ... and the former junction target survives' (Test-Path -LiteralPath (Join-Path $sv 'keep.txt')) $true
+                $msg = ''; try { Remove-EoVerifiedTree $st } catch { $msg = $_.Exception.Message }
+                Expect 'vm delete (elevated): Remove-EoVerifiedTree of an absent folder does nothing' $msg ''
+
+                # New-EoSecureDir, in the scratch folder.
+                $sp = Join-Path $sb 'HV-new'
+                New-EoSecureDir $sp -Parent
+                Expect 'vm live (elevated): New-EoSecureDir -Parent gives owner Administrators and the planned protected ACL' (@(Test-EoPathFacts (Get-EoPathFacts $sp) 'parent' -Container -New) -join ';') ''
+                $threw = ''; try { Assert-EoNewDir $sp -Parent } catch { $threw = $_.Exception.Message }
+                Expect 'vm live (elevated): Assert-EoNewDir accepts it' $threw ''
+                $sr = Join-Path $sp 'eo-l2'
+                New-EoSecureDir $sr
+                Expect 'vm live (elevated): New-EoSecureDir gives eo-l2 Administrators and SYSTEM only, protected' (@(Test-EoPathFacts (Get-EoPathFacts $sr) 'root' -Container -New) -join ';') ''
+                Set-Content -LiteralPath (Join-Path $sr 'planted.vhdx') -Value 'x'
+                $threw = ''; try { Assert-EoNewDir $sr } catch { $threw = $_.Exception.Message }
+                Expect 'vm live (elevated): Assert-EoNewDir refuses a folder that is not empty' ($threw.Contains('is not empty')) $true
+                $threw = ''; try { New-EoSecureDir $sr } catch { $threw = $_.Exception.Message }
+                Expect 'vm live (elevated): New-EoSecureDir refuses an existing folder' ($threw.Contains('already exists')) $true
+                $threw = ''; try { New-EoSecureDir (Join-Path $sb 'missing\eo-l2') } catch { $threw = $_.Exception.Message }
+                Expect 'vm live (elevated): New-EoSecureDir refuses a missing parent' ($threw.Contains('is missing')) $true
+                $threw = ''; try { New-EoSecureDir (Join-Path $shv 'new') } catch { $threw = $_.Exception.Message }
+                Expect 'vm live (elevated): New-EoSecureDir refuses a parent that is a junction' ($threw.Contains('a link')) $true
+                Expect 'vm live (elevated): ... and made nothing in the junction target' (Test-Path -LiteralPath (Join-Path $sv 'new')) $false
+                $plain = Join-Path $base 'plain'
+                New-Item -ItemType Directory -Path $plain | Out-Null
+                Expect 'vm live (elevated): an ordinary New-Item folder fails the new-folder check (it inherits)' (VHit @(Test-EoPathFacts (Get-EoPathFacts $plain) 'root' -Container -New) 'inherits permissions') $true
+                # The glue on a real admin-protected chain: <scratch>\HV-new stands in for
+                # C:\Hyper-V, its eo-l2 for the root. Clean, it passes; a junction inside
+                # the root is reported.
+                Remove-Item -LiteralPath (Join-Path $sr 'planted.vhdx')
+                New-Item -ItemType Directory -Path (Join-Path $sr 'eo-l2\Virtual Machines') | Out-Null
+                $giso = Join-Path $sr 'iso'
+                $m3 = @(); try { $m3 = @(Get-EoVmTreeProblems '' -Parent $sp -Root $sr -IsoDir $giso) } catch { $m3 = @("threw: $($_.Exception.Message)") }
+                Expect 'vm glue (elevated): Get-EoVmTreeProblems passes a clean admin-protected chain and tree' ($m3 -join ';') ''
+                $gj = Join-Path $sr 'eo-l2\Virtual Machines\j'
+                & $mk $gj $sv
+                $m3 = @(); try { $m3 = @(Get-EoVmTreeProblems '' -Parent $sp -Root $sr -IsoDir $giso) } catch { $m3 = @("threw: $($_.Exception.Message)") }
+                Expect 'vm glue (elevated): Get-EoVmTreeProblems reports a junction inside the root' "$($m3.Count)/$(VHit $m3 'eo-l2\Virtual Machines\j is a link')" '1/True'
+                $m3 = @(); try { $m3 = @(Get-EoVmChainProblems '' $sp $sr $giso) } catch { $m3 = @("threw: $($_.Exception.Message)") }
+                Expect 'vm glue (elevated): Get-EoVmChainProblems passes the same chain (the tree is not its job)' ($m3 -join ';') ''
+                [System.IO.Directory]::Delete($gj, $false)
+                $msg = ''; try { Remove-EoVerifiedTree $sp } catch { $msg = $_.Exception.Message }
+                Expect 'vm delete (elevated): Remove-EoVerifiedTree deletes the protected folders' "$msg|$($null -eq (Get-EoEntryAttributes $sp))" '|True'
+
+                # The elevated gpg check keeps its home in an admin-only eo-l2-gpg-<random>
+                # folder and removes it again, also when the check fails.
+                if (Test-Path 'C:\Program Files\Git\usr\bin\gpg.exe') {
+                    $gpgBefore = @(Get-ChildItem -LiteralPath $env:ProgramData -Directory -Filter 'eo-l2-gpg-*' | ForEach-Object { $_.Name })
+                    $junk = Join-Path $sb 'junk.txt'
+                    Set-Content -LiteralPath $junk -Value 'not a key'
+                    $msg = ''; try { $null = Assert-EoDebianSignature $junk $junk $junk } catch { $msg = $_.Exception.Message }
+                    $gpgAfter = @(Get-ChildItem -LiteralPath $env:ProgramData -Directory -Filter 'eo-l2-gpg-*' | ForEach-Object { $_.Name })
+                    Expect 'gpg (elevated): a bad signature throws and the admin-only gpg home is removed' "$($msg -ne '')/$($gpgAfter.Count - $gpgBefore.Count)" 'True/0'
+                } else {
+                    Write-Host 'info gpg not found: the elevated gpg home test is skipped'
+                }
+            } finally {
+                # Links first (removing a junction removes only the link), then the folder.
+                foreach ($l in @(Get-EoTreeEntries $sb -Tolerant | Where-Object { $_.Reparse })) { try { [System.IO.Directory]::Delete($l.Full, $false) } catch { Write-Host "info could not remove link $($l.Full): $($_.Exception.Message)" } }
+                $msg = ''; try { Remove-EoVerifiedTree $sb } catch { $msg = $_.Exception.Message }
+                Expect 'scratch: Remove-EoVerifiedTree removes the self-test scratch folder' "$msg|$($null -eq (Get-EoEntryAttributes $sb))" '|True'
+            }
         } else {
-            Write-Host 'info not elevated: the New-EoSecureDir live tests are skipped'
+            Write-Host 'info not elevated: the delete, New-EoSecureDir and gpg live tests are skipped'
         }
     } finally {
-        # Links first (removing a junction removes only the link), then the rest.
+        $EO.Evidence = $savedEvidence
+        # Links first (removing a junction removes only the link), then the rest. TEMP
+        # only; the self-test's own temporary folder is the one path it removes this way.
         if (Test-Path -LiteralPath $base) {
-            foreach ($l in @(Get-EoTreeEntries $base | Where-Object { $_.Reparse })) { try { [System.IO.Directory]::Delete($l.Full, $false) } catch { Write-Host "info could not remove link $($l.Full): $($_.Exception.Message)" } }
+            foreach ($l in @(Get-EoTreeEntries $base -Tolerant | Where-Object { $_.Reparse })) { try { [System.IO.Directory]::Delete($l.Full, $false) } catch { try { [System.IO.File]::Delete($l.Full) } catch { Write-Host "info could not remove link $($l.Full): $($_.Exception.Message)" } } }
             Remove-Item -LiteralPath $base -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
 }
 
-# Structure of 02, undo-02 and verify-host for the VM folders.
+# Structure of 02, undo-02, verify-host and the shared helpers for the VM folders and
+# the evidence folder.
 & {
     $t = $null; $e = $null
     $ast02 = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir '02-vm.ps1'), [ref]$t, [ref]$e)
     $astU = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir 'undo-02-vm.ps1'), [ref]$t, [ref]$e)
     $astV = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir 'verify-host.ps1'), [ref]$t, [ref]$e)
     $astF = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir '_vmfolder.ps1'), [ref]$t, [ref]$e)
+    $astC = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir '_common.ps1'), [ref]$t, [ref]$e)
     $cmds = { param($Ast, [string[]]$Names) @($Ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -in $Names }, $true) | Sort-Object { $_.Extent.StartOffset }) }
+    $fn = { param($Ast, [string]$Name) @($Ast.FindAll({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $Name }, $true))[0] }
+    $at = { param($List) @($List | ForEach-Object { $_.Extent.StartOffset }) }
 
     # The plan says what is created and with which ACL.
     $plan = @(& $cmds $ast02 @('Confirm-EoPlan'))
     $planText = if ($plan.Count) { "$($plan[0].Extent.Text)" } else { '' }
     Expect '02 plan: one Confirm-EoPlan' $plan.Count 1
     Expect '02 plan: no longer creates C:\Hyper-V with the inherited C:\ ACL' ($planText.Contains('inherits the C:\ ACL') -or $planText.Contains('exists; unchanged')) $false
-    foreach ($want in @('S-1-5-32-544', 'S-1-5-18', 'S-1-5-32-545', 'read and execute only', 'inheritance off', 'set in the create call', 'passed the check', 'is a link (reparse point)', 'deletes $($EO.Root) only')) {
+    foreach ($want in @('S-1-5-32-544', 'S-1-5-18', 'S-1-5-32-545', 'read and execute only', 'inheritance off', 'set in the create call', 'passed the check', 'is a link (reparse point)', 'deletes $($EO.Root) only', 'admin-only copy', 'this VM''s own account only', 'readable at most by this VM''s account', 'printed (icacls)', '$($EO.VmIdFile)')) {
         Expect "02 plan: states '$want'" ($planText.Contains($want)) $true
     }
 
     # 02 creates folders only through New-EoSecureDir, never New-Item or icacls grants,
-    # and checks the chain right before each create, copy, New-VHD, New-VM and attach.
+    # and checks the chain right before each create, copy, New-VHD, New-VM, the VM id
+    # record and the attaches. Before the confirmation it copies only into the admin-only
+    # sums folder.
     Expect '02 structure: no New-Item, Remove-Item or icacls grant' "$(@(& $cmds $ast02 @('New-Item', 'Remove-Item')).Count)/$($ast02.Extent.Text.Contains('/grant'))" '0/False'
     $conf = @(& $cmds $ast02 @('Confirm-EoPlan'))[0].Extent.StartOffset
-    $acts = @(& $cmds $ast02 @('New-EoSecureDir', 'Copy-Item', 'New-VHD', 'New-VM', 'Add-VMHardDiskDrive', 'Add-VMDvdDrive'))
+    $allActs = @(& $cmds $ast02 @('New-EoSecureDir', 'Copy-Item', 'New-VHD', 'New-VM', 'Write-EoNewFile', 'Add-VMHardDiskDrive', 'Add-VMDvdDrive'))
+    $early = @($allActs | Where-Object { $_.Extent.StartOffset -lt $conf })
+    Expect '02 structure: before the confirmation only the copies into the admin-only sums folder' (($early | ForEach-Object { "$($_.GetCommandName()):$($_.Extent.Text.Contains('-Destination (Join-Path $sumsDir'))" }) -join ',') 'Copy-Item:True'
+    $acts = @($allActs | Where-Object { $_.Extent.StartOffset -gt $conf })
     $asserts = @(& $cmds $ast02 @('Assert-EoVmChain') | ForEach-Object { $_.Extent.StartOffset })
     $newDir = @(& $cmds $ast02 @('Assert-EoNewDir') | ForEach-Object { $_.Extent.StartOffset })
-    Expect '02 structure: 3 folder creates, 1 copy, 2 New-VHD, 1 New-VM, 3 attaches' (($acts | ForEach-Object { $_.GetCommandName() }) -join ',') 'New-EoSecureDir,New-EoSecureDir,New-EoSecureDir,Copy-Item,New-VHD,New-VHD,New-VM,Add-VMHardDiskDrive,Add-VMHardDiskDrive,Add-VMDvdDrive'
+    Expect '02 structure: 3 folder creates, 1 copy, 2 New-VHD, 1 New-VM, the VM id record, 3 attaches' (($acts | ForEach-Object { $_.GetCommandName() }) -join ',') 'New-EoSecureDir,New-EoSecureDir,New-EoSecureDir,Copy-Item,New-VHD,New-VHD,New-VM,Write-EoNewFile,Add-VMHardDiskDrive,Add-VMHardDiskDrive,Add-VMDvdDrive'
     $prev = $conf; $unguarded = @()
     foreach ($a in $acts) {
         $o = $a.Extent.StartOffset
         $attachFollow = $a.GetCommandName() -in @('Add-VMHardDiskDrive', 'Add-VMDvdDrive') -and @($acts | Where-Object { $_.Extent.StartOffset -lt $o -and $_.GetCommandName() -in @('Add-VMHardDiskDrive', 'Add-VMDvdDrive') }).Count
-        if ($o -lt $conf -or (-not $attachFollow -and -not @($asserts | Where-Object { $_ -gt $prev -and $_ -lt $o }).Count)) { $unguarded += "$($a.Extent.StartLineNumber): $($a.GetCommandName())" }
+        if (-not $attachFollow -and -not @($asserts | Where-Object { $_ -gt $prev -and $_ -lt $o }).Count) { $unguarded += "$($a.Extent.StartLineNumber): $($a.GetCommandName())" }
         $prev = $o
     }
-    Expect '02 structure: every create, copy, New-VHD, New-VM and the attaches come after the confirmation and right after a chain check' ($unguarded -join ', ') ''
+    Expect '02 structure: every create, copy, New-VHD, New-VM, the VM id record and the attaches come after the confirmation and right after a chain check' ($unguarded -join ', ') ''
     $creates = @($acts | Where-Object { $_.GetCommandName() -eq 'New-EoSecureDir' } | ForEach-Object { $_.Extent.StartOffset })
     $readBack = @(for ($i = 0; $i -lt $creates.Count; $i++) { $next = @($acts | Where-Object { $_.Extent.StartOffset -gt $creates[$i] } | Select-Object -First 1 | ForEach-Object { $_.Extent.StartOffset }); $lim = if ($next.Count) { $next[0] } else { [int]::MaxValue }; @($newDir | Where-Object { $_ -gt $creates[$i] -and $_ -lt $lim }).Count -eq 1 })
     Expect '02 structure: each folder it creates is read back before the next change' ($readBack -join ',') 'True,True,True'
+    $attachAssert = @(& $cmds $ast02 @('Assert-EoVmChain') | Where-Object { "$($_.Extent.Text)".Contains("'attach the disks and the ISO' `$vmId") })
+    Expect '02 structure: the attach check accepts this VM''s account only ($vmId)' $attachAssert.Count 1
+    Expect '02 structure: the final folder report is for this VM ($vmId)' ((@(& $cmds $ast02 @('Get-EoVmFolderReport')) | ForEach-Object { "$($_.Extent.Text)" }) -join '|') 'Get-EoVmFolderReport $vmId'
+    $showAcl = @(& $at @(& $cmds $ast02 @('Show-EoVmFolderAcls')))
+    $report = @(& $at @(& $cmds $ast02 @('Get-EoVmFolderReport')))
+    Expect '02 structure: the actual ACLs are printed after the final check' ($report.Count -eq 1 -and @($showAcl | Where-Object { $_ -gt $report[0] }).Count -ge 1) $true
 
-    # undo-02: no Remove-Item; the tree checked before the plan, after it and after
-    # Remove-VM; one Remove-EoVerifiedTree, of $EO.Root, after that last check.
+    # The ISO record and SHA256SUMS: the name checked before any path is built from it;
+    # SHA256SUMS, its signature and the key copied into the admin-only sums folder; the
+    # signature verified on that copy and the hash line read from the same copy, after
+    # the signature; the source ISO and its copy both hashed.
+    $rec = @(& $at @(& $cmds $ast02 @('Test-EoIsoRecord')))
+    $isoPaths = @(& $at @(& $cmds $ast02 @('Join-Path') | Where-Object { "$($_.Extent.Text)".Contains('$v.iso') }))
+    $recAt = if ($rec.Count) { $rec[0] } else { [int]::MaxValue }
+    Expect '02 iso: Test-EoIsoRecord once, before every path built from the ISO name' "$($rec.Count)/$(@($isoPaths | Where-Object { $_ -lt $recAt }).Count)/$($isoPaths.Count -ge 2)" '1/0/True'
+    $scr = @(& $cmds $ast02 @('New-EoScratchDir'))
+    Expect '02 sums: one admin-only scratch folder for the sums' (($scr | ForEach-Object { "$($_.Extent.Text)" }) -join '|') "New-EoScratchDir 'sums'"
+    $sig = @(& $cmds $ast02 @('Assert-EoDebianSignature'))
+    $sigText = if ($sig.Count) { "$($sig[0].Extent.Text)" } else { '' }
+    Expect '02 sums: the signature is verified on the admin-only copy' "$($sig.Count)/$($sigText.StartsWith('Assert-EoDebianSignature $sums (Join-Path $sumsDir ''SHA256SUMS.sign'') (Join-Path $sumsDir ''debian-cd-key.asc'')'))" '1/True'
+    $sumsSet = @($ast02.FindAll({ param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and "$($n.Left)" -eq '$sums' }, $true) | ForEach-Object { "$($_.Right)" })
+    Expect '02 sums: $sums is the copy in the admin-only folder' ($sumsSet -join '|') "Join-Path `$sumsDir 'SHA256SUMS'"
+    $reads = @(& $cmds $ast02 @('Get-Content') | Where-Object { "$($_.Extent.Text)".Contains('$sums') })
+    Expect '02 sums: the hash line is read from that copy, after the signature check' "$($reads.Count)/$(@($reads | Where-Object { $_.Extent.StartOffset -gt $sig[0].Extent.StartOffset }).Count)" '1/1'
+    Expect '02 sums: nothing reads SHA256SUMS from the download folder' (@(& $cmds $ast02 @('Get-Content', 'Assert-EoDebianSignature') | Where-Object { "$($_.Extent.Text)".Contains('$EO.Download') }).Count) 0
+    $hashes = @(& $cmds $ast02 @('Get-FileHash') | ForEach-Object { "$($_.Extent.Text)" })
+    Expect '02 iso: the source ISO and its copy are hashed' ($hashes -join '|') 'Get-FileHash -Algorithm SHA256 -LiteralPath $srcIso|Get-FileHash -Algorithm SHA256 -LiteralPath $iso'
+
+    # undo-02, in this order: the VM id (Get-EoUndoView: chain first, then the record),
+    # the tolerant tree check, the plan, the view again and Test-EoUndoPlanStill, the
+    # tolerant check again, the snapshot, Stop-VM, Remove-VM, the strict check, the
+    # delete of $EO.Root. No Remove-Item.
     Expect 'undo-02 structure: no Remove-Item' (@(& $cmds $astU @('Remove-Item')).Count) 0
     $rt = @(& $cmds $astU @('Remove-EoVerifiedTree'))
     Expect 'undo-02 structure: one Remove-EoVerifiedTree, of $EO.Root' (($rt | ForEach-Object { "$($_.Extent.Text)" }) -join '|') 'Remove-EoVerifiedTree $EO.Root'
-    $uc = @(& $cmds $astU @('Confirm-EoPlan') | ForEach-Object { $_.Extent.StartOffset })
-    $chk = @(& $cmds $astU @('Get-EoVmTreeProblems') | ForEach-Object { $_.Extent.StartOffset })
-    $rv = @(& $cmds $astU @('Remove-VM') | ForEach-Object { $_.Extent.StartOffset })
-    $ok = $uc.Count -eq 1 -and $chk.Count -eq 3 -and $rv.Count -eq 1 -and $rt.Count -eq 1 -and $chk[0] -lt $uc[0] -and $chk[1] -gt $uc[0] -and $chk[1] -lt $rv[0] -and $chk[2] -gt $rv[0] -and $chk[2] -lt $rt[0].Extent.StartOffset
-    Expect 'undo-02 structure: the tree is checked before the plan, after the confirmation and after Remove-VM, then deleted' $ok $true
+    $chkAst = @(& $cmds $astU @('Get-EoVmTreeProblems'))
+    Expect 'undo-02 structure: tolerant, tolerant, then strict tree checks' (($chkAst | ForEach-Object { "$($_.Extent.Text)".Contains('-AllowUnreadable') }) -join ',') 'True,True,False'
+    $ord = [ordered]@{
+        'view (plan)'   = @(& $cmds $astU @('Get-EoUndoView'))[0]
+        'check 1'       = $chkAst[0]
+        'plan'          = @(& $cmds $astU @('Confirm-EoPlan'))[0]
+        'view (now)'    = @(& $cmds $astU @('Get-EoUndoView'))[1]
+        'plan still'    = @(& $cmds $astU @('Test-EoUndoPlanStill'))[0]
+        'check 2'       = $chkAst[1]
+        'snapshot'      = @(& $cmds $astU @('Save-EoSnapshot'))[0]
+        'Stop-VM'       = @(& $cmds $astU @('Stop-VM'))[0]
+        'Remove-VM'     = @(& $cmds $astU @('Remove-VM'))[0]
+        'strict check'  = $chkAst[2]
+        'delete'        = $rt[0]
+    }
+    $seq = @($ord.Keys | Where-Object { $ord[$_] } | Sort-Object { $ord[$_].Extent.StartOffset })
+    Expect 'undo-02 structure: the order of checks, plan, removal and delete' ($seq -join ' > ') (@($ord.Keys) -join ' > ')
+    Expect 'undo-02 structure: two views, one plan check, one Stop-VM and one Remove-VM' "$(@(& $cmds $astU @('Get-EoUndoView')).Count)/$(@(& $cmds $astU @('Test-EoUndoPlanStill')).Count)/$(@(& $cmds $astU @('Stop-VM')).Count)/$(@(& $cmds $astU @('Remove-VM')).Count)" '2/1/1/1'
+    Expect 'undo-02 structure: a changed plan stops it' ($astU.Extent.Text.Contains('if ($changed.Count) { throw')) $true
+    $view = & $fn $astU 'Get-EoUndoView'
+    $vc = @(if ($view) { & $at @(& $cmds $view @('Get-EoChainProblems')) })
+    $vr = @(if ($view) { & $at @(& $cmds $view @('Read-EoVmIdFile')) })
+    Expect 'undo-02 structure: the VM id record is read only after the chain was checked for links' "$($vc.Count)/$($vr.Count)/$($vc.Count -and $vr.Count -and $vc[0] -lt $vr[0])" '1/1/True'
 
-    # verify-host reads the VM folders only in the full check (the VM exists).
+    # verify-host reads the VM folders and the Hyper-V Administrators list only in the
+    # full check (the VM exists), and passes this VM's id.
+    $gate = { param($List) @($List | Where-Object { $q = $_.Parent; $hit = $false; while ($q) { if ($q -is [System.Management.Automation.Language.IfStatementAst] -and "$($q.Clauses[0].Item1)" -eq '-not $SwitchOnly') { $hit = $true; break }; $q = $q.Parent }; $hit }) }
     $vr = @(& $cmds $astV @('Get-EoVmFolderReport'))
-    $gated = @($vr | Where-Object { $q = $_.Parent; $hit = $false; while ($q) { if ($q -is [System.Management.Automation.Language.IfStatementAst] -and "$($q.Clauses[0].Item1)" -eq '-not $SwitchOnly') { $hit = $true; break }; $q = $q.Parent }; $hit })
-    Expect 'verify-host structure: the VM folder rows are read once, in the full check only' "$($vr.Count)/$($gated.Count)" '1/1'
+    Expect 'verify-host structure: the VM folder rows are read once, in the full check only' "$($vr.Count)/$(@(& $gate $vr).Count)" '1/1'
+    Expect 'verify-host structure: ... for this VM''s id' ("$(if ($vr.Count) { $vr[0].Extent.Text })".Contains('$vm.Id')) $true
+    $hg = @(& $cmds $astV @('Get-EoLocalGroupMemberNames'))
+    Expect 'verify-host structure: Hyper-V Administrators (S-1-5-32-578) listed once, in the full check only' "$($hg.Count)/$(@(& $gate $hg).Count)/$("$(if ($hg.Count) { $hg[0].Extent.Text })".Contains('S-1-5-32-578'))" '1/1/True'
+    # The shipped row loop: an 'INFO ' key becomes an INFO row, never PASS or FAIL.
+    $loop = @($astV.FindAll({ param($n) $n -is [System.Management.Automation.Language.ForEachStatementAst] -and "$($n.Condition)" -eq '$vf.Keys' }, $true))
+    Expect 'verify-host structure: one row loop over the VM folder report' $loop.Count 1
+    $got = ''
+    try {
+        $got = & {
+            Set-StrictMode -Version 3.0
+            $rows = New-Object System.Collections.Generic.List[object]
+            function Row([string]$Name, [bool]$Ok, [string]$Detail) { $rows.Add([pscustomobject]@{ Result = $(if ($Ok) { 'PASS' } else { 'FAIL' }); Check = $Name; Detail = $Detail }) }
+            $vf = [ordered]@{ 'a check' = @(); 'a failing check' = @('p1', 'p2'); 'INFO runtime folders' = @('x', 'y') }
+            . ([scriptblock]::Create($loop[0].Extent.Text))
+            ($rows | ForEach-Object { "$($_.Result):$($_.Check):$($_.Detail)" }) -join '|'
+        }
+    } catch { $got = "threw: $($_.Exception.Message)" }
+    Expect 'verify-host rows: PASS, FAIL and INFO from the report' $got 'PASS:a check:|FAIL:a failing check:p1; p2|INFO:runtime folders:x; y'
+    $members = @(); try { $members = @(Get-EoLocalGroupMemberNames 'S-1-5-32-544') } catch { $members = @("threw: $($_.Exception.Message)") }
+    Expect 'verify-host: the members of a local group are listed (Administrators here)' "$($members.Count -ge 1)/$(@($members | Where-Object { "$_".StartsWith('threw') }).Count)" 'True/0'
+    $hva = @(); try { $hva = @(Get-EoLocalGroupMemberNames 'S-1-5-32-578') } catch { $hva = @("threw: $($_.Exception.Message)") }
+    Write-Host "info Hyper-V Administrators here: $(if ($hva.Count) { $hva -join ', ' } else { '(none)' })"
+    Expect 'verify-host: the Hyper-V Administrators list never throws' (@($hva | Where-Object { "$_".StartsWith('threw') }).Count) 0
+
+    # New-EoSecureDir has no create-then-set fallback (it throws instead).
+    $nsd = & $fn $astF 'New-EoSecureDir'
+    Expect 'secure create: New-EoSecureDir has no New-Item, Set-Acl, icacls or CreateDirectory' "$(@(& $cmds $nsd @('New-Item', 'Set-Acl', 'icacls', 'icacls.exe', 'mkdir', 'md')).Count)/$("$($nsd.Extent.Text)".Contains('CreateDirectory'))/$("$($nsd.Extent.Text)".Contains('SetAccessControl'))" '0/False/False'
+    # Test-EoDeletableRoot takes nothing but the path (no way to skip a rule).
+    $tdr = & $fn $astF 'Test-EoDeletableRoot'
+    Expect 'delete guard: Test-EoDeletableRoot takes only the path' ((@($tdr.Parameters) | ForEach-Object { "$($_.Name)" }) -join ',') '$Root'
+    $rvt = & $fn $astF 'Remove-EoVerifiedTree'
+    Expect 'delete guard: Remove-EoVerifiedTree takes only the path' ((@($rvt.Parameters) | ForEach-Object { "$($_.Name)" }) -join ',') '$Root'
+
+    # The evidence writes (_common.ps1): Start-EoLog checks the chain right before the
+    # transcript, which is a new file; Save-EoSnapshot writes through Write-EoNewFile.
+    $sl = & $fn $astC 'Start-EoLog'
+    $slCmds = @($sl.FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] }, $true) | Sort-Object { $_.Extent.StartOffset })
+    $tr = @($slCmds | Where-Object { $_.GetCommandName() -eq 'Start-Transcript' })
+    $trAt = if ($tr.Count) { $tr[0].Extent.StartOffset } else { 0 }
+    $beforeTr = @($slCmds | Where-Object { $_.Extent.StartOffset -lt $trAt } | Select-Object -Last 1 | ForEach-Object { $_.GetCommandName() })
+    Expect 'evidence structure: Start-Transcript once, -LiteralPath -NoClobber, right after a link check of the evidence folder' "$($tr.Count)/$("$(if ($tr.Count) { $tr[0].Extent.Text })".Contains('-LiteralPath $path -NoClobber'))/$($beforeTr -join '')" '1/True/Assert-EoNoLinkChain'
+    Expect 'evidence structure: Start-EoLog no longer forces the folder (New-Item -Force)' ("$($sl.Extent.Text)".Contains('-Force')) $false
+    $ss = & $fn $astC 'Save-EoSnapshot'
+    Expect 'evidence structure: Save-EoSnapshot writes only through Write-EoNewFile' "$(@(& $cmds $ss @('Set-Content', 'Out-File', 'Add-Content')).Count)/$(@(& $cmds $ss @('Write-EoNewFile')).Count)" '0/1'
+    # The gpg home: admin-only scratch folder when elevated, %TEMP% otherwise.
+    $ds = & $fn $astC 'Assert-EoDebianSignature'
+    $ifs = @($ds.FindAll({ param($n) $n -is [System.Management.Automation.Language.IfStatementAst] -and "$($n.Clauses[0].Item1)" -eq '$elevated' }, $true))
+    $inThen = { param($If, [string]$Name) @(& $cmds $If.Clauses[0].Item2 @($Name)).Count }
+    $inElse = { param($If, [string]$Name) $(if ($If.ElseClause) { @(& $cmds $If.ElseClause @($Name)).Count } else { 0 }) }
+    Expect 'gpg structure: two elevation branches (create, clean up)' $ifs.Count 2
+    if ($ifs.Count -eq 2) {
+        Expect 'gpg structure: elevated, the home is New-EoScratchDir ''gpg''; otherwise TEMP' "$(& $inThen $ifs[0] 'New-EoScratchDir')/$(& $inElse $ifs[0] 'New-Item')/$("$($ifs[0].ElseClause.Extent.Text)".Contains('GetTempPath'))" '1/1/True'
+        Expect 'gpg structure: elevated, it is removed with Remove-EoVerifiedTree; Remove-Item only otherwise' "$(& $inThen $ifs[1] 'Remove-EoVerifiedTree')/$(& $inThen $ifs[1] 'Remove-Item')/$(& $inElse $ifs[1] 'Remove-Item')" '1/0/1'
+    }
+    Expect 'gpg structure: elevation decided once, by Test-EoAdmin' ("$($ds.Extent.Text)".Contains('$elevated = Test-EoAdmin')) $true
 
     # Every call to a function returning a list is collected in @() (StrictMode, 0 or 1 results).
-    $listFns = @('Test-EoPathFacts', 'Test-EoChainFacts', 'Test-EoVmTree', 'Test-EoDeletableRoot', 'Get-EoVmChainProblems', 'Get-EoVmTreeProblems', 'Get-EoTreeEntries', 'Get-EoDirNames', 'Get-EoAncestorPaths')
-    foreach ($pair in @(@('02-vm.ps1', $ast02), @('undo-02-vm.ps1', $astU), @('verify-host.ps1', $astV), @('_vmfolder.ps1', $astF))) {
+    $listFns = @('Test-EoPathFacts', 'Test-EoChainFacts', 'Test-EoVmTree', 'Test-EoDeletableRoot', 'Get-EoVmChainProblems', 'Get-EoVmTreeProblems', 'Get-EoTreeEntries', 'Get-EoDirNames', 'Get-EoAncestorPaths', 'Get-EoChainProblems', 'Test-EoUndoPlanStill', 'Test-EoIsoRecord', 'Get-EoLocalGroupMemberNames')
+    foreach ($pair in @(@('02-vm.ps1', $ast02), @('undo-02-vm.ps1', $astU), @('verify-host.ps1', $astV), @('_vmfolder.ps1', $astF), @('_common.ps1', $astC))) {
         $calls = @($pair[1].FindAll({ param($n) $n -is [System.Management.Automation.Language.CommandAst] -and $n.GetCommandName() -in $listFns }, $true))
         $bare = @($calls | Where-Object {
                 $q = $_.Parent; $ok = $false

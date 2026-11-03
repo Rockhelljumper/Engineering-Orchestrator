@@ -24,6 +24,9 @@ $EO = [ordered]@{
     IsoDir       = 'C:\Hyper-V\eo-l2\iso'
     SystemVhd    = 'C:\Hyper-V\eo-l2\eo-l2-system.vhdx'
     AnchorVhd    = 'C:\Hyper-V\eo-l2\eo-l2-anchor.vhdx'
+    # The id of VM eo-l2, written by 02 right after New-VM into the admin-only root, so
+    # undo-02 still knows the VM's account (ConvertTo-EoVmSid) after Remove-VM or a rerun.
+    VmIdFile     = 'C:\Hyper-V\eo-l2\eo-l2.vmid'
     SystemBytes  = 160GB
     AnchorBytes  = 4GB
     MemoryBytes  = 16GB
@@ -117,12 +120,24 @@ function Invoke-EoNative([string]$Exe, [string[]]$Arguments, [switch]$AllowFail)
 # fingerprint is in $EO.DebianCdKeys, using only the key in $KeyFile, in a
 # throwaway gpg home that is removed afterwards. Returns the primary fingerprint;
 # throws otherwise. Used by 03 (after download) and again by 02 (elevated).
+# Where the gpg home goes depends on elevation:
+#   - elevated (02): an admin-only folder $env:ProgramData\eo-l2-gpg-<random>, made with
+#     New-EoScratchDir (ACL set in the create call, read back) and deleted with
+#     Remove-EoVerifiedTree, so no standard user can plant files in it, swap the status
+#     file or redirect the elevated delete through a link;
+#   - not elevated (03): a folder under the user's %TEMP%, as before; gpg runs as that
+#     user there, so protecting the folder from them gains nothing.
 function Assert-EoDebianSignature([string]$Sums, [string]$Sign, [string]$KeyFile) {
     $gpg = 'C:\Program Files\Git\usr\bin\gpg.exe'
     $gpgconf = 'C:\Program Files\Git\usr\bin\gpgconf.exe'
     if (-not (Test-Path $gpg)) { throw "gpg not found at $gpg" }
-    $home_ = Join-Path ([IO.Path]::GetTempPath()) ("eo-l2-gnupg-" + [guid]::NewGuid().ToString('N'))
-    New-Item -ItemType Directory -Path $home_ | Out-Null
+    $elevated = Test-EoAdmin
+    if ($elevated) {
+        $home_ = New-EoScratchDir 'gpg'
+    } else {
+        $home_ = Join-Path ([IO.Path]::GetTempPath()) ("eo-l2-gnupg-" + [guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $home_ | Out-Null
+    }
     # gpg from Git for Windows takes MSYS-style paths.
     $msys = { param($p) $p -replace '^([A-Za-z]):', '/$1' -replace '\\', '/' }
     $gh = & $msys $home_
@@ -145,9 +160,27 @@ function Assert-EoDebianSignature([string]$Sums, [string]$Sign, [string]$KeyFile
     } finally {
         # gpg 2.4 may leave an agent or keyboxd running in the home; stop them first.
         if (Test-Path $gpgconf) { Invoke-EoNative $gpgconf @('--homedir', $gh, '--kill', 'all') -AllowFail | Out-Null }
-        Remove-Item -Recurse -Force $home_ -ErrorAction SilentlyContinue
-        if (Test-Path $home_) { Write-Host "note: could not remove $home_; delete it by hand" }
+        if ($elevated) {
+            try { Remove-EoVerifiedTree $home_ }
+            catch { Write-Host "note: could not remove $home_ ($($_.Exception.Message)); check it holds no link (dir /AL /S) before deleting it by hand" }
+        } else {
+            Remove-Item -Recurse -Force $home_ -ErrorAction SilentlyContinue
+            if (Test-Path $home_) { Write-Host "note: could not remove $home_; delete it by hand" }
+        }
     }
+}
+
+# Problems with the ISO record 03 wrote (verified.json, in a folder the standard user
+# can write): iso must be a plain file name of letters, digits, '.', '_' and '-' ending
+# in .iso, without '..', so Join-Path cannot leave the download or iso folder; sha256
+# must be 64 lowercase hex digits. Pure.
+function Test-EoIsoRecord($Record) {
+    $p = New-Object System.Collections.Generic.List[string]
+    $iso = Get-EoProp $Record 'iso'
+    $sha = Get-EoProp $Record 'sha256'
+    if ($iso -isnot [string] -or $iso -cnotmatch '\A[A-Za-z0-9._-]+\.iso\z' -or $iso.Contains('..')) { $p.Add("verified.json names the ISO '$iso', want a plain file name (letters, digits, '.', '_', '-', ending in .iso, no '..')") }
+    if ($sha -isnot [string] -or $sha -cnotmatch '\A[0-9a-f]{64}\z') { $p.Add("verified.json gives sha256 '$sha', want 64 lowercase hex digits") }
+    return $p
 }
 
 function Test-EoAdmin {
@@ -163,11 +196,19 @@ function Assert-EoNotAdmin {
     if (Test-EoAdmin) { throw 'Run this step from a normal (not elevated) PowerShell. Nothing was changed.' }
 }
 
+# The evidence folder is in the user profile, so a standard user (or anything running
+# as them) can replace it, or a folder above it, with a link to an admin-only place,
+# and most steps write there elevated. So no folder from the drive root down to it may
+# be a link, checked again immediately before the transcript starts, and the
+# transcript must be a new file (an existing one is refused; -NoClobber as well).
 function Start-EoLog([string]$Step) {
-    New-Item -ItemType Directory -Force -Path $EO.Evidence | Out-Null
+    Assert-EoNoLinkChain $EO.Evidence 'the evidence folder'
+    if ($null -eq (Get-EoEntryAttributes $EO.Evidence)) { New-Item -ItemType Directory -Path $EO.Evidence | Out-Null }
     $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')
     $path = Join-Path $EO.Evidence "$stamp-$Step.transcript.txt"
-    Start-Transcript -Path $path | Out-Null
+    if ($null -ne (Get-EoEntryAttributes $path)) { throw "Refusing to start the transcript: $path already exists (it is never overwritten). Nothing was changed." }
+    Assert-EoNoLinkChain $EO.Evidence 'the evidence folder'
+    Start-Transcript -LiteralPath $path -NoClobber | Out-Null
     Write-Host "eo-l2 step: $Step"
     Write-Host "transcript: $path"
     Write-Host "user: $([Security.Principal.WindowsIdentity]::GetCurrent().Name)  elevated: $(Test-EoAdmin)"
@@ -225,9 +266,14 @@ function Get-EoSnapshot {
     return $s
 }
 
+# Written as a new file by Write-EoNewFile (no link from the drive root down to the
+# evidence folder, never over an existing file), in the format Set-Content -Encoding
+# UTF8 wrote before: the JSON and a line break, with a byte order mark on Windows
+# PowerShell 5.1 and without one on PowerShell 7.
 function Save-EoSnapshot([string]$Stamp, [string]$Label) {
     $path = Join-Path $EO.Evidence "$Stamp-$Label.snapshot.json"
-    Get-EoSnapshot | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 -Path $path
+    $json = Get-EoSnapshot | ConvertTo-Json -Depth 6
+    Write-EoNewFile $path ("$json" + [Environment]::NewLine) $EO.Evidence -Bom:($PSVersionTable.PSEdition -eq 'Desktop')
     Write-Host "snapshot: $path"
     return $path
 }

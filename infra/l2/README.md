@@ -112,13 +112,55 @@ To undo everything, run in this order: `undo-02-vm.ps1` (elevated; deletes the g
 
 The VM, its disks and the ISO live in `C:\Hyper-V\eo-l2`. `C:\` lets every authenticated user create folders and gives them Modify, delete included, on whatever inherits from it, so a `C:\Hyper-V` with the inherited ACL, or one a standard user made, could be renamed or replaced and a planted VM folder opened by Hyper-V; and a junction anywhere in the path would send an elevated delete elsewhere (measured on RH-DT-M3: `Remove-Item` through a junction deletes the redirected target, for example `C:\ProgramData\eo-l2` with the 01b/01c records). The rules are in `host/_vmfolder.ps1`:
 
-- **No link.** No folder from `C:\` down to `C:\Hyper-V\eo-l2\iso` may be a reparse point (junction, symbolic link, mount point). Each level is checked on its own, because a path through a junction reads like the real one. 02 checks before its plan and again immediately before each create, the ISO copy, each `New-VHD`, `New-VM` and the attach calls.
+- **No link.** No folder from `C:\` down to `C:\Hyper-V\eo-l2\iso` may be a reparse point (junction, symbolic link, mount point). Each level is checked on its own, because a path through a junction reads like the real one. 02 checks before its plan and again immediately before each create, the ISO copy, each `New-VHD`, `New-VM`, the VM id record and the attach calls.
 - **`C:\Hyper-V`.** When absent, 02 creates it with its ACL in the create call itself (owner Administrators; inheritance off; full control for Administrators and SYSTEM; read and execute for Users; nothing else) and reads it back. When present, 02 uses it only if it is owned by Administrators, SYSTEM or TrustedInstaller and no other account has a write-class right (write, append, delete, delete child, write attributes, change permissions, take ownership, or a generic write or all) in any entry, inherited or not. Read-only entries for others are accepted, and so is an inherit-only CREATOR OWNER entry (it stands for whoever creates a child, which the rule limits to administrators). Other folders in it (other VMs) are left alone. With no write right for standard users there, none can rename, replace or write into anything below it, which closes the window between each check and the next call to all but administrators.
-- **`eo-l2` and `iso`.** Created the same way: owner Administrators, inheritance off, Administrators and SYSTEM only; each read back (owner, ACL, empty, no link) before use.
-- **Disks, ISO and VM configuration.** Owner Administrators, SYSTEM or the VM's own account; access for Administrators, SYSTEM and the VM's own account `NT VIRTUAL MACHINE\<VM id>` (`S-1-5-83-1-...`), which Hyper-V adds when it attaches them, only. 02 checks this at its end, verify-host on every full check.
-- **Contents.** `eo-l2` may hold only `eo-l2-system.vhdx`, `eo-l2-anchor.vhdx`, `iso\*.iso` and `eo-l2\Virtual Machines` and `eo-l2\Snapshots` (what `New-VM -Path` creates; 02 prints the tree it found so the first run records the real layout).
-- **Undo.** `undo-02-vm.ps1` checks all of the above before its plan, after the confirmation and after `Remove-VM`, and stops on any finding. It then deletes `C:\Hyper-V\eo-l2` entry by entry, deepest first, re-checking each entry and every folder above it for a link right before each delete, folders only when empty; it never runs a recursive `Remove-Item`, and it refuses outright to delete the 01b/01c record folder, the evidence folder, ProgramData, Windows or the user profile. `C:\Hyper-V` stays.
-- **What remains.** An administrator could still swap a folder for a junction between the last re-check and the next call; PowerShell offers no handle-relative create or delete to close that.
+- **Creating a folder with its ACL in one step, or not at all.** 02 and the scratch folders below use `DirectoryInfo.Create(DirectorySecurity)` (Windows PowerShell 5.1) or `FileSystemAclExtensions.Create` (PowerShell 7). An edition with neither makes the step throw before it creates anything; there is no create-then-set-ACL fallback, because in that window a standard user could open a handle that keeps its access.
+- **`eo-l2` and `iso`.** Created the same way: owner Administrators, inheritance off, Administrators and SYSTEM only; each read back (owner, ACL, empty, no link) before use. Later only this VM's own account may be added (Hyper-V may add it), with read and list rights at most.
+- **This VM's own account.** Hyper-V gives each VM an account `NT VIRTUAL MACHINE\<VM id>`. Its SID is built from the VM id (`(Get-VM eo-l2).Id`): `S-1-5-83-1-` and the id's 16 bytes (`Guid.ToByteArray`) read as four little-endian UInt32, joined by `-` (`ConvertTo-EoVmSid`; for example `3d1cfb06-8390-426d-8579-bd79b6bf3aa4` gives `S-1-5-83-1-1025309446-1114473360-2042460549-2755313590`). Only that SID is accepted, and only once the VM exists; another VM's account and the Virtual Machines group (`S-1-5-83-0`) never are. Right after `New-VM`, 02 writes the id to `C:\Hyper-V\eo-l2\eo-l2.vmid` (a new file in the admin-only folder, never overwritten) so the undo still knows the account after `Remove-VM`, or on a rerun after the VM is gone; when both exist, the record and the VM id must agree.
+- **Disks, ISO and VM configuration.** Owner Administrators, SYSTEM or this VM's account; access for Administrators, SYSTEM and this VM's account only. 02 checks this at its end, verify-host on every full check. 02 prints the actual ACL (`icacls`) of every level of the chain and every path under `eo-l2` to the transcript, at its end and when it stops after a change, so the first run records what Hyper-V really added.
+- **Contents.** `eo-l2` may hold only `eo-l2-system.vhdx`, `eo-l2-anchor.vhdx`, `eo-l2.vmid`, `iso\*.iso` and `eo-l2\Virtual Machines` and `eo-l2\Snapshots` (what `New-VM -Path` creates; 02 prints the tree it found so the first run records the real layout). Every folder must be listable, except, while the VM runs, its runtime folder `eo-l2\Virtual Machines\<id>`: verify-host then shows it as an INFO row.
+- **The ISO record and SHA256SUMS.** `verified.json` sits in the standard user's download folder, so 02 accepts its ISO name only as a plain file name (`\A[A-Za-z0-9._-]+\.iso\z`, no `..`). It copies `SHA256SUMS`, `SHA256SUMS.sign` and the key once into an admin-only folder `%ProgramData%\eo-l2-sums-<random>`, verifies the signature on that copy, reads the hash line from the same copy, hashes the source ISO, and hashes the copy in `iso` again. The folder is deleted again before the plan.
+- **Undo.** `undo-02-vm.ps1`, in this order: (1) before the plan, the chain has no link, the VM id comes from Hyper-V or the record, and all of the above holds; a running VM's unreadable runtime folder is only listed in the plan, not passed as checked. (2) After the typed confirmation, the same checks again, and the plan must still be true: the VM and the folder present or absent as listed, with the same VM id; otherwise it stops and must be run again for a new plan. (3) `Stop-VM -TurnOff`, `Remove-VM`. (4) The full strict check, every folder now readable. (5) The delete: entry by entry, deepest first, re-checking each entry and every folder above it for a link right before each delete, folders only when empty; never a recursive `Remove-Item`. Any failed check stops it and prints the actual ACLs. The delete refuses outright the 01b/01c record folder, the evidence folder, ProgramData, Windows, the user profile, any path with `~` (8.3 names), or anything holding them; there is no parameter to skip that. The only ProgramData folders it accepts are the admin-only scratch folders `eo-l2-gpg-`, `eo-l2-sums-` and `eo-l2-selftest-` followed by 32 hex digits. `C:\Hyper-V` stays.
+- **verify-host** also lists, as an INFO row that never fails, the members of Hyper-V Administrators (`S-1-5-32-578`); they can manage VMs and their files without being administrators. Whether that list is acceptable is the operator's call; nothing checks it.
+- **What remains.** An administrator could still swap a folder for a junction between the last re-check and the next call; PowerShell offers no handle-relative create or delete to close that. The Hyper-V layout (which folders New-VM creates, which ACL entries Hyper-V adds and where) is taken from the documentation and has not yet been seen on RH-DT-M3; the first 02 run prints it, and a difference makes 02 fail its final check, not pass silently.
+
+#### Recovering from a refused undo-02
+
+When `undo-02-vm.ps1` refuses (a link, an unexpected owner, ACL entry or file, a VM id mismatch, a folder it cannot list), it changes nothing, or, when it refuses after `Remove-VM`, it deletes nothing. First find out who changed the folders and why; do not delete anything through a link. If the content is to be removed anyway, this is an **attended manual procedure**, done by the operator in an elevated `cmd.exe`, one command at a time, reading each output before the next:
+
+1. Make sure nothing in the path is a link. Each of these must list no `<JUNCTION>`, `<SYMLINKD>` or `<SYMLINK>` entry (an empty listing, or "File Not Found", is the good result):
+   ```bat
+   dir /AL C:\
+   dir /AL C:\Hyper-V
+   dir /AL /S C:\Hyper-V\eo-l2
+   ```
+   If any link shows, stop and investigate; do not go on.
+2. Take ownership for Administrators, drop every explicit entry below the folder, and make `eo-l2` and `iso` protected and admin-only (everything below them then inherits Administrators and SYSTEM only):
+   ```bat
+   takeown /F C:\Hyper-V\eo-l2 /A /R /D Y
+   icacls C:\Hyper-V\eo-l2 /reset /T /C
+   icacls C:\Hyper-V\eo-l2 /grant:r *S-1-5-32-544:(OI)(CI)F *S-1-5-18:(OI)(CI)F
+   icacls C:\Hyper-V\eo-l2 /inheritance:r
+   icacls C:\Hyper-V\eo-l2\iso /grant:r *S-1-5-32-544:(OI)(CI)F *S-1-5-18:(OI)(CI)F
+   icacls C:\Hyper-V\eo-l2\iso /inheritance:r
+   icacls C:\Hyper-V\eo-l2 /T
+   ```
+   (skip the two `iso` lines when there is no `iso` folder). The last line lists the result: owner aside, only `BUILTIN\Administrators` and `NT AUTHORITY\SYSTEM` may appear. Then repeat step 1 (the listing must still show no link).
+3. Check `C:\Hyper-V` itself (`icacls C:\Hyper-V`): owner an administrator, no write-class right for any other account. Fix it the same way if not, without touching other VMs' folders inside it.
+4. Run `undo-02-vm.ps1` again and read its plan; it must now pass its checks and delete the folder itself. Do not delete the folder by hand.
+
+The procedure resets every ACL under `C:\Hyper-V\eo-l2`, so run it only once the guest and its disks are to be destroyed. It never touches `C:\ProgramData\eo-l2` or the evidence folder.
+
+### Elevated writes into the evidence and download folders
+
+`%USERPROFILE%\eo-l2-evidence` and `%USERPROFILE%\Downloads\eo-l2-iso` belong to the standard user, and most steps write or read there elevated. So (in `host/_common.ps1`, for every step):
+
+- Before each transcript and snapshot, no folder from `C:\` down to the evidence folder may be a link (each level checked); the transcript's chain is checked again immediately before `Start-Transcript`.
+- Each evidence file is created new (`FileMode.CreateNew`, `Start-Transcript -NoClobber`); an existing file of that name is refused, never overwritten. File names and formats are unchanged (the snapshot is the same JSON, with a byte order mark on Windows PowerShell 5.1 and without one on PowerShell 7, as `Set-Content -Encoding UTF8` wrote it).
+- The elevated gpg check (02) keeps its gpg home and status file in an admin-only `%ProgramData%\eo-l2-gpg-<random>`, made with its ACL in the create call and deleted with the link-checked delete. Not elevated (03), it uses `%TEMP%` as before: gpg runs as that user there, so protecting the folder from them would gain nothing.
+- 02 reads nothing in the download folder through a link (see *The ISO record and SHA256SUMS* above).
+
+Not covered: 01b, 01c, their undos, 03 and 05 also copy or move files into the evidence folder themselves (for example 01c's closed record); those lines are unchanged here, so only the chain check at their start (in `Start-EoLog`) protects them, not a check right before each write.
 
 ### The filter guard record and its undo
 

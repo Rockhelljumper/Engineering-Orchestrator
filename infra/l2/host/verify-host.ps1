@@ -9,7 +9,8 @@
 #   that may override block rules; and the VM folders (step 02): no link (reparse
 #   point) from C:\ down to C:\Hyper-V\eo-l2\iso, C:\Hyper-V admin-protected, eo-l2
 #   and iso Administrators and SYSTEM only, disks, ISO and VM configuration for
-#   Administrators, SYSTEM and the VM's own account only. -SwitchOnly runs only the switch and host
+#   Administrators, SYSTEM and the VM's own account only; an INFO row lists the members
+#   of Hyper-V Administrators (S-1-5-32-578) without judging them. -SwitchOnly runs only the switch and host
 #   checks (used by 01, 01b and 01c, before the VM exists). The host guard (01b) is
 #   required; only 01-switch.ps1, which runs before 01b, passes -BeforeGuard.
 #   The filter guard (01c, B9-R1) is checked whenever its record exists, always in
@@ -125,12 +126,20 @@ try {
         Row 'No assigned (passthrough) devices' ($assigned -eq 0) "$assigned"
         Row 'Nested virtualization off' (-not (Get-VMProcessor -VMName $EO.VmName).ExposeVirtualizationExtensions) ''
         # The VM folder chain (02, rules in _vmfolder.ps1): no link from C:\ down, C:\Hyper-V
-        # admin-protected, eo-l2 and iso Administrators and SYSTEM only, the disks, the ISO
-        # and the VM configuration with at most Hyper-V's per-VM account added, and
-        # nothing in eo-l2 that 02 and Hyper-V did not put there.
+        # admin-protected, eo-l2 and iso Administrators and SYSTEM only (this VM's own
+        # account read at most), the disks, the ISO and the VM configuration with at most
+        # this VM's own account added (from its id; no other VM's account), and nothing in
+        # eo-l2 that 02 and Hyper-V did not put there. 'INFO ' entries are notes.
         $vf = $null
-        try { $vf = Get-EoVmFolderReport } catch { $vf = [ordered]@{ 'VM folders: owner, ACL and link checks' = @("not read: $($_.Exception.Message)") } }
-        foreach ($k in $vf.Keys) { $vp = @($vf[$k]); Row $k ($vp.Count -eq 0) ($vp -join '; ') }
+        try { $vf = Get-EoVmFolderReport "$(if ($vm) { $vm.Id })" } catch { $vf = [ordered]@{ 'VM folders: owner, ACL and link checks' = @("not read: $($_.Exception.Message)") } }
+        foreach ($k in $vf.Keys) {
+            $vp = @($vf[$k])
+            if ("$k".StartsWith('INFO ')) { $rows.Add([pscustomobject]@{ Result = 'INFO'; Check = "$k".Substring(5); Detail = ($vp -join '; ') }) }
+            else { Row $k ($vp.Count -eq 0) ($vp -join '; ') }
+        }
+        # Read only, not a check: who may manage Hyper-V without being an administrator.
+        $hva = @(Get-EoLocalGroupMemberNames 'S-1-5-32-578')
+        $rows.Add([pscustomobject]@{ Result = 'INFO'; Check = 'Hyper-V Administrators (S-1-5-32-578) members (listed, not checked)'; Detail = $(if ($hva.Count) { $hva -join ', ' } else { '(none)' }) })
     }
     $rows | Format-Table -AutoSize -Wrap | Out-String -Width 220 | Write-Host
     if (-not $SwitchOnly) { Get-VMNetworkAdapter -VMName $EO.VmName | Format-List VMName, Name, SwitchName, MacAddress, Status, IPAddresses | Out-String | Write-Host }
