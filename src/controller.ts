@@ -657,8 +657,12 @@ export class Controller {
     const judges: Judges = { verifier: opts.verifier, reviewer: opts.reviewer };
     this.resume();
     this.journal.append('run.start', { owner: this.owner, runner: runner.kind, verifier: String(judges.verifier.kind), reviewer: String(judges.reviewer.kind) });
-    // Attempts a crash left between their end and their verdicts: judge them now (once each),
-    // in a run for the repository their plan was approved for.
+    // Attempts a crash left between their end and their verdicts: judge them now, in a run for
+    // the repository their plan was approved for. Judging is at-least-once, not once: a judge
+    // whose answer was not yet journaled (a crash between the judge returning and the
+    // verify.verdict/review.verdict append) is asked again here. The fake judges are
+    // deterministic; M3's real judges must be idempotent, or record their result durably
+    // before the controller uses it.
     for (const t of this.store.list()) {
       if (this.awaitingStage(t) !== undefined && this.planIndex.get(t.id)?.repoPath === runRepo) await this.adjudicate(t.id, judges);
     }
@@ -779,7 +783,14 @@ export class Controller {
   /**
    * Advance a task, asking the controller's verifier and reviewer for each verdict it needs,
    * and journaling each verdict before it is applied. A verdict already journaled for this
-   * attempt is never asked for again, so a crash or a second call applies it once.
+   * attempt is never asked for again and is applied once, whatever crashes. A judge may still
+   * be asked more than once (at-least-once): a crash after it answers but before its verdict
+   * is journaled loses the answer, and the next run asks again.
+   *
+   * Known limitation (before M5): judges run after the attempt's lease heartbeat has stopped
+   * (runAttempt clears it before calling this), so a judge can hold the claim for up to
+   * timeouts.invocationMs while the lease (leaseMs) lapses. Harmless with M1's one sequential
+   * controller; it must be fixed before M5 runs workers concurrently.
    */
   private async adjudicate(taskId: string, judges: Judges): Promise<void> {
     for (let guard = 0; guard < 8; guard++) {

@@ -15,7 +15,10 @@ import type { Plan } from '../../src/plan.ts';
  * right after each journal record of interest: between a run's completion (attempt.end) and
  * its verdict, between a verdict and the evidence seal or transition it leads to, and after
  * the review verdict. After `eo resume` and `eo run`, the attempt is never run again, no spend
- * is settled twice, each verdict is asked for exactly once and none is lost.
+ * is settled twice, each verdict is asked for exactly once and none is lost. (Exactly once
+ * holds here because every crash point follows a journal append. A crash between a judge
+ * answering and its verdict being journaled makes the next run ask it again: judging is
+ * at-least-once, see docs/05.)
  */
 
 const plan: Plan = { epicId: 'E1', title: 'verdicts', tasks: [{ id: 'A', title: 'a', deps: [] }] };
