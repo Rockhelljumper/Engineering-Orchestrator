@@ -1,6 +1,6 @@
 # 04 — Milestone integration and dependency-aware plan (Task E)
 
-Updated 2026-11-03 after owner decisions F-1 to F-6.
+Updated 2026-11-03 after owner decisions F-1 to F-6, the 01c run and the Step 02 preflight.
 
 ## PX-K0..K6 mapped onto M8
 
@@ -41,8 +41,9 @@ Phase B: 02 VM → 04a →          M2-1 arg builder, role profiles          │
 
 ## Ordered next steps
 
-1. **01c** (Track 1): operator runs it; independent evidence review; then a separate approval for step 02.
-2. **Verdict separation** (Track 2): draft PR, owner review, merge on separate approval. Unblocks M2-1 and K2.
+1. **01c** (Track 1): **done** 2026-11-03 19:22Z, accepted, evidence reviewed and archived.
+1a. **Step 02 parent-folder ACL fix** (Track 1, blocking): `02-vm.ps1` must create or verify an admin-only `C:\Hyper-V` and refuse reparse points; `undo-02` gets the same checks. Code and review in PR #4, then a separate authorization for the attended 02 run.
+2. **Verdict separation** (Track 2): draft PR #7, owner review, merge on separate approval. Unblocks M2-1 and K2.
 3. **Independent review of ADR-005..010** (Track 3): findings applied; owner marks them final.
 4. **Provisioning log** in PR #4 (docs only) so the repo carries the audit trail.
 5. **Phase B steps 02..verify**, each with its own approval, interleaved with M2-1..M2-8 code work (no dependency between them until M2-9/M2-10).
