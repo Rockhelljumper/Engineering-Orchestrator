@@ -12,6 +12,23 @@ $failures = New-Object System.Collections.Generic.List[string]
 function Expect([string]$Name, $Actual, $Expected) {
     if ("$Actual" -ceq "$Expected") { Write-Host "ok   $Name" } else { Write-Host "FAIL $Name (got '$Actual', want '$Expected')"; $failures.Add($Name) }
 }
+$skips = New-Object System.Collections.Generic.List[string]
+function Skip([string]$Name, [string]$Why) { Write-Host "skip $Name ($Why)"; $skips.Add($Name) }
+
+# Makes a test folder unlistable: inheritance off and an explicit deny of List folder
+# for Everyone. Returns whether this process really cannot list it now: an account
+# holding an enabled privilege such as SeBackupPrivilege lists it anyway, and the
+# checks that need an unlistable folder are then reported as skipped, not passed.
+function Lock-EoTestDir([string]$Path) {
+    Invoke-EoNative icacls.exe @($Path, '/inheritance:r') | Out-Null
+    Invoke-EoNative icacls.exe @($Path, '/deny', '*S-1-1-0:(RD)') | Out-Null
+    try { $null = [System.IO.Directory]::GetFileSystemEntries($Path); return $false } catch { return $true }
+}
+function Unlock-EoTestDir([string]$Path, [string]$Sid) {
+    Invoke-EoNative icacls.exe @($Path, '/remove:d', '*S-1-1-0') -AllowFail | Out-Null
+    Invoke-EoNative icacls.exe @($Path, '/grant', "*${Sid}:(OI)(CI)F") -AllowFail | Out-Null
+}
+$lockWhy = 'this account lists a folder whose ACL denies it, so no folder here is unlistable'
 
 Write-Host "PowerShell $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))"
 
@@ -1372,15 +1389,18 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
         $ud = Join-Path $base 'unlisted'
         New-Item -ItemType Directory -Path (Join-Path $ud 'eo-l2\Virtual Machines\locked') | Out-Null
         $locked = Join-Path $ud 'eo-l2\Virtual Machines\locked'
-        Invoke-EoNative icacls.exe @($locked, '/inheritance:r') | Out-Null
         try {
-            $te = @(Get-EoTreeEntries $ud -Tolerant)
-            Expect 'vm live: an unlistable folder is marked Unreadable with -Tolerant' ((@($te | Where-Object { $_.Unreadable } | ForEach-Object { $_.Rel })) -join ',') 'eo-l2\Virtual Machines\locked'
-            Expect 'vm live: ... and passes Test-EoVmTree -AllowUnreadable only there' "$(@(Test-EoVmTree $te -AllowUnreadable -Root $ud).Count)/$(VHit @(Test-EoVmTree $te -Root $ud) 'could not be listed')" '0/True'
-            $threw = $false; try { $null = @(Get-EoTreeEntries $ud) } catch { $threw = $true }
-            Expect 'vm live: without -Tolerant an unlistable folder throws' $threw $true
+            if (Lock-EoTestDir $locked) {
+                $te = @(Get-EoTreeEntries $ud -Tolerant)
+                Expect 'vm live: an unlistable folder is marked Unreadable with -Tolerant' ((@($te | Where-Object { $_.Unreadable } | ForEach-Object { $_.Rel })) -join ',') 'eo-l2\Virtual Machines\locked'
+                Expect 'vm live: ... and passes Test-EoVmTree -AllowUnreadable only there' "$(@(Test-EoVmTree $te -AllowUnreadable -Root $ud).Count)/$(VHit @(Test-EoVmTree $te -Root $ud) 'could not be listed')" '0/True'
+                $threw = $false; try { $null = @(Get-EoTreeEntries $ud) } catch { $threw = $true }
+                Expect 'vm live: without -Tolerant an unlistable folder throws' $threw $true
+            } else {
+                Skip 'vm live: an unlistable folder is marked Unreadable with -Tolerant, and throws without it' $lockWhy
+            }
         } finally {
-            Invoke-EoNative icacls.exe @($locked, '/grant', "*$([Security.Principal.WindowsIdentity]::GetCurrent().User.Value):(OI)(CI)F") -AllowFail | Out-Null
+            Unlock-EoTestDir $locked ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value)
         }
 
         # The fail-closed create: an edition with no one-step secure create gets a throw
@@ -1426,10 +1446,14 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
                 $sl = Join-Path $sb 'unlisted'
                 New-Item -ItemType Directory -Path (Join-Path $sl 'eo-l2\locked') | Out-Null
                 Set-Content -LiteralPath (Join-Path $sl 'eo-l2\locked\inside.txt') -Value 'x'
-                Invoke-EoNative icacls.exe @((Join-Path $sl 'eo-l2\locked'), '/inheritance:r') | Out-Null
-                $msg = ''; try { Remove-EoVerifiedTree $sl } catch { $msg = $_.Exception.Message }
-                Invoke-EoNative icacls.exe @((Join-Path $sl 'eo-l2\locked'), '/grant', '*S-1-5-32-544:(OI)(CI)F') -AllowFail | Out-Null
-                Expect 'vm delete (elevated): Remove-EoVerifiedTree refuses a tree it cannot list, deleting nothing' "$($msg -ne '')/$(Test-Path -LiteralPath (Join-Path $sl 'eo-l2\locked\inside.txt'))" 'True/True'
+                if (Lock-EoTestDir (Join-Path $sl 'eo-l2\locked')) {
+                    $msg = ''; try { Remove-EoVerifiedTree $sl } catch { $msg = $_.Exception.Message }
+                    Unlock-EoTestDir (Join-Path $sl 'eo-l2\locked') 'S-1-5-32-544'
+                    Expect 'vm delete (elevated): Remove-EoVerifiedTree refuses a tree it cannot list, deleting nothing' "$($msg -ne '')/$(Test-Path -LiteralPath (Join-Path $sl 'eo-l2\locked\inside.txt'))" 'True/True'
+                } else {
+                    Unlock-EoTestDir (Join-Path $sl 'eo-l2\locked') 'S-1-5-32-544'
+                    Skip 'vm delete (elevated): Remove-EoVerifiedTree refuses a tree it cannot list, deleting nothing' $lockWhy
+                }
 
                 # Without the junction the same tree goes, read-only file included.
                 [System.IO.Directory]::Delete($sinner, $false)
@@ -1695,6 +1719,11 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
     }
 }
 
+if ($skips.Count) {
+    Write-Host "$($skips.Count) check(s) skipped: $($skips -join '; ')"
+    $priv = @(Invoke-EoNative whoami.exe @('/priv') -AllowFail | Where-Object { $_ -match 'SeBackupPrivilege|SeRestorePrivilege' })
+    foreach ($l in $priv) { Write-Host "info $($l.Trim())" }
+}
 if ($failures.Count) { Write-Host "$($failures.Count) failure(s)"; exit 1 }
-Write-Host 'all host-script self-tests passed'
+if ($skips.Count) { Write-Host ('all host-script self-tests passed ({0} skipped)' -f $skips.Count) } else { Write-Host 'all host-script self-tests passed' }
 exit 0
