@@ -424,7 +424,9 @@ test('M2-0b: a state root made before M2-0b is refused until an operator adopts 
   assert.equal(headOf(root)?.journalSeq, records.length);
   fs.rmSync(root, { recursive: true });
   fs.cpSync(old, root, { recursive: true });
-  assert.throws(() => Controller.open(root, { adopt: { by: 'operator' } }), /the journal ends at seq 2, behind its anchored head at seq 3/);
+  // The head is the adopted journal's last record (the anchor binding, then the format marker).
+  assert.deepEqual(records.slice(2).map((r) => r.type), ['anchor.bound', 'journal.format']);
+  assert.throws(() => Controller.open(root, { adopt: { by: 'operator' } }), new RegExp(`the journal ends at seq 2, behind its anchored head at seq ${records.length}\\b`));
 });
 
 test('M2-0b: a fresh anchor is created whole: a leftover temporary file is ignored and two opens agree on one key', () => {

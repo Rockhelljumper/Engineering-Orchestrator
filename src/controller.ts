@@ -69,8 +69,20 @@ interface AppliedVerdict {
   seq: number;
 }
 
+/** Shaped like an M1 completed result (verdicts embedded). Honoured only before the format marker; see legacyResult. */
 function isLegacyResult(r: AttemptEndRecord['result']): r is LegacyCompletedResult {
   return r.kind === 'completed' && Object.hasOwn(r, 'verification');
+}
+
+/**
+ * The journal format marker. The first open by code that keeps verdicts out of runner results
+ * appends one (`{verdictSplit: 1}`); every attempt.end after it was written by such code, so
+ * one with embedded verdicts after the marker cannot be a legacy record and is escalated as
+ * tampering instead of replayed.
+ */
+export const JOURNAL_FORMAT = 'journal.format';
+export interface JournalFormatRecord {
+  verdictSplit: 1;
 }
 
 export type EscalationCategory = 'budget' | 'attempts' | 'repeated-failure' | 'infra' | 'evidence' | 'policy';
@@ -312,6 +324,10 @@ export class Controller {
     const bound = this.journal.ofType<{ kind: string }>('store.bound')[0];
     if (!bound) this.journal.append('store.bound', { kind: this.store.kind });
     else if (bound.data.kind !== this.store.kind) throw new ControllerError(`this state root uses the ${bound.data.kind} store, not ${this.store.kind}`);
+    // From here on no attempt.end may carry runner verdicts (see JOURNAL_FORMAT). Records
+    // already in the journal, from M1 code, keep being replayed as they were written.
+    const format = this.journal.ofType<JournalFormatRecord>(JOURNAL_FORMAT)[0] ?? this.journal.append<JournalFormatRecord>(JOURNAL_FORMAT, { verdictSplit: 1 });
+    this.formatSeq = format.seq;
     // A crash can leave the journal's last transition unapplied. Finish it now (after the checks above, so an open that fails writes no task), so a command
     // run before resume (eo unblock) cannot journal a transition after it and make it look
     // like an older one that was never applied.
@@ -321,6 +337,19 @@ export class Controller {
 
   /** Task facts as approved in journaled plans; authoritative over the store's copy. */
   private planIndex: Map<string, PlannedTask>;
+  /** Seq of the journal format marker; legacy-shaped attempt ends are honoured only before it. */
+  private readonly formatSeq: number;
+
+  /** The M1 result of an attempt end journaled before the format marker, if it is one. */
+  private legacyResult(end: JournalRecord<AttemptEndRecord>): LegacyCompletedResult | undefined {
+    const r = end.data.result;
+    return isLegacyResult(r) && end.seq < this.formatSeq ? r : undefined;
+  }
+
+  /** A legacy-shaped attempt end journaled after the format marker: no code writes one, so it is tampering. */
+  private forgedLegacyEnd(end: JournalRecord<AttemptEndRecord>): boolean {
+    return isLegacyResult(end.data.result) && end.seq > this.formatSeq;
+  }
 
   /** Acquire the controller lock and open state. Throws if another controller is running. */
   static open(root: string, opts: ControllerOpenOptions = {}): Controller {
@@ -742,7 +771,7 @@ export class Controller {
     const stage: VerdictStage | undefined = t.state === 'verifying' ? 'verification' : t.state === 'reviewing' ? 'review' : undefined;
     if (stage === undefined) return undefined;
     const end = this.attemptEnd(t.id, t.attempt);
-    if (!end || end.data.result.kind !== 'completed') return undefined;
+    if (!end || end.data.result.kind !== 'completed' || isLegacyResult(end.data.result)) return undefined;
     if (this.verdictFor(stage, t.id, t.attempt) !== undefined || this.rejectedVerdict(stage, t.id, t.attempt, end.seq) !== undefined) return undefined;
     return stage;
   }
@@ -812,11 +841,12 @@ export class Controller {
   private verdictFor(stage: VerdictStage, taskId: string, attempt: number): AppliedVerdict | undefined {
     const end = this.attemptEnd(taskId, attempt);
     if (!end) return undefined;
-    const r = end.data.result;
-    if (isLegacyResult(r)) {
+    const r = this.legacyResult(end);
+    if (r) {
       const legacy = { judge: 'M1: scripted', kind: 'M1', seq: end.seq };
       return stage === 'verification' ? { verdict: r.verification.verdict, signature: r.verification.signature, ...legacy } : { verdict: r.review.verdict, signature: null, ...legacy };
     }
+    if (isLegacyResult(end.data.result)) return undefined;
     const rec = this.journal
       .ofType<VerdictRecord>(VERDICT_RECORD[stage])
       .find((x) => x.data.stage === stage && x.data.taskId === taskId && x.data.attempt === attempt && x.data.endSeq === end.seq && x.data.source === 'controller');
@@ -859,6 +889,17 @@ export class Controller {
       }
       const L = this.policy.limits;
       const r = end.result;
+      if (this.forgedLegacyEnd(endRec)) {
+        if (t.state !== 'implementing' && t.state !== 'verifying' && t.state !== 'reviewing') return changed;
+        this.escalate(
+          taskId,
+          t.state,
+          'evidence',
+          `attempt.end ${taskId}#${end.attempt} (seq ${endRec.seq}) carries runner verdicts, which only a journal from before the verdict split can hold, but it follows the format marker (seq ${this.formatSeq})`,
+          'The journal holds an attempt end no controller of this version writes; investigate tampering?',
+        );
+        return true;
+      }
       if (r.kind === 'infra') {
         if (t.state !== 'implementing') return changed;
         const infraFailures = t.infraFailures + 1;
@@ -962,6 +1003,7 @@ export class Controller {
     const r = end.result;
     if (r.kind !== 'completed') return null;
     if (isLegacyResult(r)) {
+      // verdictFor gave a verdict for this end, so it precedes the format marker.
       // An attempt an M1 controller ended before a crash: seal it as that code did.
       const entries = [
         this.evidence.writeArtifact(t.id, end.attempt, 'runner-result.json', JSON.stringify(r, null, 2)),
