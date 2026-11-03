@@ -1543,7 +1543,7 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
     $conf = @(& $cmds $ast02 @('Confirm-EoPlan'))[0].Extent.StartOffset
     $allActs = @(& $cmds $ast02 @('New-EoSecureDir', 'Copy-Item', 'New-VHD', 'New-VM', 'Write-EoNewFile', 'Add-VMHardDiskDrive', 'Add-VMDvdDrive'))
     $early = @($allActs | Where-Object { $_.Extent.StartOffset -lt $conf })
-    Expect '02 structure: before the confirmation only the copies into the admin-only sums folder' (($early | ForEach-Object { "$($_.GetCommandName()):$($_.Extent.Text.Contains('-Destination (Join-Path $sumsDir'))" }) -join ',') 'Copy-Item:True'
+    Expect '02 structure: before the confirmation only the copies into the admin-only sums folder' (($early | ForEach-Object { '{0}:{1}' -f $_.GetCommandName(), $_.Extent.Text.Contains('-Destination (Join-Path $sumsDir') }) -join ',') 'Copy-Item:True'
     $acts = @($allActs | Where-Object { $_.Extent.StartOffset -gt $conf })
     $asserts = @(& $cmds $ast02 @('Assert-EoVmChain') | ForEach-Object { $_.Extent.StartOffset })
     $newDir = @(& $cmds $ast02 @('Assert-EoNewDir') | ForEach-Object { $_.Extent.StartOffset })
