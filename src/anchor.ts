@@ -5,6 +5,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { canonicalJson, hmacHex, sha256Hex } from './util/canonical.ts';
 import { assertPrivateDir, fsyncDir, writeFileAtomic } from './util/fsx.ts';
 import type { JournalRecord } from './journal.ts';
+import { AnchorServiceClient } from './anchorService.ts';
 
 /**
  * Rollback anchor (M2-0b). After every journal append the controller records the journal
@@ -51,6 +52,26 @@ export interface AnchorHead {
 }
 
 export class AnchorError extends Error {}
+
+/**
+ * Where heads are kept: an anchor directory (RollbackAnchor) or the eo-anchor service
+ * (AnchorServiceClient, M2 Phase B). The controller uses only this interface.
+ */
+export interface AnchorBackend {
+  /** Where the anchor lives, for messages and forensic records. */
+  readonly dir: string;
+  readonly id: string;
+  read(rootId: string): AnchorHead | null;
+  rawHead(rootId: string): string | null;
+  /** prevJournalMac is the MAC of the journal record before journalSeq ("genesis" for seq 1). */
+  advance(rootId: string, keyId: string, root: string, journalSeq: number, journalMac: string, prevJournalMac?: string): AnchorHead;
+  forget(rootId: string): void;
+}
+
+/** The anchor service socket, when one is configured (EO_ANCHOR_SOCKET). */
+export function anchorSocket(): string | undefined {
+  return process.env['EO_ANCHOR_SOCKET'] || undefined;
+}
 
 /**
  * The canonical form of a state-root path: symlinks resolved and, where the filesystem
@@ -116,7 +137,7 @@ function macEqual(a: string, b: string): boolean {
   return ba.length === bb.length && ba.length > 0 && timingSafeEqual(ba, bb);
 }
 
-export class RollbackAnchor {
+export class RollbackAnchor implements AnchorBackend {
   readonly dir: string;
   readonly id: string;
   private readonly key: Buffer;
@@ -336,6 +357,12 @@ export interface AnchorInspection {
 export function inspectAnchor(dir: string, stateRoot: string, journalKey: Buffer, records: readonly JournalRecord[]): AnchorInspection {
   const rootId = rootIdOf(stateRoot);
   const keyId = keyIdOf(journalKey);
+  const socket = anchorSocket();
+  if (socket) {
+    const service = AnchorServiceClient.open(socket);
+    const head = service.read(rootId);
+    return { dir: service.dir, anchorId: service.id, rootId, keyId, head, check: checkAnchor(records, head, service.id, rootId, keyId) };
+  }
   if (!fs.existsSync(path.join(dir, 'anchor.json'))) {
     const bound = journaledBinding(records);
     const check: AnchorCheck = bound

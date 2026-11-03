@@ -15,7 +15,7 @@ import { openStore } from '../../src/store/open.ts';
 import { BudgetLedger } from '../../src/budget.ts';
 import { policyHash, loadPolicy } from '../../src/policy.ts';
 import type { Plan } from '../../src/plan.ts';
-import { CLI, readExecLog, runCli, samplePlan, sandbox, TEST_STORE, tmpDir, writeJson, type Sandbox } from '../support/helpers.ts';
+import { ANCHOR_IS_SERVICE, CLI, readExecLog, runCli, samplePlan, sandbox, TEST_STORE, tmpDir, writeJson, type Sandbox } from '../support/helpers.ts';
 
 /**
  * M2-0b: rollback detection for the whole state root. The journal head is recorded after
@@ -24,6 +24,9 @@ import { CLI, readExecLog, runCli, samplePlan, sandbox, TEST_STORE, tmpDir, writ
  */
 
 const copiesRoot = TEST_STORE === 'beads' && 'copies the FakeStore state root';
+// These tests read or edit the anchor directory itself. With the eo-anchor service the same
+// attacks run in tests/integration/anchor-service.test.ts and services/anchor/tests.
+const dirOnly = ANCHOR_IS_SERVICE && 'edits the anchor directory; the service mode equivalents are in tests/integration/anchor-service.test.ts';
 const twoIndependent: Plan = { epicId: 'E1', title: 'two', tasks: [{ id: 'A', title: 'a', deps: [] }, { id: 'B', title: 'b', deps: [] }] };
 const anchorDir = (): string => process.env['EO_ANCHOR_DIR'] as string;
 
@@ -80,7 +83,7 @@ function restore(sb: Sandbox, snap: string): void {
   fs.cpSync(snap, sb.root, { recursive: true });
 }
 
-test('M2-0b: the anchor records every journal append, and a fresh state root is bound to it', () => {
+test('M2-0b: the anchor records every journal append, and a fresh state root is bound to it', { skip: dirOnly }, () => {
   const sb = sandbox();
   const c = Controller.open(sb.root);
   try {
@@ -164,7 +167,7 @@ test('M2-0b: an older copy of the whole state root is refused at every point; no
   assert.deepEqual(doctor(sb.root).problems, []);
 });
 
-test('M2-0b: a crash between the journal append and the anchor update is recovered on open', () => {
+test('M2-0b: a crash between the journal append and the anchor update is recovered on open', { skip: dirOnly }, () => {
   const sb = sandbox();
   let c = Controller.open(sb.root);
   c.importPlan(twoIndependent, sb.repo, 'h');
@@ -191,7 +194,7 @@ test('M2-0b: a crash between the journal append and the anchor update is recover
   assert.deepEqual(doctor(sb.root).problems, []);
 });
 
-test('M2-0b: a crash right after journaling the binding, before the first head, is recovered', () => {
+test('M2-0b: a crash right after journaling the binding, before the first head, is recovered', { skip: dirOnly }, () => {
   const dir = tmpDir();
   const root = path.join(dir, 'state');
   const p = initStateRoot(root);
@@ -256,7 +259,7 @@ test('M2-0b: a removed journal is refused before the store is opened or repaired
   assert.equal(fs.existsSync(p.journal), false, 'nothing recreated the journal');
 });
 
-test('M2-0b: a tampered anchor head is refused, and the forensic record keeps its bytes and the journal', () => {
+test('M2-0b: a tampered anchor head is refused, and the forensic record keeps its bytes and the journal', { skip: dirOnly }, () => {
   const sb = sandbox();
   const f = headFile(sb.root);
   const h = JSON.parse(fs.readFileSync(f, 'utf8')) as { journalSeq: number };
@@ -269,7 +272,7 @@ test('M2-0b: a tampered anchor head is refused, and the forensic record keeps it
   assert.ok(doctor(sb.root).problems.some((x) => /^anchor: anchor head .* failed verification/.test(x)));
 });
 
-test('M2-0b: an older copy re-signed with a new journal key is refused, with or without its binding', { skip: copiesRoot }, async () => {
+test('M2-0b: an older copy re-signed with a new journal key is refused, with or without its binding', { skip: copiesRoot || dirOnly }, async () => {
   const sb = sandbox();
   const log = path.join(sb.dir, 'exec.log');
   const script = { execLog: log, default: { behaviour: 'pass' as const, costUsd: 0.5 } };
@@ -302,7 +305,7 @@ test('M2-0b: an older copy re-signed with a new journal key is refused, with or 
   assert.throws(() => a.advance(rootIdOf(sb.root), 'f'.repeat(32), 'x', (h?.journalSeq ?? 0) + 1, 'aa'), /recorded under journal key/);
 });
 
-test('M2-0b: a copy at another path is not adopted without an operator, and its older copy is refused even then', { skip: copiesRoot }, async () => {
+test('M2-0b: a copy at another path is not adopted without an operator, and its older copy is refused even then', { skip: copiesRoot || dirOnly }, async () => {
   const sb = sandbox();
   let c = Controller.open(sb.root);
   c.importPlan(twoIndependent, sb.repo, 'h');
@@ -339,7 +342,7 @@ test('M2-0b: a copy at another path is not adopted without an operator, and its 
   assert.throws(() => Controller.open(sb.root), /behind its anchored head/);
 });
 
-test('M2-0b: an operator can accept a restored backup explicitly; the replaced head is kept, and M1 checks still apply', { skip: copiesRoot }, async () => {
+test('M2-0b: an operator can accept a restored backup explicitly; the replaced head is kept, and M1 checks still apply', { skip: copiesRoot || dirOnly }, async () => {
   const sb = sandbox();
   let c = Controller.open(sb.root);
   c.importPlan(twoIndependent, sb.repo, 'h');
@@ -374,7 +377,7 @@ test('M2-0b: an operator can accept a restored backup explicitly; the replaced h
   assert.throws(() => Controller.open(sb.root, { adopt: { by: 'operator', acceptRollback: true } }), /tamper|MAC|verif/i);
 });
 
-test('M2-0b: an anchor inside the state root, or a state root inside the anchor, is refused', () => {
+test('M2-0b: an anchor inside the state root, or a state root inside the anchor, is refused', { skip: dirOnly }, () => {
   const sb = sandbox();
   assert.throws(() => Controller.open(sb.root, { anchorDir: path.join(sb.root, 'anchor') }), /inside the state root/);
   assert.throws(() => Controller.open(sb.root, { anchorDir: sb.dir }), /the state root .* is inside the rollback anchor/);
@@ -390,7 +393,7 @@ test('M2-0b: an anchor inside the state root, or a state root inside the anchor,
   }
 });
 
-test('M2-0b: a state root whose anchor lost its head, or that is pointed at another anchor, is refused', () => {
+test('M2-0b: a state root whose anchor lost its head, or that is pointed at another anchor, is refused', { skip: dirOnly }, () => {
   const sb = sandbox();
   const p = statePaths(sb.root);
   const other = tmpDir('eo-anchor-other-');
@@ -403,7 +406,7 @@ test('M2-0b: a state root whose anchor lost its head, or that is pointed at anot
   assert.ok(doctor(sb.root).problems.some((x) => /no head for this state root/.test(x)));
 });
 
-test('M2-0b: a state root made before M2-0b is refused until an operator adopts it; its older copy is refused after that', { skip: copiesRoot }, () => {
+test('M2-0b: a state root made before M2-0b is refused until an operator adopts it; its older copy is refused after that', { skip: copiesRoot || dirOnly }, () => {
   // Build a pre-M2-0b state root: its journal has no anchor binding and no anchor has its head.
   const dir = tmpDir();
   const root = path.join(dir, 'state');
@@ -489,7 +492,7 @@ test('M2-0b: doctor reports the last transition unapplied as damage when no cont
   assert.ok(doctor(sb.root).problems.some((x) => unapplied.test(x)), 'dead holder: reported');
 });
 
-test('M2-0b: doctor run beside a working controller never reports a transition in flight as damage', { skip: TEST_STORE === 'beads' && 'FakeStore timing' }, async () => {
+test('M2-0b: doctor run beside a working controller never reports a transition in flight as damage', { skip: (TEST_STORE === 'beads' && 'FakeStore timing') || (ANCHOR_IS_SERVICE && 'each doctor run calls the service through a helper process, too slow to overlap enough') }, async () => {
   const sb = sandbox((pol) => ({ ...pol, budget: { ...pol.budget, epic: { usd: 1000, tokens: 1_000_000_000 }, task: { usd: 100, tokens: 100_000_000 } } }));
   const c = Controller.open(sb.root);
   c.importPlan({ epicId: 'E1', title: 'many', tasks: Array.from({ length: 12 }, (_, i) => ({ id: `T${i}`, title: `t${i}`, deps: [] })) }, sb.repo, 'h');

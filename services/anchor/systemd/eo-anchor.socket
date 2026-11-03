@@ -1,0 +1,17 @@
+# eo-anchor sockets (M2 Phase B). systemd owns both sockets, so neither the
+# controller nor the anchor account can replace them.
+[Unit]
+Description=eo rollback-anchor sockets
+
+[Socket]
+# Data socket: the controller (group eo) only; the service also checks the peer uid.
+ListenStream=/run/eo-anchor/anchor.sock
+FileDescriptorName=data
+SocketUser=eo-anchor
+SocketGroup=eo
+SocketMode=0660
+DirectoryMode=0755
+Service=eo-anchor.service
+
+[Install]
+WantedBy=sockets.target

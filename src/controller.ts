@@ -3,7 +3,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { Journal, verifyJournalFile, type JournalRecord } from './journal.ts';
-import { AnchorError, canonicalRoot, checkAnchor, defaultAnchorDir, keyIdOf, rootIdOf, RollbackAnchor, type AnchorHead } from './anchor.ts';
+import { AnchorError, anchorSocket, canonicalRoot, checkAnchor, defaultAnchorDir, keyIdOf, rootIdOf, RollbackAnchor, type AnchorBackend, type AnchorHead } from './anchor.ts';
+import { AnchorServiceClient } from './anchorService.ts';
 import { EvidenceLedger } from './evidence.ts';
 import { BudgetGovernor, type Amount } from './budget.ts';
 import { assertRepositoryApproved, canonicalRepoPath, loadPolicy, policyHash, savePolicy, withApprovedRepository, type Policy } from './policy.ts';
@@ -72,6 +73,8 @@ export interface ControllerOpenOptions {
   allowPolicyDrift?: boolean;
   /** The rollback anchor directory (M2-0b); default EO_ANCHOR_DIR, else defaultAnchorDir(). */
   anchorDir?: string;
+  /** The eo-anchor service socket (M2 Phase B); default EO_ANCHOR_SOCKET. When set, it replaces the anchor directory. */
+  anchorSocket?: string;
   /**
    * An operator adopts this state root into the anchor ("eo anchor adopt"): one with journal
    * records that the anchor has never seen (made before M2-0b, or moved). With
@@ -145,7 +148,7 @@ export class Controller {
   readonly budget: BudgetGovernor;
   readonly owner: string;
   readonly tornTailRepaired: boolean;
-  readonly anchor: RollbackAnchor;
+  readonly anchor: AnchorBackend;
   /** This state root's id in the anchor, derived from its canonical path. */
   readonly rootId: string;
   /** Fingerprint of this state root's journal key, recorded with its anchored head. */
@@ -168,7 +171,8 @@ export class Controller {
     // M2-0b: before anything else reads or repairs the state root, its journal must reach the
     // head recorded in the rollback anchor, which lives outside the state root. A restored
     // older copy of the whole state root is consistent inside but behind its anchor.
-    const anchorDir = opts.anchorDir ?? defaultAnchorDir();
+    const socket = opts.anchorSocket ?? anchorSocket();
+    const anchorDir = socket ? `eo-anchor service at ${socket}` : (opts.anchorDir ?? defaultAnchorDir());
     this.rootId = rootIdOf(paths.root);
     this.keyId = keyIdOf(key);
     const refusal = (reason: string, head: AnchorHead | null, rawHead: string | null, anchorId: string | null): RecoveryRefusedError => {
@@ -182,15 +186,17 @@ export class Controller {
     };
     let anchored: AnchorHead | null;
     try {
-      this.anchor = RollbackAnchor.open(anchorDir, paths.root);
+      this.anchor = socket ? AnchorServiceClient.open(socket) : RollbackAnchor.open(anchorDir, paths.root);
       anchored = this.anchor.read(this.rootId);
     } catch (err) {
       if (!(err instanceof AnchorError)) throw err;
       let raw: string | null = null;
-      try {
-        raw = fs.readFileSync(path.join(anchorDir, 'heads', `${this.rootId}.json`)).toString('base64');
-      } catch {
-        // no head file
+      if (!socket) {
+        try {
+          raw = fs.readFileSync(path.join(anchorDir, 'heads', `${this.rootId}.json`)).toString('base64');
+        } catch {
+          // no head file
+        }
       }
       throw refusal(err.message, null, raw, null);
     }
@@ -239,12 +245,12 @@ export class Controller {
       if (!note.startsWith('Forensic record:')) throw new ControllerError(`the anchor's head could not be preserved before it is replaced. ${note}`);
       this.anchor.forget(this.rootId);
     }
-    this.journal = Journal.open(paths.journal, key, { repairTornTail: true, onAppend: (r) => this.anchor.advance(this.rootId, this.keyId, root, r.seq, r.mac) });
+    this.journal = Journal.open(paths.journal, key, { repairTornTail: true, onAppend: (r) => this.anchor.advance(this.rootId, this.keyId, root, r.seq, r.mac, r.prev) });
     this.tornTailRepaired = before.tornTail;
     // The one gap a crash can leave: the last record was journaled but not yet anchored.
     const last = this.journal.records().at(-1);
     this.anchorRepaired = anchorState.kind === 'one-ahead';
-    if (anchorState.kind === 'one-ahead' && last) this.anchor.advance(this.rootId, this.keyId, root, last.seq, last.mac);
+    if (anchorState.kind === 'one-ahead' && last) this.anchor.advance(this.rootId, this.keyId, root, last.seq, last.mac, last.prev);
     // A new state root, or one an operator adopted: bind it to this anchor. From here on a
     // copy without the binding, bound elsewhere, or behind the head is refused.
     if (binding) {

@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
+import { spawn, spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { initStateRoot, readJournalKey, statePaths, type StoreConfig } from '../../src/stateRoot.ts';
 import { canonicalRoot, keyIdOf, rootIdOf } from '../../src/anchor.ts';
@@ -50,6 +50,42 @@ export function tmpDir(prefix = 'eo-test-'): string {
 // M2-0b: each test process anchors its state roots in its own directory, outside all of them,
 // unless the run sets EO_ANCHOR_DIR. Child processes (the CLI) inherit it.
 if (!process.env['EO_ANCHOR_DIR']) process.env['EO_ANCHOR_DIR'] = tmpDir('eo-anchor-');
+
+/**
+ * M2 Phase B: EO_TEST_ANCHOR=service runs the suites against the eo-anchor service instead of
+ * the anchor directory. Each test process starts its own service (as the test user, on
+ * temporary sockets) unless EO_ANCHOR_SOCKET is already set; child processes inherit the socket.
+ * Tests that edit the anchor directory directly skip themselves in this mode (ANCHOR_IS_SERVICE).
+ */
+export const ANCHOR_IS_SERVICE = process.env['EO_TEST_ANCHOR'] === 'service' || Boolean(process.env['EO_ANCHOR_SOCKET']);
+export let anchorAdminSocket: string | undefined = process.env['EO_ANCHOR_ADMIN_SOCKET'] || undefined;
+if (process.env['EO_TEST_ANCHOR'] === 'service' && !process.env['EO_ANCHOR_SOCKET']) {
+  const d = tmpDir('eo-anchor-svc-');
+  const state = path.join(d, 'state');
+  fs.mkdirSync(state, { mode: 0o700 });
+  const data = path.join(d, 'anchor.sock');
+  const admin = path.join(d, 'admin.sock');
+  const uid = String(process.getuid?.() ?? 0);
+  const svc = spawn('python3', ['-I', path.join(REPO_ROOT, 'services', 'anchor', 'eo_anchor.py'), '--state-dir', state, '--controller-user', uid, '--admin-uid', uid, '--data-socket', data, '--admin-socket', admin], { stdio: 'ignore', detached: false });
+  svc.unref();
+  process.on('exit', () => svc.kill('SIGKILL'));
+  const deadline = Date.now() + 15_000;
+  while (!(fs.existsSync(data) && fs.existsSync(admin))) {
+    if (Date.now() > deadline) throw new Error('the test anchor service did not start');
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+  }
+  process.env['EO_ANCHOR_SOCKET'] = data;
+  process.env['EO_ANCHOR_ADMIN_SOCKET'] = admin;
+  process.env['EO_ANCHOR_SERVER_USER'] = uid;
+  anchorAdminSocket = admin;
+}
+
+/** Test-only: an operator command on the anchor service's admin socket (eo-anchorctl). */
+export function anchorAdmin(args: string[]): Record<string, unknown> {
+  if (!anchorAdminSocket) throw new Error('no anchor service admin socket');
+  const r = spawnSync('python3', ['-I', path.join(REPO_ROOT, 'services', 'anchor', 'eo_anchorctl.py'), '--socket', anchorAdminSocket, ...args], { encoding: 'utf8' });
+  return JSON.parse(r.stdout) as Record<string, unknown>;
+}
 
 /** Remove a sandbox now (long sweeps create many). */
 export function disposeSandbox(sb: { dir: string }): void {

@@ -1,0 +1,5 @@
+# Scripts and services that run inside the Linux guest must keep LF endings even
+# in a Windows checkout (core.autocrlf=true): with CRLF, bash runs them with their
+# safety checks broken.
+infra/l2/guest/** text eol=lf
+services/** text eol=lf

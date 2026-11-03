@@ -6,7 +6,7 @@ import { Controller, ControllerError, RecoveryRefusedError, type EscalationRecor
 import { FakeRunner, type FakeScript } from '../../src/runner/fake.ts';
 import { PolicyError, canonicalRepoPath, loadPolicy, policyHash } from '../../src/policy.ts';
 import { doctor } from '../../src/doctor.ts';
-import { readExecLog, samplePlan, sandbox, setAnchorHead, TEST_STORE, tmpDir, type Sandbox } from '../support/helpers.ts';
+import { ANCHOR_IS_SERVICE, readExecLog, samplePlan, sandbox, setAnchorHead, TEST_STORE, tmpDir, type Sandbox } from '../support/helpers.ts';
 import { planHash, type Plan } from '../../src/plan.ts';
 import { statePaths } from '../../src/stateRoot.ts';
 import { openStore } from '../../src/store/open.ts';
@@ -452,7 +452,7 @@ function evidenceAndEscalations(root: string): { evidence: Record<string, string
   return { evidence: filesUnder(p.evidence), escalations: filesUnder(p.escalations) };
 }
 
-test('restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record', async (t) => {
+test('restoring any older valid journal never rewinds finished tasks, attempts or spend; recovery refuses without changing anything and leaves a forensic record', { skip: ANCHOR_IS_SERVICE && 'rolls the anchor directory back with the journal; the service refuses that (tests/integration/anchor-service.test.ts)' }, async (t) => {
   // A run with a verification failure, so tasks pass through several transitions and attempts.
   const { sb, c, log } = await runPlan(samplePlan(), { default: { behaviour: 'pass' }, tasks: { T2: [{ behaviour: 'verify-fail', signature: 's' }] } });
   c.close();
@@ -533,7 +533,7 @@ test('restoring any older valid journal never rewinds finished tasks, attempts o
   setAnchorHead(sb.root, lines.length);
 });
 
-test('a journal cut back past a repeated block cannot undo the block by passing for a crash', async () => {
+test('a journal cut back past a repeated block cannot undo the block by passing for a crash', { skip: ANCHOR_IS_SERVICE && 'rolls the anchor directory back with the journal; the service refuses that (tests/integration/anchor-service.test.ts)' }, async () => {
   // The second review's case: blocked (budget), unblocked by a human, blocked again. Cut just
   // after the unblock, the journal expects ready one step after blocked, and the store is
   // blocked again; only the journal position recorded in the store tells the two blocks apart.
