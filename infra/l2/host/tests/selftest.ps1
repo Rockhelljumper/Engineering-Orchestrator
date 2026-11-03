@@ -13,7 +13,9 @@ function Expect([string]$Name, $Actual, $Expected) {
     if ("$Actual" -ceq "$Expected") { Write-Host "ok   $Name" } else { Write-Host "FAIL $Name (got '$Actual', want '$Expected')"; $failures.Add($Name) }
 }
 $skips = New-Object System.Collections.Generic.List[string]
-function Skip([string]$Name, [string]$Why) { Write-Host "skip $Name ($Why)"; $skips.Add($Name) }
+$ciSkips = New-Object System.Collections.Generic.List[string]
+# -Ci: a check CI must run; a skip of it fails the self-test under GitHub Actions.
+function Skip([string]$Name, [string]$Why, [switch]$Ci) { Write-Host "skip $Name ($Why)"; $skips.Add($Name); if ($Ci) { $ciSkips.Add($Name) } }
 
 # Makes a test folder unlistable: inheritance off and an explicit deny of List folder
 # for Everyone. Returns whether this process really cannot list it now: an account
@@ -22,7 +24,8 @@ function Skip([string]$Name, [string]$Why) { Write-Host "skip $Name ($Why)"; $sk
 function Lock-EoTestDir([string]$Path) {
     Invoke-EoNative icacls.exe @($Path, '/inheritance:r') | Out-Null
     Invoke-EoNative icacls.exe @($Path, '/deny', '*S-1-1-0:(RD)') | Out-Null
-    try { $null = [System.IO.Directory]::GetFileSystemEntries($Path); return $false } catch { return $true }
+    try { $null = [System.IO.Directory]::GetFileSystemEntries($Path); return $false }
+    catch { if ((Get-EoInnerException $_) -is [System.UnauthorizedAccessException]) { return $true } throw }
 }
 function Unlock-EoTestDir([string]$Path, [string]$Sid) {
     Invoke-EoNative icacls.exe @($Path, '/remove:d', '*S-1-1-0') -AllowFail | Out-Null
@@ -1218,6 +1221,11 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
         'a scratch name, 31 hex digits'        = @((Join-Path $env:ProgramData 'eo-l2-gpg-0123456789abcdef0123456789abcde'), 'is inside')
         'a scratch name of another kind'       = @((Join-Path $env:ProgramData 'eo-l2-other-0123456789abcdef0123456789abcdef'), 'is inside')
         'a scratch name one level down'        = @((Join-Path $env:ProgramData 'Microsoft\eo-l2-gpg-0123456789abcdef0123456789abcdef'), 'is inside')
+        'a public folder'                      = @('C:\Users\Public\eo-l2', 'is neither')
+        'a Program Files folder'               = @('C:\Program Files\eo-l2', 'is neither')
+        'another folder under C:\Hyper-V'      = @('C:\Hyper-V\other', 'is neither')
+        'a folder inside the root'             = @((Join-Path $EO.Root 'eo-l2'), 'is neither')
+        'a folder on another drive'            = @('D:\Hyper-V\eo-l2', 'is neither')
     }
     Expect 'delete guard: a folder inside a scratch folder may be deleted' (@(Test-EoDeletableRoot (Join-Path $env:ProgramData 'eo-l2-selftest-0123456789abcdef0123456789abcdef\tree')) -join ';') ''
     # A short 8.3 name: refused as '~', or, where GetFullPath expands it (.NET Framework
@@ -1397,7 +1405,7 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
                 $threw = $false; try { $null = @(Get-EoTreeEntries $ud) } catch { $threw = $true }
                 Expect 'vm live: without -Tolerant an unlistable folder throws' $threw $true
             } else {
-                Skip 'vm live: an unlistable folder is marked Unreadable with -Tolerant, and throws without it' $lockWhy
+                Skip 'vm live: an unlistable folder is marked Unreadable with -Tolerant, and throws without it' $lockWhy -Ci
             }
         } finally {
             Unlock-EoTestDir $locked ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value)
@@ -1446,13 +1454,17 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
                 $sl = Join-Path $sb 'unlisted'
                 New-Item -ItemType Directory -Path (Join-Path $sl 'eo-l2\locked') | Out-Null
                 Set-Content -LiteralPath (Join-Path $sl 'eo-l2\locked\inside.txt') -Value 'x'
-                if (Lock-EoTestDir (Join-Path $sl 'eo-l2\locked')) {
-                    $msg = ''; try { Remove-EoVerifiedTree $sl } catch { $msg = $_.Exception.Message }
+                $msg = ''; $lockedOk = $false
+                try {
+                    $lockedOk = Lock-EoTestDir (Join-Path $sl 'eo-l2\locked')
+                    if ($lockedOk) { try { Remove-EoVerifiedTree $sl } catch { $msg = $_.Exception.Message } }
+                } finally {
                     Unlock-EoTestDir (Join-Path $sl 'eo-l2\locked') 'S-1-5-32-544'
+                }
+                if ($lockedOk) {
                     Expect 'vm delete (elevated): Remove-EoVerifiedTree refuses a tree it cannot list, deleting nothing' "$($msg -ne '')/$(Test-Path -LiteralPath (Join-Path $sl 'eo-l2\locked\inside.txt'))" 'True/True'
                 } else {
-                    Unlock-EoTestDir (Join-Path $sl 'eo-l2\locked') 'S-1-5-32-544'
-                    Skip 'vm delete (elevated): Remove-EoVerifiedTree refuses a tree it cannot list, deleting nothing' $lockWhy
+                    Skip 'vm delete (elevated): Remove-EoVerifiedTree refuses a tree it cannot list, deleting nothing' $lockWhy -Ci
                 }
 
                 # Without the junction the same tree goes, read-only file included.
@@ -1502,6 +1514,18 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
                 $m3 = @(); try { $m3 = @(Get-EoVmChainProblems '' $sp $sr $giso) } catch { $m3 = @("threw: $($_.Exception.Message)") }
                 Expect 'vm glue (elevated): Get-EoVmChainProblems passes the same chain (the tree is not its job)' ($m3 -join ';') ''
                 [System.IO.Directory]::Delete($gj, $false)
+                # -Acls: every entry below the root must leave writing to Administrators,
+                # SYSTEM and this VM's account. A Users grant on a VM folder is reported
+                # with -Acls only.
+                $m3 = @(); try { $m3 = @(Get-EoVmTreeProblems '' -Acls -Parent $sp -Root $sr -IsoDir $giso) } catch { $m3 = @("threw: $($_.Exception.Message)") }
+                Expect 'vm glue (elevated): Get-EoVmTreeProblems -Acls passes the clean tree' ($m3 -join ';') ''
+                $gvm = Join-Path $sr 'eo-l2\Virtual Machines'
+                Invoke-EoNative icacls.exe @($gvm, '/grant', '*S-1-5-32-545:(OI)(CI)M') | Out-Null
+                $m3 = @(); try { $m3 = @(Get-EoVmTreeProblems '' -Acls -Parent $sp -Root $sr -IsoDir $giso) } catch { $m3 = @("threw: $($_.Exception.Message)") }
+                Expect 'vm glue (elevated): Get-EoVmTreeProblems -Acls reports a Users grant below the root' "$(VHit $m3 'S-1-5-32-545')/$(VHit $m3 'Virtual Machines grants access')" 'True/True'
+                $m3 = @(); try { $m3 = @(Get-EoVmTreeProblems '' -Parent $sp -Root $sr -IsoDir $giso) } catch { $m3 = @("threw: $($_.Exception.Message)") }
+                Expect 'vm glue (elevated): ... which only -Acls checks' ($m3 -join ';') ''
+                Invoke-EoNative icacls.exe @($gvm, '/remove:g', '*S-1-5-32-545') | Out-Null
                 $msg = ''; try { Remove-EoVerifiedTree $sp } catch { $msg = $_.Exception.Message }
                 Expect 'vm delete (elevated): Remove-EoVerifiedTree deletes the protected folders' "$msg|$($null -eq (Get-EoEntryAttributes $sp))" '|True'
 
@@ -1620,6 +1644,7 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
     Expect 'undo-02 structure: one Remove-EoVerifiedTree, of $EO.Root' (($rt | ForEach-Object { "$($_.Extent.Text)" }) -join '|') 'Remove-EoVerifiedTree $EO.Root'
     $chkAst = @(& $cmds $astU @('Get-EoVmTreeProblems'))
     Expect 'undo-02 structure: tolerant, tolerant, then strict tree checks' (($chkAst | ForEach-Object { "$($_.Extent.Text)".Contains('-AllowUnreadable') }) -join ',') 'True,True,False'
+    Expect 'undo-02 structure: only the strict check, right before the delete, checks every ACL (-Acls)' (($chkAst | ForEach-Object { "$($_.Extent.Text)".Contains('-Acls') }) -join ',') 'False,False,True'
     $ord = [ordered]@{
         'view (plan)'   = @(& $cmds $astU @('Get-EoUndoView'))[0]
         'check 1'       = $chkAst[0]
@@ -1719,11 +1744,28 @@ function VHit($Msgs, [string]$Want) { @(@($Msgs) | Where-Object { "$_".Contains(
     }
 }
 
+# The typed confirmation: Confirm-EoPlan refuses redirected input before it asks, so
+# nothing piped or scripted can answer for the operator.
+& {
+    $astC = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $hostDir '_common.ps1'), [ref]$null, [ref]$null)
+    $cf = @($astC.FindAll({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Confirm-EoPlan' }, $true))
+    $body = if ($cf.Count) { "$($cf[0].Body.Extent.Text)" } else { '' }
+    $iRedir = $body.IndexOf('[Console]::IsInputRedirected'); $iRead = $body.IndexOf('Read-Host')
+    Expect 'confirm structure: Confirm-EoPlan checks for redirected input before Read-Host' "$($cf.Count)/$($iRedir -ge 0 -and $iRead -gt $iRedir)" '1/True'
+    if ([Console]::IsInputRedirected) {
+        $msg = ''; try { Confirm-EoPlan 'vm' @('nothing') } catch { $msg = $_.Exception.Message }
+        Expect 'confirm: with input redirected, Confirm-EoPlan refuses without asking' ($msg.Contains('standard input is redirected')) $true
+    } else {
+        Write-Host 'info input is a console here; the redirected-input refusal is checked by structure only'
+    }
+}
+
 if ($skips.Count) {
     Write-Host "$($skips.Count) check(s) skipped: $($skips -join '; ')"
     $priv = @(Invoke-EoNative whoami.exe @('/priv') -AllowFail | Where-Object { $_ -match 'SeBackupPrivilege|SeRestorePrivilege' })
     foreach ($l in $priv) { Write-Host "info $($l.Trim())" }
 }
+if ($env:GITHUB_ACTIONS -eq 'true') { foreach ($n in $ciSkips) { $failures.Add("skipped in CI: $n") } }
 if ($failures.Count) { Write-Host "$($failures.Count) failure(s)"; exit 1 }
 if ($skips.Count) { Write-Host ('all host-script self-tests passed ({0} skipped)' -f $skips.Count) } else { Write-Host 'all host-script self-tests passed' }
 exit 0

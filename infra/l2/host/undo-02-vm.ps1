@@ -69,8 +69,9 @@ try {
         Remove-VM -Name $EO.VmName -Force
     }
     if (Get-VM -Name $EO.VmName -ErrorAction SilentlyContinue) { throw 'VM still present after Remove-VM; nothing was deleted.' }
-    # Strict now: the VM is off and removed, so every folder must be readable and pass.
-    $treeBad = @(Get-EoVmTreeProblems $now.VmId)
+    # Strict now: the VM is off and removed, so every folder must be readable and pass,
+    # and every entry's ACL must leave writing to Administrators, SYSTEM and the VM's account.
+    $treeBad = @(Get-EoVmTreeProblems $now.VmId -Acls)
     if ($treeBad.Count) { Show-EoVmFolderAcls; throw "Refusing to delete $($EO.Root) (the VM is removed, its folder is not): $($treeBad -join '; '). Nothing was deleted; follow README `"Recovering from a refused undo-02`" (attended; never delete through a link)." }
     Remove-EoVerifiedTree $EO.Root
     $after = Save-EoSnapshot $stamp 'after'

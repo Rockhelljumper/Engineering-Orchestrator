@@ -220,8 +220,11 @@ function Start-EoLog([string]$Step) {
 function Stop-EoLog { try { Stop-Transcript | Out-Null } catch { } }
 
 # Print the plan, then require the operator to type the step name. Anything else
-# aborts before a change is made.
+# aborts before a change is made. The answer must come from a person at the console:
+# with standard input redirected (piped text, a file, a non-interactive runner) the
+# step refuses before asking, so no script or pipe can answer for the operator.
 function Confirm-EoPlan([string]$Step, [string[]]$Lines) {
+    if ([Console]::IsInputRedirected) { throw "Not confirmed; step '$Step' stopped before any change: standard input is redirected, and the confirmation must be typed by the operator at the console." }
     Write-Host ''
     Write-Host "=== Planned changes for step '$Step' ==="
     foreach ($l in $Lines) { Write-Host "  - $l" }

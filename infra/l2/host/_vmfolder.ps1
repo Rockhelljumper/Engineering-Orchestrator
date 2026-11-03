@@ -299,8 +299,10 @@ function Test-EoVmTree($Entries, [string]$VmName = $EO.VmName, [switch]$AllowUnr
 # the user profile (whose folders the user can change). The one exception: an
 # admin-only scratch folder directly under ProgramData whose name matches
 # $EoScratchPattern (eo-l2-gpg-, eo-l2-sums- or eo-l2-selftest- and 32 hex digits),
-# or a folder inside one. There is no parameter to skip any of this. Pure (string
-# work only).
+# or a folder inside one. On top of that it is an allow-list: the path must be
+# $EO.Root itself, or such a scratch folder or a folder inside one; anything else
+# (C:\Users\Public\x, C:\Program Files\x, another folder under C:\Hyper-V) is
+# refused. There is no parameter to skip any of this. Pure (string work only).
 function Test-EoDeletableRoot([string]$Root) {
     $p = New-Object System.Collections.Generic.List[string]
     if (-not $Root -or -not [System.IO.Path]::IsPathRooted($Root) -or $Root -notmatch '\A[A-Za-z]:\\') { $p.Add("'$Root' is not a full path on a drive"); return $p }
@@ -312,6 +314,8 @@ function Test-EoDeletableRoot([string]$Root) {
     $pd = "$env:ProgramData".TrimEnd('\')
     $underPd = if ($pd -and $full.StartsWith("$pd\", [System.StringComparison]::OrdinalIgnoreCase)) { $full.Substring($pd.Length + 1) } else { '' }
     $scratch = $underPd -and (@($underPd -split '\\')[0] -cmatch $EoScratchPattern)
+    $isRoot = $EO.Root -and ($full -ieq "$($EO.Root)".TrimEnd('\'))
+    if (-not $isRoot -and -not $scratch) { $p.Add("'$Root' is neither $($EO.Root) nor an eo-l2 scratch folder under ProgramData (the only folders it may delete)") }
     foreach ($keep in @($EO.GuardDir, $EO.Evidence, $env:ProgramData, $env:windir, $env:USERPROFILE)) {
         if (-not $keep) { continue }
         $k = $keep.TrimEnd('\')
@@ -482,14 +486,27 @@ function Assert-EoVmChain([string]$Action, [string]$VmId = '') {
 # Problems that stop undo-02: the chain (no link, the parent admin-protected, root and
 # iso Administrators and SYSTEM only, $VmId's account read at most) and what the root
 # holds (Test-EoVmTree: expected entries only, no link anywhere, everything listable;
-# with -AllowUnreadable a running VM's runtime folder may be unlistable). Nothing to
-# check when the root is absent, apart from the chain.
-function Get-EoVmTreeProblems([string]$VmId = '', [switch]$AllowUnreadable, [string]$Parent = $EO.VmParent, [string]$Root = $EO.Root, [string]$IsoDir = $EO.IsoDir) {
+# with -AllowUnreadable a running VM's runtime folder may be unlistable). With -Acls,
+# also the security of every entry below the root: iso as the root (Administrators
+# and SYSTEM only, $VmId's account read at most), everything else Administrators,
+# SYSTEM and $VmId's account only, so no other account can write anywhere in the
+# tree that Remove-EoVerifiedTree is about to delete. Nothing to check when the root
+# is absent, apart from the chain.
+function Get-EoVmTreeProblems([string]$VmId = '', [switch]$AllowUnreadable, [switch]$Acls, [string]$Parent = $EO.VmParent, [string]$Root = $EO.Root, [string]$IsoDir = $EO.IsoDir) {
     $p = New-Object System.Collections.Generic.List[string]
     foreach ($x in @(Get-EoVmChainProblems $VmId $Parent $Root $IsoDir)) { $p.Add($x) }
     if ($p.Count) { return $p }
     if ($null -eq (Get-EoEntryAttributes $Root)) { return $p }
-    foreach ($x in @(Test-EoVmTree @(Get-EoTreeEntries $Root -Tolerant:$AllowUnreadable) -AllowUnreadable:$AllowUnreadable -Root $Root)) { $p.Add($x) }
+    $entries = @(Get-EoTreeEntries $Root -Tolerant:$AllowUnreadable)
+    foreach ($x in @(Test-EoVmTree $entries -AllowUnreadable:$AllowUnreadable -Root $Root)) { $p.Add($x) }
+    if ($Acls -and -not $p.Count) {
+        $vmSid = ConvertTo-EoVmSid $VmId
+        foreach ($e in $entries) {
+            if ($e.Reparse -or $e.Unreadable) { continue }
+            $kind = if ($e.Full -ieq $IsoDir.TrimEnd('\')) { 'root' } else { 'vm' }
+            foreach ($x in @(Test-EoPathFacts (Get-EoPathFacts $e.Full) $kind -Container:([bool]$e.Container) -VmSid $vmSid)) { $p.Add($x) }
+        }
+    }
     return $p
 }
 
@@ -541,10 +558,11 @@ function Show-EoVmFolderAcls([string]$Root = $EO.Root, [string]$IsoDir = $EO.Iso
 #     link that appeared after the listing is at worst removed itself, never followed,
 #     and an entry that appeared after the listing stops the delete.
 # What remains: a folder above an entry turned into a junction between that entry's
-# re-check and its delete call would redirect that one call. For $EO.Root every folder
-# involved is writable by Administrators and SYSTEM only (undo-02 checks that with
-# Get-EoVmTreeProblems first), and the scratch folders are admin-only too, so only an
-# administrator could do it. Neither .NET Framework nor PowerShell offers a delete
+# re-check and its delete call would redirect that one call. For $EO.Root every entry
+# involved is writable by Administrators, SYSTEM and the removed VM's account only
+# (undo-02 checks every entry's ACL with Get-EoVmTreeProblems -Acls right before
+# this), and the scratch folders are admin-only too, so only an administrator could
+# do it. Neither .NET Framework nor PowerShell offers a delete
 # relative to an open folder handle that would close that last window without native code.
 function Remove-EoVerifiedTree([string]$Root) {
     $bad = @(Test-EoDeletableRoot $Root)
