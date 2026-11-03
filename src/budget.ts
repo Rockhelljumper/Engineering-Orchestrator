@@ -8,6 +8,13 @@ import type { Journal, JournalRecord } from './journal.ts';
  * and a single invocation can end above its `--max-budget-usd` cap (docs/07 §5). The governor
  * therefore never trusts a cap to hold during a run; it controls what may *start*.
  *
+ * A reported cost is also worker-controlled and untrusted: it is charged as reported
+ * (basis 'reported', marked `trust: 'worker-reported'`), so a compromised worker can
+ * under-report, down to {usd: 0, tokens: 0}, and later admissions will see too little
+ * spent. Nothing here can detect that; only the provider-side spend limit on the worker's API
+ * key bounds what is really spent (docs/04 T5, T9). What the governor does guarantee is that
+ * every charge is a finite, non-negative amount (see settle and applySettle).
+ *
  * For every invocation it reserves R before launch:
  *   R.usd    = invocation.usd    + maxTurnCostUsd          (once measured, M2-6b)
  *            = max(factor * invocation.usd, invocation.usd + minExtraUsd)   (until then)
@@ -54,6 +61,8 @@ export interface SettleRecord {
   usd: number;
   tokens: number;
   basis: 'reported' | 'unknown' | 'not-started';
+  /** On a 'reported' settle: the amount is what the worker said it spent, unverified. */
+  trust?: 'worker-reported';
   overshootUsd: number;
   overshootTokens: number;
 }
@@ -89,6 +98,7 @@ export class BudgetLedger {
   private readonly spentBy = new Map<string, Amount>();
   private readonly reservedBy = new Map<string, Amount>();
   private readonly settled = new Set<string>();
+  private readonly anomalies: string[] = [];
 
   static fromRecords(records: readonly JournalRecord[]): BudgetLedger {
     const l = new BudgetLedger();
@@ -110,10 +120,23 @@ export class BudgetLedger {
     if (!r) throw new Error(`settle of unknown or already settled reservation ${s.id}`);
     this.open.delete(s.id);
     this.settled.add(s.id);
+    // Fail closed, as for any cost that is not a valid amount: a journaled charge that is not
+    // finite and non-negative (an overflow journaled as null by code before the cost bounds)
+    // counts as the full reservation, never as nothing.
+    let charge: Amount = { usd: s.usd, tokens: s.tokens };
+    if (!isAmount(charge)) {
+      this.anomalies.push(`settle ${s.id} journaled an invalid charge (${JSON.stringify({ usd: s.usd, tokens: s.tokens })}); counted as its full reservation`);
+      charge = { usd: r.usd, tokens: r.tokens };
+    }
     for (const k of keys(r)) {
       add(this.reservedBy, k, { usd: -r.usd, tokens: -r.tokens });
-      add(this.spentBy, k, s);
+      add(this.spentBy, k, charge);
     }
+  }
+
+  /** Journaled settles whose charge was not a valid amount, and what was counted instead. */
+  invalidCharges(): string[] {
+    return [...this.anomalies];
   }
 
   openReservations(): ReserveRecord[] {
@@ -202,14 +225,22 @@ export class BudgetGovernor {
     if (!r) throw new Error(`no open reservation ${reservationId}`);
     const charge = notStarted ? { usd: 0, tokens: 0 } : (reported ?? { usd: r.usd, tokens: r.tokens });
     if (!(charge.usd >= 0) || !(charge.tokens >= 0)) throw new Error('reported cost must be non-negative');
+    // Refuse rather than journal a charge that is not finite (it would be journaled as null and
+    // lost on replay). The controller only passes costs validCost accepted, which are bounded.
+    if (!Number.isFinite(charge.usd) || !Number.isFinite(charge.tokens)) throw new Error('reported cost must be finite');
+    const reportedBasis = !notStarted && reported !== null;
     const rec: SettleRecord = {
       id: reservationId,
       usd: round(charge.usd),
       tokens: Math.ceil(charge.tokens),
-      basis: notStarted ? 'not-started' : reported ? 'reported' : 'unknown',
+      basis: notStarted ? 'not-started' : reportedBasis ? 'reported' : 'unknown',
+      ...(reportedBasis ? { trust: 'worker-reported' as const } : {}),
       overshootUsd: round(Math.max(0, charge.usd - r.usd)),
       overshootTokens: Math.max(0, Math.ceil(charge.tokens) - r.tokens),
     };
+    if (!isAmount(rec) || !Number.isFinite(rec.overshootUsd) || !Number.isFinite(rec.overshootTokens)) {
+      throw new Error(`reported cost ${JSON.stringify(charge)} is out of range for the budget ledger`);
+    }
     this.journal.append('budget.settle', rec);
     this.ledger.applySettle(rec);
     return rec;
@@ -237,6 +268,11 @@ function add(m: Map<string, Amount>, k: string, a: { usd: number; tokens: number
 
 function get(m: Map<string, Amount>, k: string): Amount {
   return m.get(k) ?? { usd: 0, tokens: 0 };
+}
+
+/** A finite, non-negative amount: the only kind of charge the ledger counts. */
+function isAmount(a: { usd: unknown; tokens: unknown }): boolean {
+  return typeof a.usd === 'number' && Number.isFinite(a.usd) && a.usd >= 0 && typeof a.tokens === 'number' && Number.isFinite(a.tokens) && a.tokens >= 0;
 }
 
 function round(x: number): number {

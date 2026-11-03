@@ -1,8 +1,8 @@
 /**
  * Minimal JSON Schema validator for the subset eo uses (type, required, properties,
- * additionalProperties, items, enum, const, minimum, maximum, minLength, minItems, pattern,
- * nullable via type arrays). `ajv` was the planned dependency; M1 avoids any new install, so
- * this subset is implemented and unit-tested here instead.
+ * additionalProperties, items, enum, const, minimum, maximum, minLength, maxLength, minItems,
+ * maxItems, pattern, nullable via type arrays). `ajv` was the planned dependency; M1 avoids any
+ * new install, so this subset is implemented and unit-tested here instead.
  */
 export interface Schema {
   type?: string | string[];
@@ -16,7 +16,10 @@ export interface Schema {
   maximum?: number;
   exclusiveMinimum?: number;
   minLength?: number;
+  /** Maximum string length, in UTF-16 code units (String.prototype.length). */
+  maxLength?: number;
   minItems?: number;
+  maxItems?: number;
   pattern?: string;
   description?: string;
 }
@@ -77,6 +80,9 @@ function check(schema: Schema, value: unknown, path: string, errors: ValidationE
     if (schema.minLength !== undefined && value.length < schema.minLength) {
       errors.push({ path, message: `must have length >= ${schema.minLength}` });
     }
+    if (schema.maxLength !== undefined && value.length > schema.maxLength) {
+      errors.push({ path, message: `must have length <= ${schema.maxLength}` });
+    }
     if (schema.pattern !== undefined && !new RegExp(schema.pattern).test(value)) {
       errors.push({ path, message: `must match ${schema.pattern}` });
     }
@@ -85,16 +91,23 @@ function check(schema: Schema, value: unknown, path: string, errors: ValidationE
     if (schema.minItems !== undefined && value.length < schema.minItems) {
       errors.push({ path, message: `must have >= ${schema.minItems} items` });
     }
+    if (schema.maxItems !== undefined && value.length > schema.maxItems) {
+      // Too many items: report it once, without checking (and listing errors for) every item.
+      errors.push({ path, message: `must have <= ${schema.maxItems} items` });
+      return;
+    }
     if (schema.items !== undefined) value.forEach((item, i) => check(schema.items as Schema, item, `${path}[${i}]`, errors));
   }
   if (typeOf(value) === 'object') {
     const obj = value as Record<string, unknown>;
+    // Own properties only: a key such as "__proto__" or "constructor" must never match
+    // something inherited from Object.prototype.
     for (const key of schema.required ?? []) {
-      if (!(key in obj)) errors.push({ path, message: `missing required property "${key}"` });
+      if (!Object.hasOwn(obj, key)) errors.push({ path, message: `missing required property "${key}"` });
     }
     const props = schema.properties ?? {};
     for (const [key, v] of Object.entries(obj)) {
-      const sub = props[key];
+      const sub = Object.hasOwn(props, key) ? props[key] : undefined;
       if (sub !== undefined) {
         check(sub, v, `${path}.${key}`, errors);
       } else if (schema.additionalProperties === false) {

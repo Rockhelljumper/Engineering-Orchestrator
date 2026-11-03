@@ -7,11 +7,14 @@ import type { ReportedCost, RunRequest, RunResult, Runner } from './types.ts';
  * Scripted stand-in for a Claude worker, used for deterministic tests and failure simulation.
  * Behaviour per task and attempt comes from a script; attempts beyond the script use `default`.
  *
- *   pass         completes; verification passes; review approves
- *   verify-fail  completes; verification fails with `signature`
- *   review-fail  completes; verification passes; review requests changes
+ *   pass         completes; the controller's verifier passes and its reviewer approves
+ *   verify-fail  completes; the controller's verifier fails with `signature`
+ *   review-fail  completes; the verifier passes; the reviewer requests changes
  *   crash        throws an infra failure (worker died)
  *   hang         never finishes until aborted (timeout path)
+ *
+ * The runner reports only that it ran (observations). The verdicts come from the fake
+ * verifier and reviewer that fakeJudgesFor (src/verify/fake.ts) builds from the same script.
  */
 export type Behaviour = 'pass' | 'verify-fail' | 'review-fail' | 'crash' | 'hang';
 
@@ -28,6 +31,8 @@ export interface AttemptScript {
 export interface FakeScript {
   /** File that receives one line per execution, written before the work starts. */
   execLog?: string;
+  /** File that receives one line per call of the fake verifier or reviewer (fakeJudgesFor). */
+  verdictLog?: string;
   default: AttemptScript;
   tasks?: Record<string, AttemptScript[]>;
 }
@@ -52,6 +57,7 @@ export const fakeScriptSchema: Schema = {
   additionalProperties: false,
   properties: {
     execLog: { type: 'string' },
+    verdictLog: { type: 'string' },
     default: attemptSchema,
     tasks: { type: 'object', additionalProperties: { type: 'array', items: attemptSchema } },
   },
@@ -88,17 +94,10 @@ export class FakeRunner implements Runner {
       case 'crash':
         return { kind: 'infra', reason: 'worker crashed (scripted)', cost };
       case 'pass':
-        return { kind: 'completed', cost, verification: { verdict: 'pass', signature: null }, review: { verdict: 'approve' }, summary: 'scripted pass' };
       case 'verify-fail':
-        return {
-          kind: 'completed',
-          cost,
-          verification: { verdict: 'fail', signature: s.signature ?? 'scripted-failure' },
-          review: { verdict: 'approve' },
-          summary: 'scripted verification failure',
-        };
       case 'review-fail':
-        return { kind: 'completed', cost, verification: { verdict: 'pass', signature: null }, review: { verdict: 'changes' }, summary: 'scripted review rejection' };
+        // Whether the work is good is for the controller's verifier and reviewer to decide.
+        return { kind: 'completed', cost, summary: 'scripted run completed', observations: { exitCode: 0 } };
     }
   }
 }

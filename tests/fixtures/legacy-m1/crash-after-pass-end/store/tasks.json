@@ -1,0 +1,38 @@
+{
+ "version": 1,
+ "tasks": {
+  "A": {
+   "id": "A",
+   "epicId": "L1",
+   "title": "a",
+   "deps": [],
+   "state": "implementing",
+   "claim": {
+    "owner": "ctl:vm:10155:a6408828",
+    "leaseExpiresAt": 1793734392498
+   },
+   "notes": [],
+   "attempt": 1,
+   "correctionFailures": 0,
+   "infraFailures": 0,
+   "lastFailureSignature": null,
+   "repeatCount": 0,
+   "journalSeq": 12
+  },
+  "B": {
+   "id": "B",
+   "epicId": "L1",
+   "title": "b",
+   "deps": [],
+   "state": "ready",
+   "claim": null,
+   "notes": [],
+   "attempt": 0,
+   "correctionFailures": 0,
+   "infraFailures": 0,
+   "lastFailureSignature": null,
+   "repeatCount": 0,
+   "journalSeq": 10
+  }
+ }
+}

@@ -1,0 +1,15 @@
+{
+  "kind": "completed",
+  "cost": {
+    "usd": 0.01,
+    "tokens": 1000
+  },
+  "verification": {
+    "verdict": "fail",
+    "signature": "legacy:A1"
+  },
+  "review": {
+    "verdict": "approve"
+  },
+  "summary": "scripted verification failure"
+}

@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Controller, ControllerError, RecoveryRefusedError, type EscalationRecord } from '../../src/controller.ts';
 import { FakeRunner, type FakeScript } from '../../src/runner/fake.ts';
+import { fakeJudgesFor } from '../../src/verify/fake.ts';
 import { PolicyError, canonicalRepoPath, loadPolicy, policyHash } from '../../src/policy.ts';
 import { doctor } from '../../src/doctor.ts';
 import { readExecLog, samplePlan, sandbox, setAnchorHead, TEST_STORE, tmpDir, type Sandbox } from '../support/helpers.ts';
@@ -23,7 +24,7 @@ async function runPlan(plan: Plan, script: Omit<FakeScript, 'execLog'>, sb = san
   const log = path.join(sb.dir, 'exec.log');
   const c = Controller.open(sb.root);
   c.importPlan(plan, sb.repo, 'test-human');
-  const summary = await c.run(new FakeRunner({ ...script, execLog: log }), { repoPath: sb.repo });
+  const summary = await c.run(new FakeRunner({ ...script, execLog: log }), { ...fakeJudgesFor({ ...script, execLog: log }), repoPath: sb.repo });
   return { sb, c, log, summary };
 }
 
@@ -247,7 +248,7 @@ test('a lease that cannot be renewed ends the attempt as an infra failure instea
   const c = Controller.open(sb.root, { store });
   try {
     c.importPlan(twoIndependent, sb.repo, 'h');
-    const summary = await c.run(new FakeRunner({ default: { behaviour: 'pass' }, tasks: { A: [{ behaviour: 'hang' }, { behaviour: 'hang' }] }, execLog: log }), { repoPath: sb.repo });
+    const summary = await c.run(new FakeRunner({ default: { behaviour: 'pass' }, tasks: { A: [{ behaviour: 'hang' }, { behaviour: 'hang' }] }, execLog: log }), { ...fakeJudgesFor({ default: { behaviour: 'pass' }, tasks: { A: [{ behaviour: 'hang' }, { behaviour: 'hang' }] }, execLog: log }), repoPath: sb.repo });
     // Both hung attempts report no cost, so each is charged the full $5 reservation and the
     // $10 task cap then stops a third attempt: the budget, not the lease, decides the end state.
     assert.equal(summary.states['A'], 'blocked');
@@ -336,7 +337,7 @@ test('M1-10: run and plan import refuse a repository that is not approved', asyn
     c.importPlan(samplePlan(), sb.repo, 'h');
     const before = c.journal.records().length;
     const log = path.join(sb.dir, 'exec.log');
-    await assert.rejects(c.run(new FakeRunner({ default: { behaviour: 'pass' }, execLog: log }), { repoPath: other }), PolicyError);
+    await assert.rejects(c.run(new FakeRunner({ default: { behaviour: 'pass' }, execLog: log }), { ...fakeJudgesFor({ default: { behaviour: 'pass' }, execLog: log }), repoPath: other }), PolicyError);
     assert.equal(c.journal.records().length, before, 'nothing was journaled for the refused run');
     assert.deepEqual(readExecLog(log), [], 'nothing was launched');
   } finally {
@@ -356,7 +357,7 @@ test('blocked requires an escalation record, and only unblock leaves it', async 
     assert.equal(a?.state, 'ready');
     assert.equal(a?.correctionFailures, 0);
     assert.equal(a?.attempt, 2, 'attempt numbering continues');
-    const s = await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: c.policy.approvedRepositories[0]?.path ?? '' });
+    const s = await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { ...fakeJudgesFor({ default: { behaviour: 'pass' } }), repoPath: c.policy.approvedRepositories[0]?.path ?? '' });
     assert.equal(s.states['A'], 'done');
     assert.equal(c.store.get('A')?.attempt, 3);
   } finally {
@@ -544,9 +545,10 @@ test('a journal cut back past a repeated block cannot undo the block by passing 
   let c = Controller.open(sb.root);
   try {
     c.importPlan(plan, sb.repo, 'h');
-    assert.equal((await c.run(runner(), { repoPath: sb.repo })).states['Z'], 'blocked');
+    const judges = fakeJudgesFor({ default: { behaviour: 'pass' } });
+    assert.equal((await c.run(runner(), { ...judges, repoPath: sb.repo })).states['Z'], 'blocked');
     c.unblock('Z', 'h', 'try again');
-    assert.equal((await c.run(runner(), { repoPath: sb.repo })).states['Z'], 'blocked');
+    assert.equal((await c.run(runner(), { ...judges, repoPath: sb.repo })).states['Z'], 'blocked');
   } finally {
     c.close();
   }
@@ -835,11 +837,11 @@ test('tasks run only against the repository their plan was approved for', async 
     c.approveRepository(other, 'h');
     c.importPlan(twoIndependent, sb.repo, 'h');
     const log = path.join(sb.dir, 'exec.log');
-    const s = await c.run(new FakeRunner({ default: { behaviour: 'pass' }, execLog: log }), { repoPath: other });
+    const s = await c.run(new FakeRunner({ default: { behaviour: 'pass' }, execLog: log }), { ...fakeJudgesFor({ default: { behaviour: 'pass' }, execLog: log }), repoPath: other });
     assert.deepEqual(readExecLog(log), [], 'nothing launched under the other repository');
     assert.deepEqual(s.states, { A: 'ready', B: 'ready' });
     assert.equal(c.journal.ofType('run.skip').length, 2);
-    const ok = await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { repoPath: sb.repo });
+    const ok = await c.run(new FakeRunner({ default: { behaviour: 'pass' } }), { ...fakeJudgesFor({ default: { behaviour: 'pass' } }), repoPath: sb.repo });
     assert.deepEqual(ok.states, { A: 'done', B: 'done' });
   } finally {
     c.close();
@@ -896,9 +898,9 @@ test('a malformed reported cost is charged as unknown instead of wedging the jou
     c.importPlan(twoIndependent, sb.repo, 'h');
     const runner = {
       kind: 'bad-cost',
-      run: async () => ({ kind: 'completed' as const, cost: { usd: -1, tokens: 1.5 }, verification: { verdict: 'pass' as const, signature: null }, review: { verdict: 'approve' as const }, summary: '' }),
+      run: async () => ({ kind: 'completed' as const, cost: { usd: -1, tokens: 1.5 }, summary: '' }),
     };
-    const s = await c.run(runner, { repoPath: sb.repo });
+    const s = await c.run(runner, { ...fakeJudgesFor({ default: { behaviour: 'pass' } }), repoPath: sb.repo });
     assert.deepEqual(s.states, { A: 'done', B: 'done' });
     const end = c.journal.ofType<{ taskId: string; invalidCost?: string; result: { cost: unknown } }>('attempt.end').find((r) => r.data.taskId === 'A');
     assert.equal(end?.data.result.cost, null);

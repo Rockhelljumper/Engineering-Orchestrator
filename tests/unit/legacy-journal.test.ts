@@ -1,0 +1,212 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { Controller, JOURNAL_FORMAT, type AttemptEndRecord, type EscalationRecord, type JournalFormatRecord } from '../../src/controller.ts';
+import type { VerdictRecord } from '../../src/verify/types.ts';
+import { doctor } from '../../src/doctor.ts';
+import { REPO_ROOT, sandbox, tmpDir } from '../support/helpers.ts';
+import type { Plan } from '../../src/plan.ts';
+
+/**
+ * State roots written before verdicts moved to the controller still open, resume and replay.
+ *
+ * tests/fixtures/legacy-m1 holds state roots produced by that code (origin/main at 79fef7a,
+ * fake store, `eo run --runner fake`), copied as they were left:
+ *   crash-after-fail-end  killed (EO_CRASH_AT) right after A#1's attempt.end, whose result
+ *                         carries the runner's own verdict: verification fail "legacy:A1"
+ *   crash-after-pass-end  the same, with verification pass and review approve
+ *   complete              a finished run: A failed verification once, B had changes requested once
+ * They were made elsewhere, under another rollback anchor, so each is adopted into this test's
+ * anchor first, as an operator does for a state root moved between machines
+ * ("eo anchor adopt --accept-rollback"). The M1 recovery checks still apply to it.
+ */
+const FIXTURES = path.join(REPO_ROOT, 'tests', 'fixtures', 'legacy-m1');
+
+function copyFixture(name: string): string {
+  const root = path.join(tmpDir('eo-legacy-'), 'state');
+  fs.cpSync(path.join(FIXTURES, name), root, { recursive: true });
+  // A checkout does not keep modes; a state root must be private.
+  const fix = (p: string): void => {
+    const st = fs.statSync(p);
+    if (st.isDirectory()) {
+      fs.chmodSync(p, 0o700);
+      for (const e of fs.readdirSync(p)) fix(path.join(p, e));
+    } else fs.chmodSync(p, 0o600);
+  };
+  fix(root);
+  return root;
+}
+
+function adopt(root: string): Controller {
+  return Controller.open(root, { adopt: { by: 'test-operator', acceptRollback: true } });
+}
+
+function newRecordTypes(c: Controller, from: number): string[] {
+  return c.journal.records().slice(from).map((r) => r.type);
+}
+
+test('legacy: an M1 journal killed after an attempt.end with an embedded pass resumes to done, with no verifier', () => {
+  const root = copyFixture('crash-after-pass-end');
+  const c = adopt(root);
+  try {
+    const before = c.journal.records().length;
+    const end = c.journal.ofType<AttemptEndRecord>('attempt.end').at(-1);
+    assert.equal((end?.data.result as { verification?: { verdict: string } }).verification?.verdict, 'pass', 'the fixture has an M1 attempt.end');
+    assert.equal(c.store.get('A')?.state, 'implementing');
+    const rep = c.resume();
+    assert.deepEqual(rep.advanced, ['A']);
+    assert.deepEqual(rep.awaitingVerdict, []);
+    const a = c.store.get('A');
+    assert.equal(a?.state, 'done');
+    assert.equal(a?.attempt, 1);
+    // The M1 verdicts were replayed from the old record; no controller verdict was made up for them.
+    const added = newRecordTypes(c, before);
+    assert.ok(!added.includes('verify.verdict') && !added.includes('review.verdict') && !added.includes('verdict.rejected'), added.join(' '));
+    const reasons = c.journal.ofType<{ taskId: string; reason: string }>('task.transition').filter((r) => r.data.taskId === 'A').map((r) => r.data.reason);
+    assert.ok(reasons.includes('verification passed (M1: scripted)') && reasons.includes('review approved (M1: scripted)'), reasons.join(' | '));
+    // Evidence sealed on resume is marked as the M1 placeholder, as that code sealed it.
+    assert.deepEqual(c.evidence.verify('A', 1), []);
+    assert.equal(c.evidence.read('A', 1)?.facts['placeholder'], 'M1');
+    assert.match(fs.readFileSync(path.join(c.evidence.attemptDir('A', 1), 'verification.json'), 'utf8'), /M1 placeholder/);
+    // The spend of the attempt the old controller ran was settled once, at its reported cost.
+    assert.deepEqual(c.journal.ofType<{ usd: number; basis: string }>('budget.settle').map((r) => [r.data.usd, r.data.basis]), [[0.01, 'reported']]);
+    assert.equal(c.store.get('B')?.state, 'ready');
+  } finally {
+    c.close();
+  }
+  assert.deepEqual(doctor(root).problems, []);
+});
+
+test('legacy: an M1 journal killed after an attempt.end with an embedded failure resumes into the correction loop', () => {
+  const root = copyFixture('crash-after-fail-end');
+  const c = adopt(root);
+  try {
+    c.resume();
+    const a = c.store.get('A');
+    assert.equal(a?.state, 'ready');
+    assert.equal(a?.attempt, 1);
+    assert.equal(a?.correctionFailures, 1);
+    assert.equal(a?.lastFailureSignature, 'legacy:A1');
+    assert.equal(c.evidence.read('A', 1)?.facts['verification'], 'fail');
+    // Resuming again changes nothing.
+    const n = c.journal.records().length;
+    const rep = c.resume();
+    assert.deepEqual(rep.advanced, []);
+    assert.equal(c.journal.records().length, n + 1, 'only the resume record');
+  } finally {
+    c.close();
+  }
+  assert.deepEqual(doctor(root).problems, []);
+});
+
+test('legacy: a finished M1 state root opens, resumes as a no-op and verifies, its evidence untouched', () => {
+  const root = copyFixture('complete');
+  const evidenceBefore = fs.readFileSync(path.join(root, 'evidence', 'A', 'a1', 'manifest.json'), 'utf8');
+  const c = adopt(root);
+  try {
+    assert.deepEqual(c.summary().states, { A: 'done', B: 'done' });
+    const rep = c.resume();
+    assert.deepEqual([rep.advanced, rep.interrupted, rep.transitionsReplayed, rep.awaitingVerdict], [[], [], [], []]);
+    for (const [id, attempts] of [['A', 2], ['B', 2]] as const) {
+      assert.equal(c.store.get(id)?.attempt, attempts);
+      for (let n = 1; n <= attempts; n++) assert.deepEqual(c.evidence.verify(id, n), [], `${id}#${n}`);
+    }
+    assert.equal(c.store.get('A')?.lastFailureSignature, 'legacy:A1');
+    assert.equal(c.evidence.read('B', 1)?.facts['review'], 'changes');
+  } finally {
+    c.close();
+  }
+  assert.equal(fs.readFileSync(path.join(root, 'evidence', 'A', 'a1', 'manifest.json'), 'utf8'), evidenceBefore);
+  assert.deepEqual(doctor(root).problems, []);
+});
+
+test('legacy and new records in one journal: M1 attempt ends before the format marker replay; a new attempt after it waits for controller verdicts', () => {
+  // An M1 state root killed right after A#1's attempt.end (embedded verification failure),
+  // then opened by the new code: the marker is journaled after the M1 records and A#1 is
+  // replayed from its embedded verdict. Attempt 2 is then driven by hand (the fixture's plan is
+  // bound to a repository path from the machine that made it, so `run` is not used): its end
+  // carries no verdict and is applied only with the controller's verdicts.
+  const root = copyFixture('crash-after-fail-end');
+  let c = adopt(root);
+  try {
+    const marker = c.journal.ofType<JournalFormatRecord>(JOURNAL_FORMAT);
+    assert.equal(marker.length, 1);
+    assert.deepEqual(marker[0]?.data, { verdictSplit: 1 });
+    const m1End = c.journal.ofType<AttemptEndRecord>('attempt.end').find((r) => Object.hasOwn(r.data.result, 'verification'));
+    assert.ok(m1End !== undefined && m1End.seq < (marker[0]?.seq ?? 0), 'the M1 attempt.end precedes the marker');
+    c.resume();
+    let a = c.store.get('A');
+    assert.deepEqual([a?.state, a?.attempt, a?.correctionFailures, a?.lastFailureSignature], ['ready', 1, 1, 'legacy:A1']);
+    assert.equal(c.evidence.read('A', 1)?.facts['placeholder'], 'M1');
+    // Attempt 2 under the new code.
+    assert.equal(c.budget.reserve('A#2@new', 'A', 'L1').kind, 'admit');
+    c.transition({ taskId: 'A', from: 'ready', to: 'implementing', reason: 'attempt 2', attempt: 2, reservationId: 'A#2@new' });
+    const endSeq = c.journal.append<AttemptEndRecord>('attempt.end', { taskId: 'A', attempt: 2, result: { kind: 'completed', cost: { usd: 0.01, tokens: 10 }, summary: 's' }, synthesized: false }).seq;
+    assert.deepEqual(c.resume().awaitingVerdict, ['A']);
+    assert.equal(c.store.get('A')?.state, 'verifying');
+    const v: VerdictRecord = { stage: 'verification', taskId: 'A', attempt: 2, endSeq, verdict: 'pass', signature: null, source: 'controller', judge: 'fake' };
+    c.journal.append('verify.verdict', v);
+    c.advance('A');
+    assert.equal(c.store.get('A')?.state, 'reviewing');
+    c.journal.append('review.verdict', { ...v, stage: 'review', verdict: 'approve' });
+    c.advance('A');
+    a = c.store.get('A');
+    assert.deepEqual([a?.state, a?.attempt, a?.correctionFailures], ['done', 2, 1]);
+    assert.equal(c.evidence.read('A', 2)?.facts['verificationSource'], 'controller');
+    // A second open does not write a second marker.
+    c.close();
+    c = Controller.open(root);
+    assert.equal(c.journal.ofType(JOURNAL_FORMAT).length, 1);
+  } finally {
+    c.close();
+  }
+  assert.deepEqual(doctor(root).problems, []);
+});
+
+test('a legacy-shaped attempt end after the format marker is not replayed: the task is escalated as evidence tampering', () => {
+  // Built by hand under the new code, which journals the marker on its first open: an
+  // attempt.end carrying runner verdicts can only have been written by someone holding the
+  // journal key, not by any controller of this version.
+  const sb = sandbox();
+  const plan: Plan = { epicId: 'E1', title: 'one', tasks: [{ id: 'A', title: 'a', deps: [] }] };
+  let c = Controller.open(sb.root);
+  let endSeq: number;
+  try {
+    c.importPlan(plan, sb.repo, 'h');
+    c.promote();
+    assert.equal(c.budget.reserve('A#1@m1', 'A', 'E1').kind, 'admit');
+    c.transition({ taskId: 'A', from: 'ready', to: 'implementing', reason: 'attempt 1', attempt: 1, reservationId: 'A#1@m1' });
+    endSeq = c.journal.append('attempt.end', {
+      taskId: 'A',
+      attempt: 1,
+      result: { kind: 'completed', cost: { usd: 0.01, tokens: 1000 }, verification: { verdict: 'pass', signature: null }, review: { verdict: 'approve' }, summary: 'forged pass' },
+      synthesized: false,
+    }).seq;
+    const marker = c.journal.ofType(JOURNAL_FORMAT)[0];
+    assert.ok(marker !== undefined && marker.seq < endSeq, 'the marker precedes the forged end');
+  } finally {
+    c.close();
+  }
+  c = Controller.open(sb.root);
+  try {
+    c.resume();
+    const a = c.store.get('A');
+    assert.equal(a?.state, 'blocked');
+    const esc = c.journal.ofType<EscalationRecord>('escalation').map((r) => r.data);
+    assert.deepEqual(esc.map((e) => [e.taskId, e.category]), [['A', 'evidence']]);
+    assert.match(esc[0]?.detail ?? '', new RegExp(`attempt\\.end A#1 \\(seq ${endSeq}\\) carries runner verdicts.*follows the format marker`));
+    // The embedded verdicts were never applied: no review, no evidence, nothing accepted.
+    const trail = c.journal.ofType<{ taskId: string; from: string; to: string }>('task.transition').map((r) => `${r.data.from}->${r.data.to}`);
+    assert.ok(!trail.includes('verifying->reviewing') && !trail.includes('reviewing->accepted'), trail.join(' '));
+    assert.equal(c.evidence.read('A', 1), null);
+    // Its reported spend was still settled once.
+    assert.equal(c.journal.ofType('budget.settle').length, 1);
+    // Resuming again changes nothing.
+    const n = c.journal.records().length;
+    assert.deepEqual(c.resume().advanced, []);
+    assert.equal(c.journal.records().length, n + 1);
+  } finally {
+    c.close();
+  }
+});

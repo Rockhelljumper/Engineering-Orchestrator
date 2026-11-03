@@ -35,7 +35,7 @@ Feature epic used for demonstrations:
 
 ## 3. How scenarios run
 
-- **Deterministic mode (CI, every PR):** `FakeRunner` plays scripted agent behaviour per scenario (including the failure modes), so the orchestrator logic is proven repeatably at no API cost. Each scenario asserts final task states, journal contents, protected-file hashes and escalations.
+- **Deterministic mode (CI, every PR):** `FakeRunner` plays scripted agent behaviour per scenario (including the failure modes), with the controller-side `FakeVerifier` and `FakeReviewer` scripted from the same scenario to supply the verdicts, so the orchestrator logic is proven repeatably at no API cost. Each scenario asserts final task states, journal contents, protected-file hashes and escalations.
 - **Live mode (M2, M4, M6, M7, M8; budget-approved):** real `claude -p` workers on the same fixtures. Results — including failures — are recorded as evidence, not filtered.
 
 Each scenario produces `scenario-report.json`: expected vs observed for every assertion, plus evidence paths and hashes.

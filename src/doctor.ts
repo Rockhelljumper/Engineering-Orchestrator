@@ -129,6 +129,8 @@ function check(p: StateRootPaths, key: Buffer, store: TaskStore | undefined, opt
   try {
     const ledger = BudgetLedger.fromRecords(v.records);
     for (const r of ledger.openReservations()) warnings.push(`budget: reservation ${r.id} still open`);
+    // Journaled by code before the cost bounds; the ledger already counts the full reservation.
+    for (const m of ledger.invalidCharges()) warnings.push(`budget: ${m}`);
   } catch (err) {
     problems.push(`budget: ${(err as Error).message}`);
   }

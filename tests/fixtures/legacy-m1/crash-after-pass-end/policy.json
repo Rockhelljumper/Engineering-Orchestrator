@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "approvedRepositories": [
+    {
+      "path": "/tmp/eo-test-hzs5pm/repo",
+      "approvedBy": "test-human",
+      "approvedAt": "2026-11-03T19:28:11.828Z"
+    }
+  ],
+  "limits": {
+    "maxAttempts": 3,
+    "maxInfraRetries": 2,
+    "maxInvalidOutput": 1,
+    "maxIntegrationAttempts": 2,
+    "repeatedFailureStop": 2
+  },
+  "budget": {
+    "epic": {
+      "usd": 25,
+      "tokens": 20000000
+    },
+    "task": {
+      "usd": 10,
+      "tokens": 4000000
+    },
+    "invocation": {
+      "usd": 0.5,
+      "tokens": 200000
+    },
+    "maxTurnCostUsd": null,
+    "maxTurnTokens": null,
+    "unmeasuredFactor": 10,
+    "unmeasuredMinExtraUsd": 1,
+    "unmeasuredMinExtraTokens": 100000
+  },
+  "concurrency": {
+    "max": 2
+  },
+  "timeouts": {
+    "invocationMs": 900000
+  },
+  "leaseMs": 300000,
+  "protectedPaths": [
+    "tests/**",
+    "test/**",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/fixtures/**",
+    "**/__mocks__/**",
+    "**/__snapshots__/**",
+    "package.json",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "tsconfig*.json",
+    ".github/**",
+    ".claude/**",
+    "CLAUDE.md",
+    ".mcp.json",
+    ".git*"
+  ]
+}

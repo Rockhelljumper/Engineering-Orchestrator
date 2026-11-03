@@ -41,3 +41,20 @@ test('reports each kind of violation', () => {
 test('rejects non-finite numbers', () => {
   assert.notDeepEqual(validate({ type: 'number' }, Number.POSITIVE_INFINITY), []);
 });
+
+test('only own properties count: "__proto__" or "constructor" never match something inherited', () => {
+  const strict = { type: 'object', required: ['a'], additionalProperties: false, properties: { a: { type: 'number' } } };
+  assert.match(validate(strict, JSON.parse('{"a":1,"__proto__":{"x":1}}')).map((e) => e.message).join('; '), /unexpected property "__proto__"/);
+  assert.match(validate(strict, { a: 1, constructor: 'x' }).map((e) => e.message).join('; '), /unexpected property "constructor"/);
+  assert.match(validate({ type: 'object', required: ['toString'] }, {}).map((e) => e.message).join('; '), /missing required property "toString"/);
+});
+
+test('maxLength and maxItems: at the limit passes, one over fails', () => {
+  const lim: Schema = { type: 'object', properties: { s: { type: 'string', maxLength: 3 }, a: { type: 'array', maxItems: 2, items: { type: 'string', maxLength: 1 } } } };
+  assert.deepEqual(validate(lim, { s: 'abc', a: ['x', 'y'] }), []);
+  assert.match(validate(lim, { s: 'abcd' }).map((e) => e.message).join('; '), /must have length <= 3/);
+  assert.match(validate(lim, { a: ['x', 'y', 'z'] }).map((e) => e.message).join('; '), /must have <= 2 items/);
+  assert.match(validate(lim, { a: ['xy'] }).map((e) => `${e.path} ${e.message}`).join('; '), /\$\.a\[0\] must have length <= 1/);
+  // An array over maxItems is reported once, not item by item.
+  assert.deepEqual(validate(lim, { a: Array.from({ length: 1000 }, () => 'too long') }).map((e) => e.path), ['$.a']);
+});

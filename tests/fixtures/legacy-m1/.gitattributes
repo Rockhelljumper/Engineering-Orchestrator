@@ -1,0 +1,2 @@
+# Byte-exact fixtures: evidence and journal hashes must not change with line-ending conversion on Windows checkouts.
+* -text

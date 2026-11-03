@@ -14,7 +14,10 @@ import type { TaskCounters, TaskRecord, TaskStore } from './store/types.ts';
 import { planHash, topoOrder, validatePlan, type Plan } from './plan.ts';
 import { describeLock, FileLock } from './util/lock.ts';
 import { assertPrivateDir, fsyncDir, writeAll, writeFileAtomic } from './util/fsx.ts';
-import type { RunResult, Runner } from './runner/types.ts';
+import type { ReportedCost, RunResult, Runner } from './runner/types.ts';
+import { acceptRunResult, validCost } from './runner/accept.ts';
+import { checkVerdict } from './verify/check.ts';
+import { VERDICT_RECORD, type JudgeContext, type Judges, type VerdictRecord, type VerdictRejectedRecord, type VerdictStage } from './verify/types.ts';
 
 export interface TransitionRecord {
   taskId: string;
@@ -28,13 +31,58 @@ export interface TransitionRecord {
   escalationId?: string;
 }
 
+/**
+ * A completed result as journaled before verdicts moved to the controller: the runner's own
+ * scripted verdicts embedded in it. Read only to replay journals written by that code (M1);
+ * never written now, because acceptRunResult drops these fields before anything is journaled.
+ */
+export interface LegacyCompletedResult {
+  kind: 'completed';
+  cost: ReportedCost | null;
+  summary: string;
+  verification: { verdict: 'pass' | 'fail'; signature: string | null };
+  review: { verdict: 'approve' | 'changes' };
+}
+
 export interface AttemptEndRecord {
   taskId: string;
   attempt: number;
-  result: RunResult | { kind: 'infra'; reason: 'interrupted'; cost: null };
+  result: RunResult | LegacyCompletedResult | { kind: 'infra'; reason: 'interrupted'; cost: null };
   synthesized: boolean;
   /** A cost the runner reported that was not a valid amount; charged as unknown instead. */
   invalidCost?: string;
+  /** Verdict fields the runner supplied anyway; dropped from the result and never used. */
+  ignoredFields?: string[];
+  /** The runner's result failed its schema; `result` is the infra failure that replaced it. */
+  rejected?: string;
+}
+
+/** A verdict as the controller applies it: journaled by the controller, or embedded in an M1 attempt.end. */
+interface AppliedVerdict {
+  verdict: 'pass' | 'fail' | 'approve' | 'changes';
+  signature: string | null;
+  /** Who produced it, for transition reasons and evidence. */
+  judge: string;
+  /** The judge's kind ("fake"), or "M1" for a verdict embedded in an M1 attempt.end. */
+  kind: string;
+  /** Journal seq of the verdict record (for an M1 verdict, of its attempt.end). */
+  seq: number;
+}
+
+/** Shaped like an M1 completed result (verdicts embedded). Honoured only before the format marker; see legacyResult. */
+function isLegacyResult(r: AttemptEndRecord['result']): r is LegacyCompletedResult {
+  return r.kind === 'completed' && Object.hasOwn(r, 'verification');
+}
+
+/**
+ * The journal format marker. The first open by code that keeps verdicts out of runner results
+ * appends one (`{verdictSplit: 1}`); every attempt.end after it was written by such code, so
+ * one with embedded verdicts after the marker cannot be a legacy record and is escalated as
+ * tampering instead of replayed.
+ */
+export const JOURNAL_FORMAT = 'journal.format';
+export interface JournalFormatRecord {
+  verdictSplit: 1;
 }
 
 export type EscalationCategory = 'budget' | 'attempts' | 'repeated-failure' | 'infra' | 'evidence' | 'policy';
@@ -57,6 +105,8 @@ export interface ResumeReport {
   reservationsNotStarted: string[];
   claimsReleased: string[];
   advanced: string[];
+  /** Tasks whose ended attempt still needs a verdict from the controller's verifier or reviewer; the next run obtains it. */
+  awaitingVerdict?: string[];
 }
 
 export interface RunSummary {
@@ -274,6 +324,10 @@ export class Controller {
     const bound = this.journal.ofType<{ kind: string }>('store.bound')[0];
     if (!bound) this.journal.append('store.bound', { kind: this.store.kind });
     else if (bound.data.kind !== this.store.kind) throw new ControllerError(`this state root uses the ${bound.data.kind} store, not ${this.store.kind}`);
+    // From here on no attempt.end may carry runner verdicts (see JOURNAL_FORMAT). Records
+    // already in the journal, from M1 code, keep being replayed as they were written.
+    const format = this.journal.ofType<JournalFormatRecord>(JOURNAL_FORMAT)[0] ?? this.journal.append<JournalFormatRecord>(JOURNAL_FORMAT, { verdictSplit: 1 });
+    this.formatSeq = format.seq;
     // A crash can leave the journal's last transition unapplied. Finish it now (after the checks above, so an open that fails writes no task), so a command
     // run before resume (eo unblock) cannot journal a transition after it and make it look
     // like an older one that was never applied.
@@ -283,6 +337,19 @@ export class Controller {
 
   /** Task facts as approved in journaled plans; authoritative over the store's copy. */
   private planIndex: Map<string, PlannedTask>;
+  /** Seq of the journal format marker; legacy-shaped attempt ends are honoured only before it. */
+  private readonly formatSeq: number;
+
+  /** The M1 result of an attempt end journaled before the format marker, if it is one. */
+  private legacyResult(end: JournalRecord<AttemptEndRecord>): LegacyCompletedResult | undefined {
+    const r = end.data.result;
+    return isLegacyResult(r) && end.seq < this.formatSeq ? r : undefined;
+  }
+
+  /** A legacy-shaped attempt end journaled after the format marker: no code writes one, so it is tampering. */
+  private forgedLegacyEnd(end: JournalRecord<AttemptEndRecord>): boolean {
+    return isLegacyResult(end.data.result) && end.seq > this.formatSeq;
+  }
 
   /** Acquire the controller lock and open state. Throws if another controller is running. */
   static open(root: string, opts: ControllerOpenOptions = {}): Controller {
@@ -487,6 +554,7 @@ export class Controller {
       reservationsNotStarted: [],
       claimsReleased: [],
       advanced: [],
+      awaitingVerdict: [],
     };
     const records = [...this.journal.records()];
 
@@ -556,6 +624,7 @@ export class Controller {
         if (this.advance(t.id)) report.advanced.push(t.id);
       }
     }
+    for (const t of this.store.list()) if (this.awaitingStage(t) !== undefined) report.awaitingVerdict?.push(t.id);
     this.journal.append('resume', report);
     return report;
   }
@@ -579,13 +648,24 @@ export class Controller {
 
   /**
    * Run until no task can make progress. Sequential (one worker at a time) in M1; M5 adds
-   * concurrency. Always resumes first.
+   * concurrency. Always resumes first. The verifier and reviewer are the controller's own: the
+   * runner reports what it observed and they decide whether the attempt passes.
    */
-  async run(runner: Runner, opts: { maxSteps?: number; repoPath: string }): Promise<RunSummary> {
+  async run(runner: Runner, opts: { maxSteps?: number; repoPath: string } & Judges): Promise<RunSummary> {
     assertRepositoryApproved(this.policy, opts.repoPath);
     const runRepo = canonicalRepoPath(opts.repoPath);
+    const judges: Judges = { verifier: opts.verifier, reviewer: opts.reviewer };
     this.resume();
-    this.journal.append('run.start', { owner: this.owner, runner: runner.kind });
+    this.journal.append('run.start', { owner: this.owner, runner: runner.kind, verifier: String(judges.verifier.kind), reviewer: String(judges.reviewer.kind) });
+    // Attempts a crash left between their end and their verdicts: judge them now, in a run for
+    // the repository their plan was approved for. Judging is at-least-once, not once: a judge
+    // whose answer was not yet journaled (a crash between the judge returning and the
+    // verify.verdict/review.verdict append) is asked again here. The fake judges are
+    // deterministic; M3's real judges must be idempotent, or record their result durably
+    // before the controller uses it.
+    for (const t of this.store.list()) {
+      if (this.awaitingStage(t) !== undefined && this.planIndex.get(t.id)?.repoPath === runRepo) await this.adjudicate(t.id, judges);
+    }
     let steps = 0;
     const deferred = new Set<string>();
     for (;;) {
@@ -603,7 +683,7 @@ export class Controller {
       }
       // The run's repository was checked as approved above, so this task's repository is too.
       steps++;
-      await this.runAttempt(t, runner, deferred);
+      await this.runAttempt(t, runner, judges, deferred);
     }
     const summary = this.summary(steps);
     this.journal.append('run.end', summary);
@@ -617,7 +697,7 @@ export class Controller {
     return { steps, states, stalled };
   }
 
-  private async runAttempt(t: TaskRecord, runner: Runner, deferred: Set<string>): Promise<void> {
+  private async runAttempt(t: TaskRecord, runner: Runner, judges: Judges, deferred: Set<string>): Promise<void> {
     const attempt = t.attempt + 1;
     // Unique per reservation: a reservation released by resume (never launched) must not
     // collide with the retry of the same attempt number.
@@ -654,7 +734,7 @@ export class Controller {
       }
     }, Math.max(50, Math.floor(this.policy.leaseMs / 3)));
     let timer: NodeJS.Timeout | undefined;
-    let result: RunResult;
+    let result: unknown;
     try {
       const timeout = new Promise<RunResult>((resolve) => {
         timer = setTimeout(() => {
@@ -674,11 +754,130 @@ export class Controller {
       if (timer) clearTimeout(timer);
       controller.abort();
     }
-    const end: AttemptEndRecord = { taskId: t.id, attempt, result: sanitizeCost(result), synthesized: false };
-    if (end.result !== result) end.invalidCost = JSON.stringify(result.cost);
+    // Only schema-checked observations are journaled; verdict fields a runner supplies are dropped.
+    const accepted = acceptRunResult(result);
+    const end: AttemptEndRecord = {
+      taskId: t.id,
+      attempt,
+      result: accepted.result,
+      synthesized: false,
+      ...(accepted.invalidCost !== undefined ? { invalidCost: accepted.invalidCost } : {}),
+      ...(accepted.ignoredFields ? { ignoredFields: accepted.ignoredFields } : {}),
+      ...(accepted.rejected !== undefined ? { rejected: accepted.rejected } : {}),
+    };
     this.journal.append('attempt.end', end);
-    this.advance(t.id);
+    await this.adjudicate(t.id, judges);
     this.store.release(t.id, this.owner);
+  }
+
+  /** The verdict stage a task waits on: its latest attempt completed and the controller has not judged it there yet. */
+  private awaitingStage(t: TaskRecord): VerdictStage | undefined {
+    const stage: VerdictStage | undefined = t.state === 'verifying' ? 'verification' : t.state === 'reviewing' ? 'review' : undefined;
+    if (stage === undefined) return undefined;
+    const end = this.attemptEnd(t.id, t.attempt);
+    if (!end || end.data.result.kind !== 'completed' || isLegacyResult(end.data.result)) return undefined;
+    if (this.verdictFor(stage, t.id, t.attempt) !== undefined || this.rejectedVerdict(stage, t.id, t.attempt, end.seq) !== undefined) return undefined;
+    return stage;
+  }
+
+  /**
+   * Advance a task, asking the controller's verifier and reviewer for each verdict it needs,
+   * and journaling each verdict before it is applied. A verdict already journaled for this
+   * attempt is never asked for again and is applied once, whatever crashes. A judge may still
+   * be asked more than once (at-least-once): a crash after it answers but before its verdict
+   * is journaled loses the answer, and the next run asks again.
+   *
+   * Known limitation (before M5): judges run after the attempt's lease heartbeat has stopped
+   * (runAttempt clears it before calling this), so a judge can hold the claim for up to
+   * timeouts.invocationMs while the lease (leaseMs) lapses. Harmless with M1's one sequential
+   * controller; it must be fixed before M5 runs workers concurrently.
+   */
+  private async adjudicate(taskId: string, judges: Judges): Promise<void> {
+    for (let guard = 0; guard < 8; guard++) {
+      this.advance(taskId);
+      const t = this.mustGet(taskId);
+      const stage = this.awaitingStage(t);
+      if (stage === undefined) return;
+      await this.judge(stage, judges, t.id, t.attempt);
+    }
+    throw new ControllerError(`adjudication did not settle for ${taskId}`);
+  }
+
+  /** Ask one judge for its verdict on an ended attempt and journal it, or journal why it was refused. */
+  private async judge(stage: VerdictStage, judges: Judges, taskId: string, attempt: number): Promise<void> {
+    const end = this.attemptEnd(taskId, attempt);
+    const result = end?.data.result;
+    if (!end || !result || result.kind !== 'completed' || isLegacyResult(result)) throw new ControllerError(`no completed attempt ${taskId}#${attempt} to judge`);
+    const who = stage === 'verification' ? judges.verifier : judges.reviewer;
+    const kind = String(who.kind);
+    const abort = new AbortController();
+    // A copy: nothing a judge does to its context can change the journaled result.
+    const ctx: JudgeContext = { taskId, attempt, result: structuredClone(result), signal: abort.signal };
+    const ms = this.policy.timeouts.invocationMs;
+    let timer: NodeJS.Timeout | undefined;
+    let failure: Pick<VerdictRejectedRecord, 'category' | 'reason'> | undefined;
+    let raw: unknown;
+    try {
+      raw = await Promise.race([
+        stage === 'verification' ? judges.verifier.verify(ctx) : judges.reviewer.review(ctx),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms);
+        }),
+      ]);
+    } catch (err) {
+      failure = { category: 'infra', reason: `the ${stage} judge (${kind}) failed: ${err instanceof Error ? err.message : String(err)}` };
+    } finally {
+      if (timer) clearTimeout(timer);
+      abort.abort();
+    }
+    if (!failure) {
+      const checked = checkVerdict(stage, raw, taskId, attempt);
+      if (checked.ok) {
+        const rec: VerdictRecord = { stage, taskId, attempt, endSeq: end.seq, verdict: checked.verdict, signature: checked.signature, source: 'controller', judge: kind };
+        this.journal.append(VERDICT_RECORD[stage], rec);
+        return;
+      }
+      failure = { category: 'evidence', reason: checked.problem };
+    }
+    const rej: VerdictRejectedRecord = { stage, taskId, attempt, endSeq: end.seq, judge: kind, ...failure };
+    this.journal.append('verdict.rejected', rej);
+  }
+
+  /**
+   * The verdict for a stage of an attempt: the first controller verdict journaled for exactly
+   * this task, attempt and attempt.end record (a verdict bound to anything else is never
+   * applied; a duplicate after the first is ignored), or the verdict an M1 journal embedded in
+   * the attempt.end itself.
+   */
+  private verdictFor(stage: VerdictStage, taskId: string, attempt: number): AppliedVerdict | undefined {
+    const end = this.attemptEnd(taskId, attempt);
+    if (!end) return undefined;
+    const r = this.legacyResult(end);
+    if (r) {
+      const legacy = { judge: 'M1: scripted', kind: 'M1', seq: end.seq };
+      return stage === 'verification' ? { verdict: r.verification.verdict, signature: r.verification.signature, ...legacy } : { verdict: r.review.verdict, signature: null, ...legacy };
+    }
+    if (isLegacyResult(end.data.result)) return undefined;
+    const rec = this.journal
+      .ofType<VerdictRecord>(VERDICT_RECORD[stage])
+      .find((x) => x.data.stage === stage && x.data.taskId === taskId && x.data.attempt === attempt && x.data.endSeq === end.seq && x.data.source === 'controller');
+    if (!rec) return undefined;
+    return { verdict: rec.data.verdict, signature: rec.data.signature, judge: `controller ${stage === 'verification' ? 'verifier' : 'reviewer'}: ${rec.data.judge}`, kind: rec.data.judge, seq: rec.seq };
+  }
+
+  private rejectedVerdict(stage: VerdictStage, taskId: string, attempt: number, endSeq: number): VerdictRejectedRecord | undefined {
+    return this.journal
+      .ofType<VerdictRejectedRecord>('verdict.rejected')
+      .find((x) => x.data.stage === stage && x.data.taskId === taskId && x.data.attempt === attempt && x.data.endSeq === endSeq)?.data;
+  }
+
+  /** A verdict the controller refused: escalate instead of applying anything. Returns true if it did. */
+  private escalateRejected(stage: VerdictStage, t: TaskRecord, from: 'verifying' | 'reviewing', endSeq: number): boolean {
+    const rej = this.rejectedVerdict(stage, t.id, t.attempt, endSeq);
+    if (!rej) return false;
+    const question = rej.category === 'infra' ? `The ${stage} judge failed; investigate it, then unblock?` : `The ${stage} verdict was refused; investigate the judge?`;
+    this.escalate(t.id, from, rej.category, `${stage} verdict refused: ${rej.reason}`, question);
+    return true;
   }
 
   /**
@@ -690,8 +889,9 @@ export class Controller {
     let changed = false;
     for (let guard = 0; guard < 16; guard++) {
       const t = this.mustGet(taskId);
-      const end = this.latestEnd(taskId, t.attempt);
-      if (!end) return changed;
+      const endRec = this.attemptEnd(taskId, t.attempt);
+      if (!endRec) return changed;
+      const end = endRec.data;
       const resId = this.attemptReservation(taskId, end.attempt);
       if (resId !== undefined && this.budget.ledger.isOpen(resId)) {
         this.budget.settle(resId, costOf(end.result));
@@ -700,6 +900,17 @@ export class Controller {
       }
       const L = this.policy.limits;
       const r = end.result;
+      if (this.forgedLegacyEnd(endRec)) {
+        if (t.state !== 'implementing' && t.state !== 'verifying' && t.state !== 'reviewing') return changed;
+        this.escalate(
+          taskId,
+          t.state,
+          'evidence',
+          `attempt.end ${taskId}#${end.attempt} (seq ${endRec.seq}) carries runner verdicts, which only a journal from before the verdict split can hold, but it follows the format marker (seq ${this.formatSeq})`,
+          'The journal holds an attempt end no controller of this version writes; investigate tampering?',
+        );
+        return true;
+      }
       if (r.kind === 'infra') {
         if (t.state !== 'implementing') return changed;
         const infraFailures = t.infraFailures + 1;
@@ -716,27 +927,34 @@ export class Controller {
           changed = true;
           continue;
         case 'verifying': {
-          const evProblem = this.ensureEvidence(t, end);
+          // Verdicts come only from the controller's verifier (or an M1 journal); until one is
+          // journaled for this attempt the task waits here.
+          const v = this.verdictFor('verification', taskId, end.attempt);
+          if (!v) return this.escalateRejected('verification', t, 'verifying', endRec.seq) || changed;
+          const evProblem = this.ensureEvidence(t, end, v);
           if (evProblem) {
             this.escalate(taskId, 'verifying', 'evidence', evProblem, 'Evidence failed verification; investigate tampering?');
             return true;
           }
-          if (r.verification.verdict === 'pass') {
-            this.transition({ taskId, from: 'verifying', to: 'reviewing', reason: 'verification passed (M1: scripted)' });
+          if (v.verdict === 'pass') {
+            this.transition({ taskId, from: 'verifying', to: 'reviewing', reason: `verification passed (${v.judge})` });
           } else {
-            this.correctionFailure(t, 'verifying', r.verification.signature ?? 'unspecified');
+            this.correctionFailure(t, 'verifying', v.signature ?? 'unspecified');
           }
           changed = true;
           continue;
         }
-        case 'reviewing':
-          if (r.review.verdict === 'approve') {
-            this.transition({ taskId, from: 'reviewing', to: 'accepted', reason: 'review approved (M1: scripted)' });
+        case 'reviewing': {
+          const v = this.verdictFor('review', taskId, end.attempt);
+          if (!v) return this.escalateRejected('review', t, 'reviewing', endRec.seq) || changed;
+          if (v.verdict === 'approve') {
+            this.transition({ taskId, from: 'reviewing', to: 'accepted', reason: `review approved (${v.judge})` });
           } else {
             this.correctionFailure(t, 'reviewing', 'review:changes-requested');
           }
           changed = true;
           continue;
+        }
         case 'accepted':
           this.transition({ taskId, from: 'accepted', to: 'integrating', reason: 'queued for integration (M1: no-op)' });
           changed = true;
@@ -779,7 +997,7 @@ export class Controller {
    * Returns a problem when evidence that was already sealed no longer verifies: that is
    * tampering, and it is escalated rather than silently rewritten.
    */
-  private ensureEvidence(t: TaskRecord, end: AttemptEndRecord): string | null {
+  private ensureEvidence(t: TaskRecord, end: AttemptEndRecord, v: AppliedVerdict): string | null {
     const sealed = this.sealedMac(t.id, end.attempt);
     const problems = this.evidence.verify(t.id, end.attempt);
     if (problems.length === 0) {
@@ -795,16 +1013,48 @@ export class Controller {
     // Never sealed (a crash while writing it): write it now.
     const r = end.result;
     if (r.kind !== 'completed') return null;
+    if (isLegacyResult(r)) {
+      // verdictFor gave a verdict for this end, so it precedes the format marker.
+      // An attempt an M1 controller ended before a crash: seal it as that code did.
+      const entries = [
+        this.evidence.writeArtifact(t.id, end.attempt, 'runner-result.json', JSON.stringify(r, null, 2)),
+        this.evidence.writeArtifact(
+          t.id,
+          end.attempt,
+          'verification.json',
+          JSON.stringify({ source: 'scripted (M1 placeholder for the M3 verifier)', verdict: r.verification.verdict, signature: r.verification.signature }, null, 2),
+        ),
+      ];
+      const m = this.evidence.seal(t.id, end.attempt, entries, { verification: r.verification.verdict, review: r.review.verdict, placeholder: 'M1' });
+      this.journal.append('evidence.sealed', { taskId: t.id, attempt: end.attempt, mac: m.mac });
+      return null;
+    }
+    // The runner's observations and the controller's verdict on them, kept apart.
     const entries = [
-      this.evidence.writeArtifact(t.id, end.attempt, 'runner-result.json', JSON.stringify(r, null, 2)),
+      this.evidence.writeArtifact(t.id, end.attempt, 'runner-result.json', JSON.stringify({ ...r, ...(end.ignoredFields ? { ignoredFields: end.ignoredFields } : {}) }, null, 2)),
       this.evidence.writeArtifact(
         t.id,
         end.attempt,
         'verification.json',
-        JSON.stringify({ source: 'scripted (M1 placeholder for the M3 verifier)', verdict: r.verification.verdict, signature: r.verification.signature }, null, 2),
+        JSON.stringify(
+          {
+            source: v.kind === 'fake' ? 'controller-side fake verifier (scripted stand-in for the M3 verifier)' : 'controller-side verifier',
+            verifier: v.kind,
+            verdict: v.verdict,
+            signature: v.signature,
+            verdictSeq: v.seq,
+          },
+          null,
+          2,
+        ),
       ),
     ];
-    const m = this.evidence.seal(t.id, end.attempt, entries, { verification: r.verification.verdict, review: r.review.verdict, placeholder: 'M1' });
+    const m = this.evidence.seal(t.id, end.attempt, entries, {
+      verification: v.verdict,
+      verificationSource: 'controller',
+      verifier: v.kind,
+      ...(end.ignoredFields ? { ignoredRunnerFields: end.ignoredFields } : {}),
+    });
     this.journal.append('evidence.sealed', { taskId: t.id, attempt: end.attempt, mac: m.mac });
     return null;
   }
@@ -822,9 +1072,9 @@ export class Controller {
     return starts[starts.length - 1]?.data.reservationId;
   }
 
-  private latestEnd(taskId: string, attempt: number): AttemptEndRecord | undefined {
-    const ends = this.journal.ofType<AttemptEndRecord>('attempt.end').filter((r) => r.data.taskId === taskId && r.data.attempt === attempt);
-    return ends[ends.length - 1]?.data;
+  /** The attempt's end: the first one journaled. A duplicate delivered later is never applied. */
+  private attemptEnd(taskId: string, attempt: number): JournalRecord<AttemptEndRecord> | undefined {
+    return this.journal.ofType<AttemptEndRecord>('attempt.end').find((r) => r.data.taskId === taskId && r.data.attempt === attempt);
   }
 
   private mustGet(id: string): TaskRecord {
@@ -877,21 +1127,13 @@ function policyRecords(records: readonly JournalRecord[]): { committed?: string;
   return { ...(committed !== undefined ? { committed } : {}), ...(pending ? { pending } : {}) };
 }
 
-function validAmount(c: unknown): boolean {
-  const x = c as { usd?: unknown; tokens?: unknown } | null;
-  return (
-    typeof x === 'object' && x !== null && typeof x.usd === 'number' && Number.isFinite(x.usd) && x.usd >= 0 &&
-    typeof x.tokens === 'number' && Number.isInteger(x.tokens) && x.tokens >= 0
-  );
-}
-
-/** A malformed reported cost becomes "unknown" (full reservation charged) before it is journaled. */
-function sanitizeCost(r: RunResult): RunResult {
-  return r.cost === null || validAmount(r.cost) ? r : { ...r, cost: null };
-}
-
+/**
+ * The cost to charge for an attempt: what the runner reported (untrusted, see
+ * src/runner/accept.ts), or null (the full reservation) when it reported none or a journaled
+ * figure is not a valid amount, e.g. one written before the cost bounds.
+ */
 function costOf(r: AttemptEndRecord['result']): Amount | null {
-  return r.cost ? { usd: r.cost.usd, tokens: r.cost.tokens } : null;
+  return validCost(r.cost) ? { usd: r.cost.usd, tokens: r.cost.tokens } : null;
 }
 
 function attemptKey(e: { taskId: string; attempt: number }): string {
