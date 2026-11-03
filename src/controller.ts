@@ -15,7 +15,7 @@ import { planHash, topoOrder, validatePlan, type Plan } from './plan.ts';
 import { describeLock, FileLock } from './util/lock.ts';
 import { assertPrivateDir, fsyncDir, writeAll, writeFileAtomic } from './util/fsx.ts';
 import type { ReportedCost, RunResult, Runner } from './runner/types.ts';
-import { acceptRunResult } from './runner/accept.ts';
+import { acceptRunResult, validCost } from './runner/accept.ts';
 import { checkVerdict } from './verify/check.ts';
 import { VERDICT_RECORD, type JudgeContext, type Judges, type VerdictRecord, type VerdictRejectedRecord, type VerdictStage } from './verify/types.ts';
 
@@ -1074,8 +1074,13 @@ function policyRecords(records: readonly JournalRecord[]): { committed?: string;
   return { ...(committed !== undefined ? { committed } : {}), ...(pending ? { pending } : {}) };
 }
 
+/**
+ * The cost to charge for an attempt: what the runner reported (untrusted, see
+ * src/runner/accept.ts), or null (the full reservation) when it reported none or a journaled
+ * figure is not a valid amount, e.g. one written before the cost bounds.
+ */
 function costOf(r: AttemptEndRecord['result']): Amount | null {
-  return r.cost ? { usd: r.cost.usd, tokens: r.cost.tokens } : null;
+  return validCost(r.cost) ? { usd: r.cost.usd, tokens: r.cost.tokens } : null;
 }
 
 function attemptKey(e: { taskId: string; attempt: number }): string {
