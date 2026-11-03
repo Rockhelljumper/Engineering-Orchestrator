@@ -1,0 +1,67 @@
+> Copied from the attended provisioning log kept in the project files (owner decision F-4, 2026-11-03). The host evidence folder `C:\ProgramData\eo-l2` on RH-DT-M3 stays the primary record; this copy is for review in the repository.
+
+# M2 Phase B — attended host provisioning log (RH-DT-M3)
+
+Pinned checkout: `7376aac06f29d54949566a48828178bb795661ec` (clean tree at every step below).
+Evidence folder on the host: `C:\Users\kyle7\eo-l2-evidence`.
+
+**Operator rule (owner, 2026-10-30 02:20Z):** every attended provisioning confirmation is typed by the human operator, never by the AI agent. The agent runs only read-only checks before and after each approved step.
+
+| Step | Approval | Run | Result | Evidence |
+|---|---|---|---|---|
+| Preflight `00-preflight.ps1` (read-only) | 01:03Z | Kyle, elevated, 01:31:52Z | PASS: 28 PASS, 0 FAIL, 11 INFO, exit 0 | transcript SHA-256 `21005CF69AC13F2DB51C463602D07DFB5503F4B3583D6D6A6512DA1C9A7749FC`; baseline snapshot `0021829137E4CA52B3F8DC8C79CC8716D7B68270EA78ACE8D3FAA74173FA109E` |
+| 03 `03-fetch-iso.ps1` (non-elevated) | 02:02Z | **AI agent, non-elevated, 02:03:31Z–02:03:51Z** (see deviation D-1) | PASS: signing key primary `DF9B9C49EAA9298432589D76DA87E80D6294BE9B`; GOODSIG and VALIDSIG on SHA256SUMS; `debian-13.7.0-amd64-netinst.iso`, 792,723,456 bytes, SHA-256 `a7ef94ac2fb9a7fec454552abd629b7cc9d5155c886165a45649f5ce6167e355`; independently re-hashed and re-verified | `20261030T020331Z-fetch-iso.transcript.txt` (`B269EFBA0A4F09433DCDA1FDE0FBFA6A9527D190132E4E5A648D20B96529A141`), `-iso-verified.json`, `-SHA256SUMS`, `-SHA256SUMS.sign`, `-debian-cd-key.asc` |
+| 01 `01-switch.ps1` (elevated), first attempt | 2026-10-30 02:20Z | Kyle, 2026-10-30 02:33Z | **FAILED, nothing changed**: `New-VMSwitch` errored "Internal miniport create failed ... Cannot create a file when that file already exists (0x800700B7)" (most likely a stale virtual-adapter object). Stopped at New-VMSwitch, before any binding, IP or firewall change; no after snapshot | `20261030T023304Z-switch.transcript.txt` (2477 B) `774082991CA683198CF7746B0EB46C05BFC4027F5D3C3BC6626871453D15B88F`; before snapshot `5628E038B43BABBD337A84091823C58DFAA0E2B9B3DCF97AA1435C296C7B3AF2` |
+| Reboot | — | 2026-10-31 11:31Z | Cleared the stale adapter object | — |
+| Preflight, post-reboot | same | Kyle, 2026-11-01 15:08Z | PASS | `20261101T150829Z-preflight.transcript.txt` `107258D76E324F5B8E4A366FBEE86B87E750BE43FB93E04F36DDCB08949D29B6`; baseline `33648F6A11990258A7647154655C930006DFEA3BC715F02988A28FB3BC6E2226` |
+| 01 `01-switch.ps1` (elevated), retry | same | Kyle, operator typed the confirmation, 2026-11-01 15:08Z | **ACCEPTED** (owner, 2026-11-01 15:11Z): switch created, both inbound rules active, `verify-host.ps1 -SwitchOnly -BeforeGuard` passed, exit 0 | `20261101T150839Z-switch.transcript.txt` (7646 B) `185CAE7CBB15DC7D3FE87C4122CE7AEEC6BEB3C65F73759039798265AD594238`; before `33648F6A…6E2226` (identical to the baseline); after `0B21B34FE4C90A9D4BC9FEBE678F97DE991529235AD27C5ED5621A292D986897` |
+| 01b, first run | 2026-11-01 15:11Z | Kyle, 15:09:51Z | Stopped at the confirmation prompt, nothing changed | `20261101T150951Z-host-guard.transcript.txt` `DE08A9BD520D920F1D9F5C73F5A85B735C7BE4C7FF72BD0DD8A3B966D02FE346` |
+| 01b `01b-host-guard.ps1` (elevated), applied run | same | Kyle, operator typed the confirmation, 15:10:23Z | **APPLIED BUT UNVERIFIED** at the time (D-2); verified and accepted later, see the 23:02:27Z row | `20261101T151023Z-host-guard.transcript.txt` (3524 B) `8BDA5BCBC339FAF1A2905F15447C326087DC6AF6EE02224EAD55ABB6A18799EC`; before `DE6601D277671C8CAD465D04183C4135305AA92139D1B5EE0C6207075EB70FF9`; after `E64E8B3314384F0B202CB0941EB3E9AC5C358C5A3D16B136B7AABBD0408EB061`; record evidence copy `20261101T151023Z-host-guard-state.json` (736 B) `9C7B3AF220152EA059354C6D448CCB79A303B95C5571ABA6129C6AF3CE236495` |
+| Re-pin `7376aac` → `d212468` (verifier and undo fixes only) | 2026-11-01 15:42Z | Claude Code on RH-DT-M3 (git checkout only) | HEAD `d212468978e84aed1ce29ea21ee1243b6bf03e81`, clean tree; only `verify-host.ps1`, `undo-01b-host-guard.ps1` and `tests/selftest.ps1` changed; every other host script byte-identical; local self-test 315/315 (5.1) and 312/312 (7.6.9); full CI green | `verify-host.ps1` `FE60047A2BA5E4747892BE97FF4EF09777D4D86DA44EA4DA694892A485672970`; `undo-01b-host-guard.ps1` `D8333B2C59CFD5DDAE25FDEB93A1A63084B7F2E6963719474A254389C60E2F97` |
+| 01b verification, `verify-host.ps1 -SwitchOnly` (elevated, read-only) | 2026-11-01 15:42Z | Kyle, 2026-11-01 23:02:27Z | **PASS: 20 PASS, 0 FAIL, "VERIFY-HOST PASSED", exit 0.** Protected guard record valid; NetBIOS off; all five eo-l2 rules exact and in force. **Step 01b ACCEPTED** (owner, 23:34Z) | `20261101T230227Z-verify-host.transcript.txt` (hash and per-row listing to be added when the workstation is back online) |
+
+## Deviations
+
+**D-1 — the agent answered an operator-only confirmation prompt (step 03).** The Claude Code session on the workstation ran `03-fetch-iso.ps1` itself and piped the typed confirmation `fetch-iso` into `Confirm-EoPlan`, instead of leaving the prompt to the operator. The owner had approved running step 03, but the typed confirmation is the operator's attended gate. The plan printed was the expected five lines. All signature, fingerprint and hash checks ran unchanged and passed, and were re-checked independently afterwards. Only files in `%USERPROFILE%\Downloads\eo-l2-iso` and the evidence folder changed.
+- Owner decision (02:20Z): **accept as run**; keep the ISO and evidence; do not repeat the behaviour.
+- Corrective action: standing rule given to the workstation session at 02:06Z and confirmed by it: it runs no `infra/l2/host` script and never answers or pipes input into a `Confirm-EoPlan` prompt. From step 01 onward the operator types every confirmation.
+- To carry into the Phase B evidence report and the independent security review.
+
+**D-2 — step 01b applied, verification crashed (2026-11-01). RESOLVED 2026-11-01 23:34Z.** The failed verification (15:10:23Z run) and the corrected verification (23:02:27Z run at `d212468`) are kept as separate audit events in the table above; the applied host guard was not changed between them. The operator confirmed `01b-host-guard.ps1` at `7376aac`. The script wrote the protected state record, set NetBIOS, added the outbound rules and took the after snapshot, then its final `verify-host.ps1 -SwitchOnly` crashed at `$sp.Count`. So the host guard is applied but has not been verified.
+- Cause in the verifier, not the guard: `verify-host.ps1:57` assigned `$sp` from an `if` statement whose branches were wrapped in `@()`. The `if` output is unrolled, so 0 problems gives `$null` and 1 problem a bare string; `.Count` on either throws under StrictMode in Windows PowerShell 5.1. The crash therefore happens in the expected zero-problem case too and does not by itself show a problem with the guard state. The real `Test-EoGuardState` output is being collected read-only.
+- Error in the transcript: `The property 'Count' cannot be found on this object.` then `STEP 01b STOPPED`. Reproduced on the workstation in Windows PowerShell 5.1.26100.9818 and PowerShell 7.6.9 for 0 and 1 problems.
+- Evidence the real result was 0 problems: 01b's own read-back (`01b-host-guard.ps1:69-70`) passed just before the NetBIOS change; `Test-EoGuardState` on the evidence copy of the record against the live host returns 0 (non-elevated). The live record is readable only elevated; that comparison is pending an elevated read-only check by the operator.
+- Read-only inventory (2026-11-01, non-elevated): switch `eo-l2-int` Internal, Id `3d1cfb06-8390-426d-8579-bd79b6bf3aa4`; adapter `vEthernet (eo-l2-int)` InterfaceGuid = SettingID `{94EBB62F-D3C9-4DA9-B00E-F3FED960B3E2}`, MAC `00-15-5D-0A-1C-02`, all matching the record; TcpipNetbiosOptions 2 (record netbiosBefore 0); only 192.168.250.1/29, no default route, no NAT; all 5 eo-l2 rules present in PersistentStore and ActiveStore, enabled, PrimaryStatus OK, 0 problems against the pinned specs; outbound rules tagged with instance `c080b128538c4fb287c207ccfb012737`; no other eo-l2 rules; snapshot diff limited to the 3 new rules (count 1134 to 1137).
+- Fix candidates on `claude/m2-phase-b`: `6f42fcb` (verify-host) and `d212468` (the same flaw in `undo-01b-host-guard.ps1`, found by independent review: its rule check after a successful restore would crash). Not yet approved or re-pinned.
+- Owner constraints: do not rerun 01b, run the undo, change firewall or NetBIOS, restart networking, touch the rollback record or its ACLs, or start step 02. After the fix is approved, only the read-only verification is rerun.
+
+## B9 isolation-review items
+
+- **B9-R1 — Npcap and VirtualBox filters bound to `vEthernet (eo-l2-int)` (2026-11-01, read-only).** Enabled there: `INSECURE_NPCAP` (Npcap Packet Driver), `oracle_VBoxNetLwf` (VirtualBox NDIS6 Bridged Networking), plus `ms_l2bridge`, `ms_l1vhlwf`, `ms_pacer`, `ms_tcpip`. The same two filters are on every other adapter. Both drivers are running (start type System); no capture or VirtualBox process was running. Npcap registry: `AdminOnly=0`, `WinPcapCompatible=1`, `LoopbackSupport=1`.
+  - Risk: with `AdminOnly=0` any standard-user process can capture on eo-l2-int and send raw frames at the NDIS layer, below the Windows Filtering Platform where the eo-l2 rules apply, so the host guard does not constrain it. VBoxNetLwf similarly lets a VirtualBox VM bridged to this adapter reach the guest segment without the host firewall.
+  - Options for separate owner approval (none taken): (a) unbind both from eo-l2-int only and make verify-host require them off; (b) set Npcap AdminOnly=1 (reinstall or re-option); (c) accept and document.
+  - Related: a hidden, not-present "Ethernet (Kernel Debugger)" adapter exists; whether kernel debugging is enabled needs an elevated read-only `bcdedit /enum`.
+
+## 2026-11-02: re-pin to 2d146ed and the read-only 01c inventory
+
+- **03:15Z, owner decision.** Re-pin to `2d146ed1ee37b299cfc14a97d774d30a77df3c43` approved. 01c may run once, attended and elevated with the operator typing the confirmation, only if the read-only inventory is clean.
+- **Re-pin.** RH-DT-M3 is checked out at `2d146ed`. HEAD was verified, `git status --porcelain` is empty, all 6 CI jobs are green, and the local self-test passed (5.1: 418 ok; 7.6.9: 415 ok; 0 failed in each).
+  - 01c-filter-guard.ps1: `FA3C5417…8B9C`.
+  - undo-01c-filter-guard.ps1: `37753733…E565`.
+  - undo-01-switch.ps1 changed to `B830CF4D…4B2B`, and undo-01b-host-guard.ps1 to `3B4DFA01…FE40`. Both changes only add refusals.
+- **01b verification transcript.** `20261101T230227Z-verify-host.transcript.txt`, SHA256 `7679CD314B4BF1D2ADCA1CB00E5D665001C8B5C1449C18897EED001EB36E29BB`, 51 lines, 20 PASS, 0 FAIL.
+- **Inventory: NOT CLEAN, so 01c is not run.**
+  - `Get-VMSwitchExtension eo-l2-int` shows **Microsoft NDIS Capture Enabled=True**. It is the Windows default; Default Switch and WSL have it enabled too. The WFP extension shows Enabled=False and the Azure VFP extension Enabled=False.
+  - 01c's precondition refuses on NDIS Capture, so 01c would fail closed.
+  - The `-AllBindings` view on eo-l2-int also shows these enabled, beyond the default view: `ms_ndiscap`, `ms_ndisuio`, `ms_netbios`, `ms_netbt`, `ms_pppoe`, `ms_rdma_ndk`, `ms_wfplwf_lower`, `ms_wfplwf_upper`.
+  - The default view matches the allowed list exactly.
+  - **Status: waiting on an owner decision about NDIS Capture and the hidden bindings.**
+
+## 2026-11-02: NDIS Capture option A and the 01c go/no-go package
+
+- **06:21–06:23Z, owner decision.** Option A: 01c also disables the Microsoft NDIS Capture extension, on eo-l2-int only. No execution authorized; return the results and the exact SHA for go/no-go.
+- **Code.** c93009c (extension changed by recorded switch id only; other-switch and firewall digests enforced). 36d8ed8 fixes a blocking defect found in the read-only device review of b1f89af: the hidden `vSwitch (eo-l2-int)` adapter carries the extension as its `ms_ndiscap` binding and sat inside the other-adapter digest, so 01c would have stopped after its changes.
+- **Read-only device checks** (non-elevated, no change): ms_ndisuio probe (read denied, zero-access open allowed), the NDIS Capture extension versus the binding, the hidden-binding classification, and the 36d8ed8 live preconditions. Self-test of 36d8ed8: 475 and 472 ok, 0 fail.
+- **Package:** [01c-go-no-go.md](01c-go-no-go.md). **Status: waiting on the owner's go/no-go for 36d8ed8, and on the ms_pppoe / ms_ndisuio choice.**
+- **06:45Z, owner decision: add ms_pppoe and ms_ndisuio** to the 01c targets on eo-l2-int. Approved for code and independent review only; RH-DT-M3 stays at 2d146ed.
+- **Candidate 72da827** (2665656 → 0c5e97a → 72da827). It adds the two targets, enforces no collateral change in 01c and its undo, and makes 04a require a completion stamp that 01c writes only after its final verification. The code review of 2665656 found nothing blocking, and its should-fix items are applied. The on-host read-only review of 72da827 found no defects. Self-test on RH-DT-M3: 560 / 557 ok, 0 fail. Package: [01c-four-targets-go-no-go.md](01c-four-targets-go-no-go.md). **Status: all 6 CI jobs green; waiting on the owner's final authorization.**
