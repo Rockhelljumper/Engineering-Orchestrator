@@ -17,6 +17,9 @@ $EO = [ordered]@{
     SubnetHigh   = '192.168.250.7'
     FwGroup      = 'eo-l2'
     VmName       = 'eo-l2'
+    # The VM folder chain (see _vmfolder.ps1): 02 creates VmParent when absent, or
+    # requires an existing one to be admin-protected; undo-02 deletes Root only.
+    VmParent     = 'C:\Hyper-V'
     Root         = 'C:\Hyper-V\eo-l2'
     IsoDir       = 'C:\Hyper-V\eo-l2\iso'
     SystemVhd    = 'C:\Hyper-V\eo-l2\eo-l2-system.vhdx'
@@ -81,6 +84,7 @@ $EO = [ordered]@{
 }
 
 . (Join-Path $PSScriptRoot '_guard.ps1')
+. (Join-Path $PSScriptRoot '_vmfolder.ps1')
 
 # The VM's integration service with this GUID, matched on the Id's GUID part and
 # falling back to the English name. Throws when neither matches.

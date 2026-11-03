@@ -6,7 +6,10 @@
 #   eo-l2-int has no NAT, no default route, forwarding off, and the eo-l2 rules are
 #   in the active policy with their address and interface filters, with Windows
 #   Firewall on, applying local rules, not exempting eo-l2-int, and no enabled rule
-#   that may override block rules. -SwitchOnly runs only the switch and host
+#   that may override block rules; and the VM folders (step 02): no link (reparse
+#   point) from C:\ down to C:\Hyper-V\eo-l2\iso, C:\Hyper-V admin-protected, eo-l2
+#   and iso Administrators and SYSTEM only, disks, ISO and VM configuration for
+#   Administrators, SYSTEM and the VM's own account only. -SwitchOnly runs only the switch and host
 #   checks (used by 01, 01b and 01c, before the VM exists). The host guard (01b) is
 #   required; only 01-switch.ps1, which runs before 01b, passes -BeforeGuard.
 #   The filter guard (01c, B9-R1) is checked whenever its record exists, always in
@@ -121,6 +124,13 @@ try {
         $assigned = try { @(Get-VMAssignableDevice -VMName $EO.VmName -ErrorAction Stop).Count } catch { 0 }
         Row 'No assigned (passthrough) devices' ($assigned -eq 0) "$assigned"
         Row 'Nested virtualization off' (-not (Get-VMProcessor -VMName $EO.VmName).ExposeVirtualizationExtensions) ''
+        # The VM folder chain (02, rules in _vmfolder.ps1): no link from C:\ down, C:\Hyper-V
+        # admin-protected, eo-l2 and iso Administrators and SYSTEM only, the disks, the ISO
+        # and the VM configuration with at most Hyper-V's per-VM account added, and
+        # nothing in eo-l2 that 02 and Hyper-V did not put there.
+        $vf = $null
+        try { $vf = Get-EoVmFolderReport } catch { $vf = [ordered]@{ 'VM folders: owner, ACL and link checks' = @("not read: $($_.Exception.Message)") } }
+        foreach ($k in $vf.Keys) { $vp = @($vf[$k]); Row $k ($vp.Count -eq 0) ($vp -join '; ') }
     }
     $rows | Format-Table -AutoSize -Wrap | Out-String -Width 220 | Write-Host
     if (-not $SwitchOnly) { Get-VMNetworkAdapter -VMName $EO.VmName | Format-List VMName, Name, SwitchName, MacAddress, Status, IPAddresses | Out-String | Write-Host }
